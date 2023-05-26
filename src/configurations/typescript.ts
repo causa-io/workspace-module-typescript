@@ -15,6 +15,23 @@ export type TypeScriptConfiguration = {
        * Supports formatting.
        */
       environment?: Record<string, string>;
+
+      /**
+       * The version of npm to use.
+       * Can be a semver version, or `latest`.
+       */
+      version?: string;
+    };
+
+    /**
+     * Configuration related to Node.
+     */
+    node?: {
+      /**
+       * The Node version to use, for example when building Docker images.
+       * Can be a semver version, or `latest`.
+       */
+      version?: string;
     };
   };
 
@@ -32,5 +49,10 @@ export type TypeScriptConfiguration = {
        */
       definitionFileFormat?: string;
     };
+
+    /**
+     * The path to the Dockerfile used to build service containers for projects in TypeScript.
+     */
+    serviceContainerDockerfile?: string;
   };
 };
