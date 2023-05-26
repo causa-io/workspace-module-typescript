@@ -9,3 +9,4 @@ Features:
 - Implement `ProjectGetArtefactDestination` for npm packages.
 - Implement the `NpmService`.
 - Implement `ProjectBuildArtefact` for TypeScript packages.
+- Implement `ProjectPushArtefact` for npm packages
