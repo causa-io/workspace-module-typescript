@@ -10,3 +10,4 @@ Features:
 - Implement the `NpmService`.
 - Implement `ProjectBuildArtefact` for TypeScript packages.
 - Implement `ProjectPushArtefact` for npm packages
+- Implement `ProjectBuildArtefact` for TypeScript service containers
