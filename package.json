@@ -30,11 +30,17 @@
   },
   "dependencies": {
     "@causa/workspace": ">= 0.7.0 < 1.0.0",
-    "@causa/workspace-core": "^0.4.0"
+    "@causa/workspace-core": "^0.4.0",
+    "js-yaml": "^4.1.0",
+    "json-schema-to-typescript": "^13.0.1",
+    "lodash-es": "^4.17.21",
+    "prettier": "^2.8.8"
   },
   "devDependencies": {
     "@tsconfig/node18": "^2.0.1",
     "@types/jest": "^29.5.1",
+    "@types/js-yaml": "^4.0.5",
+    "@types/lodash-es": "^4.17.7",
     "@types/node": "^18.16.14",
     "copyfiles": "^2.4.1",
     "eslint": "^8.41.0",

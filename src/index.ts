@@ -1,6 +1,8 @@
 import { ModuleRegistrationFunction } from '@causa/workspace';
 import { registerFunctions } from './functions/index.js';
 
+export * from './configurations/index.js';
+
 const registerModule: ModuleRegistrationFunction = async (context) => {
   registerFunctions(context);
 };
