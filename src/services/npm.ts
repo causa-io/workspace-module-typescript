@@ -5,7 +5,8 @@ import {
   SpawnOptions,
   SpawnedProcessResult,
 } from '@causa/workspace-core';
-import { NpmExitCodeError } from './npm.errors.js';
+import { satisfies } from 'semver';
+import { IncompatibleNpmVersionError, NpmExitCodeError } from './npm.errors.js';
 
 /**
  * A service exposing the npm CLI.
@@ -22,9 +23,16 @@ export class NpmService {
    */
   readonly environment: Promise<Record<string, any> | undefined>;
 
+  /**
+   * The required npm version set in the configuration.
+   * Defaults to `latest`.
+   */
+  readonly requiredVersion: string;
+
   constructor(context: WorkspaceContext) {
     this.processService = context.service(ProcessService);
     this.environment = context.getAndRender('javascript.npm.environment');
+    this.requiredVersion = context.get('javascript.npm.version') ?? 'latest';
   }
 
   /**
@@ -84,6 +92,8 @@ export class NpmService {
     args: string[],
     options: SpawnOptions = {},
   ): Promise<SpawnedProcessResult> {
+    await this.checkNpmVersion();
+
     const defaultEnvironment = (await this.environment) ?? {};
 
     try {
@@ -103,5 +113,55 @@ export class NpmService {
 
       throw error;
     }
+  }
+
+  /**
+   * Whether the installed npm version is compatible with the required version set in the configuration.
+   * It is `undefined` before the first call to {@link NpmService.checkNpmVersion}.
+   */
+  private hasCompatibleNpmVersion: boolean | undefined;
+
+  /**
+   * A promise that resolves when the installed npm version has been checked.
+   * It is `undefined` before the first call to {@link NpmService.checkNpmVersion}, or if the actual check is not
+   * needed.
+   */
+  private npmVersionCheck: Promise<void> | undefined;
+
+  /**
+   * Checks whether the installed npm version is compatible with the required version set in the configuration.
+   * If the required version is `latest`, the check is skipped.
+   * If the installed version is not compatible, an {@link IncompatibleNpmVersionError} is thrown.
+   * The result of the check is cached, and this returns synchronously on subsequent calls.
+   */
+  private async checkNpmVersion(): Promise<void> {
+    if (this.hasCompatibleNpmVersion === true) {
+      return;
+    }
+
+    if (this.requiredVersion === 'latest') {
+      this.hasCompatibleNpmVersion = true;
+      return;
+    }
+
+    if (!this.npmVersionCheck) {
+      this.npmVersionCheck = (async () => {
+        const result = await this.processService.spawn('npm', ['--version'], {
+          capture: { stdout: true },
+        }).result;
+        const version = (result.stdout ?? '').trim();
+
+        this.hasCompatibleNpmVersion = satisfies(
+          version,
+          `^${this.requiredVersion}`,
+        );
+
+        if (!this.hasCompatibleNpmVersion) {
+          throw new IncompatibleNpmVersionError(version, this.requiredVersion);
+        }
+      })();
+    }
+
+    await this.npmVersionCheck;
   }
 }
