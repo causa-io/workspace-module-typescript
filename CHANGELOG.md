@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.0 (2023-05-26)
+
 Features:
 
 - Implement `ProjectReadVersion` for JavaScript and TypeScript languages.
