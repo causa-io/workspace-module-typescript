@@ -6,6 +6,10 @@ Features:
 
 - Implement `ProjectBuildArtefact` for TypeScript serverless functions.
 
+Fixes:
+
+- Ensure the distroless image matches the major Node version
+
 ## v0.1.0 (2023-05-26)
 
 Features:
