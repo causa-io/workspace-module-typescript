@@ -21,7 +21,7 @@ const DOCKER_FILE = fileURLToPath(
  * `NODE_VERSION` and `NPM_VERSION` are automatically passed as build arguments, obtained from the
  * `javascript.node.version` and `javascript.npm.version` configurations.
  */
-export class ProjectBuildArtefactForServiceContainer extends ProjectBuildArtefact {
+export class ProjectBuildArtefactForTypeScriptServiceContainer extends ProjectBuildArtefact {
   async _call(context: WorkspaceContext): Promise<string> {
     const path = context.getProjectPathOrThrow();
     const dockerService = context.service(DockerService);

@@ -6,9 +6,9 @@ import { jest } from '@jest/globals';
 import 'jest-extended';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
-import { ProjectBuildArtefactForServiceContainer } from './project-build-artefact-service-container.js';
+import { ProjectBuildArtefactForTypeScriptServiceContainer } from './project-build-artefact-ts-service-container.js';
 
-describe('ProjectBuildArtefactForServiceContainer', () => {
+describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
   let context: WorkspaceContext;
   let dockerService: DockerService;
 
@@ -31,7 +31,7 @@ describe('ProjectBuildArtefactForServiceContainer', () => {
           },
         },
       },
-      functions: [ProjectBuildArtefactForServiceContainer],
+      functions: [ProjectBuildArtefactForTypeScriptServiceContainer],
     }));
     dockerService = context.service(DockerService);
   });
@@ -46,7 +46,7 @@ describe('ProjectBuildArtefactForServiceContainer', () => {
           language: 'ruby',
         },
       },
-      functions: [ProjectBuildArtefactForServiceContainer],
+      functions: [ProjectBuildArtefactForTypeScriptServiceContainer],
     }));
 
     expect(() => context.call(ProjectBuildArtefact, {})).toThrow(
@@ -64,7 +64,7 @@ describe('ProjectBuildArtefactForServiceContainer', () => {
           language: 'typescript',
         },
       },
-      functions: [ProjectBuildArtefactForServiceContainer],
+      functions: [ProjectBuildArtefactForTypeScriptServiceContainer],
     }));
 
     expect(() => context.call(ProjectBuildArtefact, {})).toThrow(
@@ -137,7 +137,7 @@ describe('ProjectBuildArtefactForServiceContainer', () => {
         javascript: { node: { version: '18.0.0' }, npm: { version: '7.0.0' } },
         typescript: { serviceContainerDockerfile: 'folder/Dockerfile' },
       },
-      functions: [ProjectBuildArtefactForServiceContainer],
+      functions: [ProjectBuildArtefactForTypeScriptServiceContainer],
     }));
     dockerService = context.service(DockerService);
     const expectedDockerFile = join(context.rootPath, 'folder/Dockerfile');
