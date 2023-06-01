@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Implement `ProjectBuildArtefact` for TypeScript serverless functions.
+
 ## v0.1.0 (2023-05-26)
 
 Features:
