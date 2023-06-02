@@ -89,6 +89,7 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
       platform: '🖥️',
       buildArgs: {
         NODE_VERSION: 'latest',
+        NODE_MAJOR_VERSION: '20',
         NPM_VERSION: 'latest',
         MY_ARG: 'my-value',
         MY_OTHER_ARG: 'prefix-🏷️',
@@ -117,6 +118,7 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
       platform: '🖥️',
       buildArgs: {
         NODE_VERSION: 'latest',
+        NODE_MAJOR_VERSION: '20',
         NPM_VERSION: 'latest',
         MY_ARG: 'my-value',
         MY_OTHER_ARG: 'prefix-🏷️',
@@ -134,7 +136,7 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
           type: 'serviceContainer',
           language: 'typescript',
         },
-        javascript: { node: { version: '18.0.0' }, npm: { version: '7.0.0' } },
+        javascript: { node: { version: '18.1.0' }, npm: { version: '7.0.0' } },
         typescript: { serviceContainerDockerfile: 'folder/Dockerfile' },
       },
       functions: [ProjectBuildArtefactForTypeScriptServiceContainer],
@@ -150,7 +152,8 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
       file: expectedDockerFile,
       tags: [actualArtefact],
       buildArgs: {
-        NODE_VERSION: '18.0.0',
+        NODE_VERSION: '18.1.0',
+        NODE_MAJOR_VERSION: '18',
         NPM_VERSION: '7.0.0',
       },
     });

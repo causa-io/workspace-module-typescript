@@ -1,4 +1,5 @@
 ARG NODE_VERSION=latest
+ARG NODE_MAJOR_VERSION=20
 
 # Base image using the correct version of Node and npm.
 FROM --platform=linux/amd64 node:${NODE_VERSION} AS node-base
@@ -32,7 +33,7 @@ COPY --from=builder /home/node/package*.json /home/node/
 RUN npm ci --omit=dev
 
 # Final image, only containing production dependencies and the compiled JavaScript code.
-FROM gcr.io/distroless/nodejs18-debian11
+FROM gcr.io/distroless/nodejs${NODE_MAJOR_VERSION}
 
 WORKDIR /app
 
