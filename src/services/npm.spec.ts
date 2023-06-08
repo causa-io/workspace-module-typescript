@@ -85,7 +85,11 @@ describe('NpmService', () => {
 
       await service.build({});
 
-      expect(service.npm).toHaveBeenCalledWith('run-script', ['build'], {});
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith(
+        'run-script',
+        ['build'],
+        {},
+      );
     });
   });
 
@@ -95,7 +99,7 @@ describe('NpmService', () => {
 
       await service.publish({});
 
-      expect(service.npm).toHaveBeenCalledWith('publish', [], {});
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith('publish', [], {});
     });
   });
 
@@ -109,7 +113,7 @@ describe('NpmService', () => {
         capture: { stdout: true },
       });
 
-      expect(service.npm).toHaveBeenCalledWith(
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith(
         'run-script',
         ['my-script', '--', '--arg1', '--arg2', 'value'],
         { capture: { stdout: true } },
@@ -123,7 +127,7 @@ describe('NpmService', () => {
 
       await service.ci({});
 
-      expect(service.npm).toHaveBeenCalledWith('ci', [], {});
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith('ci', [], {});
     });
   });
 });

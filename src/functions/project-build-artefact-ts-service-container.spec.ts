@@ -84,18 +84,21 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
     const actualArtefact = await context.call(ProjectBuildArtefact, {});
 
     expect(actualArtefact).toBeString();
-    expect(dockerService.build).toHaveBeenCalledWith(context.projectPath, {
-      file: expectedDockerFile,
-      platform: '🖥️',
-      buildArgs: {
-        NODE_VERSION: 'latest',
-        NODE_MAJOR_VERSION: '20',
-        NPM_VERSION: 'latest',
-        MY_ARG: 'my-value',
-        MY_OTHER_ARG: 'prefix-🏷️',
+    expect(dockerService.build).toHaveBeenCalledExactlyOnceWith(
+      context.projectPath,
+      {
+        file: expectedDockerFile,
+        platform: '🖥️',
+        buildArgs: {
+          NODE_VERSION: 'latest',
+          NODE_MAJOR_VERSION: '20',
+          NPM_VERSION: 'latest',
+          MY_ARG: 'my-value',
+          MY_OTHER_ARG: 'prefix-🏷️',
+        },
+        tags: [actualArtefact],
       },
-      tags: [actualArtefact],
-    });
+    );
   });
 
   it('should use the passed artefact as the image name', async () => {
@@ -113,18 +116,21 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
     });
 
     expect(actualArtefact).toEqual(expectedArtefact);
-    expect(dockerService.build).toHaveBeenCalledWith(context.projectPath, {
-      file: expectedDockerFile,
-      platform: '🖥️',
-      buildArgs: {
-        NODE_VERSION: 'latest',
-        NODE_MAJOR_VERSION: '20',
-        NPM_VERSION: 'latest',
-        MY_ARG: 'my-value',
-        MY_OTHER_ARG: 'prefix-🏷️',
+    expect(dockerService.build).toHaveBeenCalledExactlyOnceWith(
+      context.projectPath,
+      {
+        file: expectedDockerFile,
+        platform: '🖥️',
+        buildArgs: {
+          NODE_VERSION: 'latest',
+          NODE_MAJOR_VERSION: '20',
+          NPM_VERSION: 'latest',
+          MY_ARG: 'my-value',
+          MY_OTHER_ARG: 'prefix-🏷️',
+        },
+        tags: [expectedArtefact],
       },
-      tags: [expectedArtefact],
-    });
+    );
   });
 
   it('should use the specified Dockerfile, and Node and npm versions', async () => {
@@ -148,14 +154,17 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
     const actualArtefact = await context.call(ProjectBuildArtefact, {});
 
     expect(actualArtefact).toBeString();
-    expect(dockerService.build).toHaveBeenCalledWith(context.projectPath, {
-      file: expectedDockerFile,
-      tags: [actualArtefact],
-      buildArgs: {
-        NODE_VERSION: '18.1.0',
-        NODE_MAJOR_VERSION: '18',
-        NPM_VERSION: '7.0.0',
+    expect(dockerService.build).toHaveBeenCalledExactlyOnceWith(
+      context.projectPath,
+      {
+        file: expectedDockerFile,
+        tags: [actualArtefact],
+        buildArgs: {
+          NODE_VERSION: '18.1.0',
+          NODE_MAJOR_VERSION: '18',
+          NPM_VERSION: '7.0.0',
+        },
       },
-    });
+    );
   });
 });
