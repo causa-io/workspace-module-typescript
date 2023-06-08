@@ -77,7 +77,7 @@ describe('ProjectBuildArtefactForTypeScriptPackage', () => {
     const actualArtefact = await context.call(ProjectBuildArtefact, {});
 
     expect(actualArtefact).toEqual(context.projectPath);
-    expect(npmService.build).toHaveBeenCalledOnceWith({
+    expect(npmService.build).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: context.projectPath,
     });
   });
