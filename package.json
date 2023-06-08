@@ -32,6 +32,7 @@
     "@causa/workspace": ">= 0.9.0 < 1.0.0",
     "@causa/workspace-core": ">= 0.7.0 < 1.0.0",
     "archiver": "^5.3.1",
+    "audit-ci": "^6.6.1",
     "js-yaml": "^4.1.0",
     "json-schema-to-typescript": "^13.0.1",
     "lodash-es": "^4.17.21",
