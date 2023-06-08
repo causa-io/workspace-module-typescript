@@ -7,6 +7,7 @@ import { ProjectGetArtefactDestinationForNpmPackage } from './project-get-artefa
 import { ProjectLintForJavaScript } from './project-lint-javascript.js';
 import { ProjectPushArtefactForNpmPackage } from './project-push-artefact-npm-package.js';
 import { ProjectReadVersionForJavascript } from './project-read-version-javascript.js';
+import { ProjectTestForJavaScript } from './project-test-javascript.js';
 
 export function registerFunctions(context: ModuleRegistrationContext) {
   context.registerFunctionImplementations(
@@ -18,5 +19,6 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ProjectLintForJavaScript,
     ProjectPushArtefactForNpmPackage,
     ProjectReadVersionForJavascript,
+    ProjectTestForJavaScript,
   );
 }
