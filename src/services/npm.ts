@@ -80,6 +80,16 @@ export class NpmService {
   }
 
   /**
+   * Runs `npm ci`.
+   * Specify the {@link SpawnOptions.workingDirectory} to set the package on which the command is run.
+   *
+   * @param options {@link SpawnOptions} for the process.
+   */
+  async ci(options: SpawnOptions = {}): Promise<void> {
+    await this.npm('ci', [], options);
+  }
+
+  /**
    * Runs an arbitrary npm command.
    *
    * @param command The npm command to run.

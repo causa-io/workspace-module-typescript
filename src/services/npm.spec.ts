@@ -116,4 +116,14 @@ describe('NpmService', () => {
       );
     });
   });
+
+  describe('ci', () => {
+    it('should run the ci command', async () => {
+      jest.spyOn(service, 'npm').mockResolvedValueOnce({ code: 0 });
+
+      await service.ci({});
+
+      expect(service.npm).toHaveBeenCalledWith('ci', [], {});
+    });
+  });
 });
