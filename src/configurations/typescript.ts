@@ -33,6 +33,27 @@ export type TypeScriptConfiguration = {
        */
       version?: string;
     };
+
+    /**
+     * Configuration used when checking dependencies for vulnerabilities.
+     */
+    dependenciesCheck?: {
+      /**
+       * Whether to ignore vulnerabilities in dev dependencies.
+       */
+      skipDev?: boolean;
+
+      /**
+       * The minimum severity level of vulnerabilities to fail the check.
+       */
+      level?: 'low' | 'moderate' | 'high' | 'critical';
+
+      /**
+       * A list of vulnerabilities to allow.
+       * See: https://github.com/IBM/audit-ci#allowlisting
+       */
+      allowlist?: string[];
+    };
   };
 
   /**
