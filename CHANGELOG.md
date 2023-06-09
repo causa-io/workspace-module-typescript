@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Features:
+
+- Implement `ProjectInit`, `ProjectTest`, `ProjectLint`, `ProjectDependenciesCheck`, and `ProjectSecurityCheck` for JavaScript and TypeScript projects.
+- Implement the `ci` command for the `NpmService`.
+
 ## v0.2.0 (2023-06-02)
 
 Features:

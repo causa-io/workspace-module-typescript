@@ -6,7 +6,7 @@ import { readNpmPackageFile } from '../utils.js';
  * Implements the {@link ProjectReadVersion} function for JavaScript projects, parsing the version from the
  * `package.json` file.
  */
-export class ProjectReadVersionForJavascript extends ProjectReadVersion {
+export class ProjectReadVersionForJavaScript extends ProjectReadVersion {
   async _call(context: WorkspaceContext): Promise<string> {
     const projectPath = context.getProjectPathOrThrow();
     const packageInfo = await readNpmPackageFile(projectPath);

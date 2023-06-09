@@ -5,9 +5,9 @@ import { createContext } from '@causa/workspace/testing';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { ProjectReadVersionForJavascript } from './project-read-version-javascript.js';
+import { ProjectReadVersionForJavaScript } from './project-read-version-javascript.js';
 
-describe('ProjectReadVersionForJavascript', () => {
+describe('ProjectReadVersionForJavaScript', () => {
   let tmpDir: string;
   let context: WorkspaceContext;
 
@@ -23,7 +23,7 @@ describe('ProjectReadVersionForJavascript', () => {
           language: 'typescript',
         },
       },
-      functions: [ProjectReadVersionForJavascript],
+      functions: [ProjectReadVersionForJavaScript],
     }));
   });
 
@@ -42,7 +42,7 @@ describe('ProjectReadVersionForJavascript', () => {
           language: 'python',
         },
       },
-      functions: [ProjectReadVersionForJavascript],
+      functions: [ProjectReadVersionForJavaScript],
     }));
 
     expect(() => context.call(ProjectReadVersion, {})).toThrow(

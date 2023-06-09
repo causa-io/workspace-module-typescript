@@ -87,7 +87,7 @@ describe('ProjectBuildArtefactForTypeScriptServerlessFunctions', () => {
 
     const actualArtefact = await context.call(ProjectBuildArtefact, {});
 
-    expect(npmService.build).toHaveBeenCalledWith({
+    expect(npmService.build).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: tmpDir,
     });
     expect(await readArchiveContent(actualArtefact)).toEqual({
@@ -127,7 +127,7 @@ describe('ProjectBuildArtefactForTypeScriptServerlessFunctions', () => {
     });
 
     expect(actualArtefact).toEqual(expectedArtefact);
-    expect(npmService.build).toHaveBeenCalledWith({
+    expect(npmService.build).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: tmpDir,
     });
     expect(await readArchiveContent(actualArtefact)).toEqual({

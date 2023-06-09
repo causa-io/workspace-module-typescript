@@ -112,7 +112,7 @@ describe('ProjectPushArtefactForNpmPackage', () => {
     });
 
     expect(actualDestination).toEqual(tmpDir);
-    expect(npmService.publish).toHaveBeenCalledWith({
+    expect(npmService.publish).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: tmpDir,
     });
   });
