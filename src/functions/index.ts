@@ -8,7 +8,7 @@ import { ProjectGetArtefactDestinationForNpmPackage } from './project-get-artefa
 import { ProjectInitForJavaScript } from './project-init-javascript.js';
 import { ProjectLintForJavaScript } from './project-lint-javascript.js';
 import { ProjectPushArtefactForNpmPackage } from './project-push-artefact-npm-package.js';
-import { ProjectReadVersionForJavascript } from './project-read-version-javascript.js';
+import { ProjectReadVersionForJavaScript } from './project-read-version-javascript.js';
 import { ProjectSecurityCheckForJavaScript } from './project-security-check.js';
 import { ProjectTestForJavaScript } from './project-test-javascript.js';
 
@@ -23,7 +23,7 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ProjectInitForJavaScript,
     ProjectLintForJavaScript,
     ProjectPushArtefactForNpmPackage,
-    ProjectReadVersionForJavascript,
+    ProjectReadVersionForJavaScript,
     ProjectSecurityCheckForJavaScript,
     ProjectTestForJavaScript,
   );
