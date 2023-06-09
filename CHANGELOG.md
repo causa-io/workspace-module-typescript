@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.3.0 (2023-06-09)
+
 Features:
 
 - Implement `ProjectInit`, `ProjectTest`, `ProjectLint`, `ProjectDependenciesCheck`, and `ProjectSecurityCheck` for JavaScript and TypeScript projects.
