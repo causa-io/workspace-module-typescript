@@ -16,11 +16,12 @@ FROM node-base AS builder
 # Used for private npm packages.
 ARG NPM_TOKEN
 
-COPY .npmrc /home/node/
+# This uses a glob pattern which will only copy `.npmrc`, but allows the file to be missing.
+COPY .npmr[c] /home/node/
 COPY package*.json /home/node/
 RUN npm ci
 
-COPY nest-cli.json /home/node/
+COPY nest-cli.jso[n] /home/node/
 COPY tsconfig*.json /home/node/
 COPY src/ /home/node/src/
 RUN npm run build
@@ -28,7 +29,7 @@ RUN npm run build
 # Image to get production dependencies.
 FROM node-base as builder-prod-dependencies
 ARG NPM_TOKEN
-COPY --from=builder /home/node/.npmrc /home/node/
+COPY --from=builder /home/node/.npmr[c] /home/node/
 COPY --from=builder /home/node/package*.json /home/node/
 RUN npm ci --omit=dev
 
@@ -40,7 +41,5 @@ WORKDIR /app
 COPY --from=builder /home/node/package.json /app/package.json
 COPY --from=builder-prod-dependencies /home/node/node_modules /app/node_modules
 COPY --from=builder /home/node/dist /app/dist
-
-EXPOSE 3000
 
 CMD ["/app/dist/index.js"]

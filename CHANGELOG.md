@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Allow `.npmrc` and `nest-cli.json` to be missing when building a Docker image.
+
 ## v0.3.0 (2023-06-09)
 
 Features:
