@@ -42,6 +42,4 @@ COPY --from=builder /home/node/package.json /app/package.json
 COPY --from=builder-prod-dependencies /home/node/node_modules /app/node_modules
 COPY --from=builder /home/node/dist /app/dist
 
-EXPOSE 3000
-
 CMD ["/app/dist/index.js"]
