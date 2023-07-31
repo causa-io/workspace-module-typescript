@@ -36,6 +36,7 @@
     "js-yaml": "^4.1.0",
     "json-schema-to-typescript": "^13.0.2",
     "lodash-es": "^4.17.21",
+    "npm-check-updates": "^16.10.17",
     "prettier": "^3.0.0",
     "semver": "^7.5.4",
     "uuid": "^9.0.0"
