@@ -30,6 +30,7 @@ Apart from `build` and `publish`, other project-level commands are supported:
 - `cs lint`: Runs `npm run lint`.
 - `cs test`: Runs `npm run test`.
 - `cs dependencies check`: Uses `npm audit` to check dependencies for vulnerabilities. See the `javascript.dependenciesCheck` configuration for more options.
+- `cs dependencies update`: Uses [npm-check-updates](https://github.com/raineorshine/npm-check-updates) to update the `package.json` file, then run `npm update`.
 - `cs security check`: Uses [njsscan](https://github.com/ajinabraham/njsscan) to scan for common insecure code patterns.
 
 TypeScript event interfaces generation through `cs events generateCode` is supported for JSON events (defined using JSONSchema).
