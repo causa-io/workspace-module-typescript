@@ -4,6 +4,7 @@ import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefa
 import { ProjectBuildArtefactForTypeScriptServerlessFunctions } from './project-build-artefact-ts-serverless-functions.js';
 import { ProjectBuildArtefactForTypeScriptServiceContainer } from './project-build-artefact-ts-service-container.js';
 import { ProjectDependenciesCheckForJavaScript } from './project-dependencies-check-javascript.js';
+import { ProjectDependenciesUpdateForJavaScript } from './project-dependencies-update-javascript.js';
 import { ProjectGetArtefactDestinationForNpmPackage } from './project-get-artefact-destination-npm-package.js';
 import { ProjectInitForJavaScript } from './project-init-javascript.js';
 import { ProjectLintForJavaScript } from './project-lint-javascript.js';
@@ -19,6 +20,7 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ProjectBuildArtefactForTypeScriptServerlessFunctions,
     ProjectBuildArtefactForTypeScriptServiceContainer,
     ProjectDependenciesCheckForJavaScript,
+    ProjectDependenciesUpdateForJavaScript,
     ProjectGetArtefactDestinationForNpmPackage,
     ProjectInitForJavaScript,
     ProjectLintForJavaScript,
