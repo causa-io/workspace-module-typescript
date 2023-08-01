@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.4.0 (2023-08-01)
+
 Breaking changes:
 
 - Dependencies check configuration is moved from `javascript.dependenciesCheck` to `javascript.dependencies.check`.
