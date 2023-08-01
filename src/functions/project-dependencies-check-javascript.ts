@@ -31,9 +31,9 @@ const ALLOWED_VULNERABILITY_LEVELS: VulnerabilityLevel[] = [
 export class ProjectDependenciesCheckForJavaScript extends ProjectDependenciesCheck {
   async _call(context: WorkspaceContext): Promise<void> {
     const conf = context.asConfiguration<TypeScriptConfiguration>();
-    const level = conf.get('javascript.dependenciesCheck.level');
-    const skipDev = conf.get('javascript.dependenciesCheck.skipDev');
-    const allowlist = conf.get('javascript.dependenciesCheck.allowlist');
+    const level = conf.get('javascript.dependencies.check.level');
+    const skipDev = conf.get('javascript.dependencies.check.skipDev');
+    const allowlist = conf.get('javascript.dependencies.check.allowlist');
 
     if (level && !ALLOWED_VULNERABILITY_LEVELS.includes(level)) {
       throw new Error(`Invalid dependencies check level '${level}'.`);

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Dependencies check configuration is moved from `javascript.dependenciesCheck` to `javascript.dependencies.check`.
+
 Features:
 
 - Implement `ProjectDependenciesUpdate` for JavaScript and TypeScript.
