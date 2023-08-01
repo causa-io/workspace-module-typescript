@@ -54,6 +54,31 @@ export type TypeScriptConfiguration = {
        */
       allowlist?: string[];
     };
+
+    /**
+     * Configuration related to JavaScript dependencies.
+     */
+    dependencies?: {
+      /**
+       * Configuration related to the update of dependencies.
+       */
+      update?: {
+        /**
+         * The default target version when updating dependencies.
+         * Defaults to `latest`.
+         */
+        defaultTarget?: 'latest' | 'newest' | 'greatest' | 'minor' | 'patch';
+
+        /**
+         * The target version for specific packages when updating dependencies.
+         * Keys are package names, values are target versions.
+         */
+        packageTargets?: Record<
+          string,
+          'latest' | 'newest' | 'greatest' | 'minor' | 'patch'
+        >;
+      };
+    };
   };
 
   /**

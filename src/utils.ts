@@ -4,7 +4,12 @@ import { join } from 'path';
 /**
  * The name of the npm package file.
  */
-const PACKAGE_FILE = 'package.json';
+export const PACKAGE_FILE = 'package.json';
+
+/**
+ * The name of the npm package lock file.
+ */
+export const PACKAGE_LOCK_FILE = 'package-lock.json';
 
 /**
  * The schema for information expected to be contained in an npm package package file.

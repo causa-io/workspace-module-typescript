@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Implement `ProjectDependenciesUpdate` for JavaScript and TypeScript.
+
 Fixes:
 
 - Allow `.npmrc` and `nest-cli.json` to be missing when building a Docker image.
