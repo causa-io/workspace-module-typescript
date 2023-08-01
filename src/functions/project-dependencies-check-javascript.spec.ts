@@ -81,10 +81,8 @@ describe('ProjectDependenciesCheckForJavaScript', () => {
           language: 'javascript',
         },
         javascript: {
-          dependenciesCheck: {
-            skipDev: true,
-            level: 'moderate',
-            allowlist: ['foo'],
+          dependencies: {
+            check: { skipDev: true, level: 'moderate', allowlist: ['foo'] },
           },
         },
       },
@@ -116,7 +114,7 @@ describe('ProjectDependenciesCheckForJavaScript', () => {
           type: 'package',
           language: 'javascript',
         },
-        javascript: { dependenciesCheck: { level: '🚨' } },
+        javascript: { dependencies: { check: { level: '🚨' } } },
       },
       functions: [ProjectDependenciesCheckForJavaScript],
     }));
