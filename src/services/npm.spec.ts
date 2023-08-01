@@ -130,4 +130,14 @@ describe('NpmService', () => {
       expect(service.npm).toHaveBeenCalledExactlyOnceWith('ci', [], {});
     });
   });
+
+  describe('update', () => {
+    it('should run the update command', async () => {
+      jest.spyOn(service, 'npm').mockResolvedValueOnce({ code: 0 });
+
+      await service.update({});
+
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith('update', [], {});
+    });
+  });
 });

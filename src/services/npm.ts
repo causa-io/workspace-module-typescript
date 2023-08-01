@@ -90,6 +90,16 @@ export class NpmService {
   }
 
   /**
+   * Runs `npm update`.
+   * Specify the {@link SpawnOptions.workingDirectory} to set the package on which the command is run.
+   *
+   * @param options {@link SpawnOptions} for the process.
+   */
+  async update(options: SpawnOptions = {}): Promise<void> {
+    await this.npm('update', [], options);
+  }
+
+  /**
    * Runs an arbitrary npm command.
    *
    * @param command The npm command to run.
