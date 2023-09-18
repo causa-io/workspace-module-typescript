@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.5.0 (2023-09-18)
+
 Features:
 
 - Implement OpenAPI specification generation for `serviceContainer` projects.
