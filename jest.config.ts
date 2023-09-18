@@ -9,6 +9,7 @@ const config: Config = {
     '!**/*.spec.ts',
     '!**/*.test.{ts,js}',
     '!./definitions/**/*.ts',
+    '!./assets/**/*.{js,ts}',
   ],
   rootDir: 'src',
   testEnvironment: 'node',
