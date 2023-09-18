@@ -79,6 +79,31 @@ export type TypeScriptConfiguration = {
         >;
       };
     };
+
+    /**
+     * Configuration related to the generation of OpenAPI specifications.
+     */
+    openApi?: {
+      /**
+       * Defines the location of the NestJS application module when generating the OpenAPI specification for a
+       * `serviceContainer` project.
+       * If this is not set, the OpenAPI specification will not be generated.
+       */
+      applicationModule?: {
+        /**
+         * The JavaScript source file containing the NestJS application module.
+         * This path is relative to the Docker container's `/app` directory (the working directory), which is usually
+         * also the project's root.
+         */
+        sourceFile: string;
+
+        /**
+         * The name of the JavaScript class for NestJS application module.
+         * It should be exported from the source file.
+         */
+        name: string;
+      };
+    };
   };
 
   /**

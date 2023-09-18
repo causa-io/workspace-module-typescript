@@ -34,3 +34,23 @@ Apart from `build` and `publish`, other project-level commands are supported:
 - `cs security check`: Uses [njsscan](https://github.com/ajinabraham/njsscan) to scan for common insecure code patterns.
 
 TypeScript event interfaces generation through `cs events generateCode` is supported for JSON events (defined using JSONSchema).
+
+### OpenAPI specification generation
+
+OpenAPI specification generation is supported for `serviceContainer` projects using the [Causa runtime](https://github.com/causa-io/runtime-typescript) (and [NestJS](https://nestjs.com/)). After configuring the project, simply run `cs openapi genSpec`.
+
+Generation works by extracting the OpenAPI specification while the application is running. For this, a script is injected into a Docker container for the service running locally. If the service relies on emulators or other resources, make sure they are running before generating the OpenAPI specification. If a `.env` file is present at the project's root, it will be used to configure the container's environment.
+
+For the generation to occur, the Causa configuration must contain where the NestJS application module can be found. For example:
+
+```yaml
+javascript:
+  openApi:
+    # If this is not set, the generation will fail.
+    applicationModule:
+      # The absolute path within the Docker container.
+      # By default the working directory is `/app`, and the compiled TypeScript code is copied to `/app/dist`.
+      sourceFile: /app/dist/app.module.js
+      # The name of the class representing the application module.
+      name: AppModule
+```
