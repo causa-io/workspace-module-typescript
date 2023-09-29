@@ -11,7 +11,7 @@ import type { ProjectDependenciesUpdateForJavaScript as ProjectDependenciesUpdat
 
 // Actually importing `npm-check-updates` is problematic because it relies on `spdx-license-ids` and `spdx-exceptions`,
 // which expose `index.json` files with which Jest has problems.
-const ncuRunMock = jest.fn((() => Promise.resolve({ 'is-even': '0.1.2' })) as (
+const ncuRunMock = jest.fn((() => Promise.resolve({})) as (
   options: any,
 ) => Promise<Record<string, string>>);
 jest.unstable_mockModule('npm-check-updates', () => ({
@@ -41,6 +41,7 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
           language: 'javascript',
         },
         javascript: {
+          npm: { environment: { SOME_VAR: '🍬' } },
           dependencies: {
             update: {
               defaultTarget: 'latest',
@@ -89,6 +90,12 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
 
   it('should update the package.json file and run npm update', async () => {
     jest.spyOn(npmService, 'update').mockResolvedValueOnce();
+    const previousEnv = { ...process.env };
+    let envDuringNcu!: NodeJS.ProcessEnv;
+    ncuRunMock.mockImplementationOnce(async () => {
+      envDuringNcu = { ...process.env };
+      return { 'is-even': '0.1.2' };
+    });
 
     const actualDidUpdate = await context.call(ProjectDependenciesUpdate, {});
 
@@ -105,11 +112,13 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
     expect(npmService.update).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: tmpDir,
     });
+    expect(envDuringNcu).toMatchObject({ SOME_VAR: '🍬' });
+    expect(process.env).toEqual(previousEnv);
+    expect(process.env.SOME_VAR).toBeUndefined();
   });
 
   it('should not run npm update if there are no dependencies to update', async () => {
     jest.spyOn(npmService, 'update').mockResolvedValueOnce();
-    ncuRunMock.mockResolvedValueOnce({});
 
     const actualDidUpdate = await context.call(ProjectDependenciesUpdate, {});
 
