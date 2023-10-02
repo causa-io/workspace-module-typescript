@@ -13,44 +13,20 @@ import { PACKAGE_FILE, PACKAGE_LOCK_FILE } from '../utils.js';
 export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesUpdate {
   async _call(context: WorkspaceContext): Promise<boolean> {
     const projectPath = context.getProjectPathOrThrow();
-    const conf = context.asConfiguration<TypeScriptConfiguration>();
-    const defaultTarget =
-      conf.get('javascript.dependencies.update.defaultTarget') ?? 'latest';
-    const packageTargets =
-      conf.get('javascript.dependencies.update.packageTargets') ?? {};
 
-    const packageFiles = [PACKAGE_FILE, PACKAGE_LOCK_FILE].map((file) =>
-      join(projectPath, file),
-    );
-    const changedFiles = await context.service(GitService).filesDiff({
-      commit: 'HEAD',
-      paths: packageFiles,
-    });
-    if (changedFiles.length > 0) {
-      throw new Error(
-        `The package file(s) contain uncommitted changes but would be modified during the update. Changes should be committed or stashed before running the update.`,
-      );
-    }
+    await this.checkForUncommittedChanges(context);
 
-    context.logger.info(`⬆️ Updating dependencies in 'package.json'.`);
-    const upgrades = await ncu.run({
-      cwd: projectPath,
-      target: (dependencyName) =>
-        packageTargets[dependencyName] ?? defaultTarget,
-      jsonUpgraded: true,
-      upgrade: true,
-    });
-
+    const upgrades = await this.lookForUpdates(context);
     if (!upgrades || Object.keys(upgrades).length === 0) {
       context.logger.info(`✅ No dependency to update.`);
       return false;
-    } else {
-      context.logger.info(
-        `⬆️ Upgraded the following dependencies:\n${Object.entries(upgrades)
-          .map(([name, version]) => `  ${name} => ${version}`)
-          .join('\n')}.`,
-      );
     }
+
+    context.logger.info(
+      `⬆️ Upgraded the following dependencies:\n${Object.entries(upgrades)
+        .map(([name, version]) => `  ${name} => ${version}`)
+        .join('\n')}.`,
+    );
 
     context.logger.info(`⬆️ Running 'npm update'.`);
     await context.service(NpmService).update({ workingDirectory: projectPath });
@@ -62,5 +38,65 @@ export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesU
     return ['javascript', 'typescript'].includes(
       context.get('project.language') ?? '',
     );
+  }
+
+  /**
+   * Ensures that there are no uncommitted changes in the package files.
+   *
+   * @param context The {@link WorkspaceContext}.
+   */
+  private async checkForUncommittedChanges(
+    context: WorkspaceContext,
+  ): Promise<void> {
+    const projectPath = context.getProjectPathOrThrow();
+    const packageFiles = [PACKAGE_FILE, PACKAGE_LOCK_FILE].map((file) =>
+      join(projectPath, file),
+    );
+
+    const changedFiles = await context.service(GitService).filesDiff({
+      commit: 'HEAD',
+      paths: packageFiles,
+    });
+
+    if (changedFiles.length > 0) {
+      throw new Error(
+        `The package file(s) contain uncommitted changes but would be modified during the update. Changes should be committed or stashed before running the update.`,
+      );
+    }
+  }
+
+  /**
+   * Runs `npm-check-updates` to look for dependency updates, possibly writing the `package.json` in the process.
+   *
+   * @param context The {@link WorkspaceContext}.
+   * @returns The upgraded dependencies, as a map of dependency name to new version.
+   */
+  private async lookForUpdates(
+    context: WorkspaceContext,
+  ): Promise<Record<string, string>> {
+    context.logger.info(`⬆️ Updating dependencies in 'package.json'.`);
+
+    const projectPath = context.getProjectPathOrThrow();
+    const conf = context.asConfiguration<TypeScriptConfiguration>();
+    const defaultTarget =
+      conf.get('javascript.dependencies.update.defaultTarget') ?? 'latest';
+    const packageTargets =
+      conf.get('javascript.dependencies.update.packageTargets') ?? {};
+
+    const previousEnv = { ...process.env };
+    const environment = await context.service(NpmService).environment;
+    process.env = { ...previousEnv, ...environment };
+
+    const upgrades = await ncu.run({
+      cwd: projectPath,
+      target: (dependencyName) =>
+        packageTargets[dependencyName] ?? defaultTarget,
+      jsonUpgraded: true,
+      upgrade: true,
+    });
+
+    process.env = previousEnv;
+
+    return (upgrades as any) ?? {};
   }
 }

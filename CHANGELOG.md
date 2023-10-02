@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Ensure `cs dependencies update` is run with the `javascript.npm.environment` configuration added as environment variables. This brings consistency to how npm-related commands are run and supports more configuration options for npm authentication.
+
 ## v0.5.0 (2023-09-18)
 
 Features:
