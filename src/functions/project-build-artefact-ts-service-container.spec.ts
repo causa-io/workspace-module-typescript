@@ -1,16 +1,25 @@
 import { WorkspaceContext } from '@causa/workspace';
-import { DockerService, ProjectBuildArtefact } from '@causa/workspace-core';
+import {
+  ProjectBuildArtefact,
+  ServiceContainerBuilderService,
+} from '@causa/workspace-core';
 import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { ProjectBuildArtefactForTypeScriptServiceContainer } from './project-build-artefact-ts-service-container.js';
 
 describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
   let context: WorkspaceContext;
-  let dockerService: DockerService;
+  let builderService: ServiceContainerBuilderService;
+
+  const expectedDockerFile = fileURLToPath(
+    new URL(
+      '../assets/Dockerfile-typescript-service-container',
+      import.meta.url,
+    ),
+  );
 
   beforeEach(() => {
     ({ context } = createContext({
@@ -33,7 +42,7 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
       },
       functions: [ProjectBuildArtefactForTypeScriptServiceContainer],
     }));
-    dockerService = context.service(DockerService);
+    builderService = context.service(ServiceContainerBuilderService);
   });
 
   it('should not support projects that are not written in TypeScript', () => {
@@ -73,67 +82,49 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
   });
 
   it('should build the Docker image with the proper build arguments', async () => {
-    const expectedDockerFile = fileURLToPath(
-      new URL(
-        '../assets/Dockerfile-typescript-service-container',
-        import.meta.url,
-      ),
-    );
-    jest.spyOn(dockerService, 'build').mockResolvedValueOnce({ code: 0 });
+    jest.spyOn(builderService, 'build').mockResolvedValueOnce();
 
     const actualArtefact = await context.call(ProjectBuildArtefact, {});
 
     expect(actualArtefact).toBeString();
-    expect(dockerService.build).toHaveBeenCalledExactlyOnceWith(
+    expect(builderService.build).toHaveBeenCalledExactlyOnceWith(
       context.projectPath,
+      actualArtefact,
+      expectedDockerFile,
       {
-        file: expectedDockerFile,
-        platform: '🖥️',
-        buildArgs: {
+        baseBuildArgs: {
           NODE_VERSION: 'latest',
           NODE_MAJOR_VERSION: '20',
           NPM_VERSION: 'latest',
-          MY_ARG: 'my-value',
-          MY_OTHER_ARG: 'prefix-🏷️',
         },
-        tags: [actualArtefact],
       },
     );
   });
 
   it('should use the passed artefact as the image name', async () => {
-    const expectedDockerFile = fileURLToPath(
-      new URL(
-        '../assets/Dockerfile-typescript-service-container',
-        import.meta.url,
-      ),
-    );
     const expectedArtefact = 'my-image-name';
-    jest.spyOn(dockerService, 'build').mockResolvedValueOnce({ code: 0 });
+    jest.spyOn(builderService, 'build').mockResolvedValueOnce();
 
     const actualArtefact = await context.call(ProjectBuildArtefact, {
       artefact: expectedArtefact,
     });
 
     expect(actualArtefact).toEqual(expectedArtefact);
-    expect(dockerService.build).toHaveBeenCalledExactlyOnceWith(
+    expect(builderService.build).toHaveBeenCalledExactlyOnceWith(
       context.projectPath,
+      expectedArtefact,
+      expectedDockerFile,
       {
-        file: expectedDockerFile,
-        platform: '🖥️',
-        buildArgs: {
+        baseBuildArgs: {
           NODE_VERSION: 'latest',
           NODE_MAJOR_VERSION: '20',
           NPM_VERSION: 'latest',
-          MY_ARG: 'my-value',
-          MY_OTHER_ARG: 'prefix-🏷️',
         },
-        tags: [expectedArtefact],
       },
     );
   });
 
-  it('should use the specified Dockerfile, and Node and npm versions', async () => {
+  it('should use the specified Node and npm versions', async () => {
     ({ context } = createContext({
       configuration: {
         workspace: { name: '🏷️' },
@@ -143,23 +134,21 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
           language: 'typescript',
         },
         javascript: { node: { version: '18.1.0' }, npm: { version: '7.0.0' } },
-        typescript: { serviceContainerDockerfile: 'folder/Dockerfile' },
       },
       functions: [ProjectBuildArtefactForTypeScriptServiceContainer],
     }));
-    dockerService = context.service(DockerService);
-    const expectedDockerFile = join(context.rootPath, 'folder/Dockerfile');
-    jest.spyOn(dockerService, 'build').mockResolvedValueOnce({ code: 0 });
+    builderService = context.service(ServiceContainerBuilderService);
+    jest.spyOn(builderService, 'build').mockResolvedValueOnce();
 
     const actualArtefact = await context.call(ProjectBuildArtefact, {});
 
     expect(actualArtefact).toBeString();
-    expect(dockerService.build).toHaveBeenCalledExactlyOnceWith(
+    expect(builderService.build).toHaveBeenCalledExactlyOnceWith(
       context.projectPath,
+      actualArtefact,
+      expectedDockerFile,
       {
-        file: expectedDockerFile,
-        tags: [actualArtefact],
-        buildArgs: {
+        baseBuildArgs: {
           NODE_VERSION: '18.1.0',
           NODE_MAJOR_VERSION: '18',
           NPM_VERSION: '7.0.0',
