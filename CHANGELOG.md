@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- The `typescript.serviceContainerDockerfile` configuration has been removed and replaced by the `serviceContainer.buildFile` parameter.
+- The default `Dockerfile` for TypeScript service containers now supports an `NPM_TOKEN` secret (rather than a build argument) that will be passed as an environment variable during `npm ci` calls.
+
+Features:
+
+- The default `Dockerfile` for TypeScript service containers now reuses the npm cache across calls and builds.
+
 ## v0.5.1 (2023-10-02)
 
 Fixes:

@@ -1,8 +1,10 @@
+# syntax=docker/dockerfile:1
+
 ARG NODE_VERSION=latest
 ARG NODE_MAJOR_VERSION=20
 
 # Base image using the correct version of Node and npm.
-FROM --platform=linux/amd64 node:${NODE_VERSION} AS node-base
+FROM node:${NODE_VERSION} AS node-base
 
 ARG NPM_VERSION=latest
 
@@ -13,25 +15,30 @@ WORKDIR /home/node
 # Image with dev dependencies, used to build the TypeScript code.
 FROM node-base AS builder
 
-# Used for private npm packages.
-ARG NPM_TOKEN
+# `.npmr[c]` will only copy `.npmrc`, but allows the file to be missing.
+COPY .npmr[c] package*.json /home/node/
 
-# This uses a glob pattern which will only copy `.npmrc`, but allows the file to be missing.
-COPY .npmr[c] /home/node/
-COPY package*.json /home/node/
-RUN npm ci
+# If the `NPM_TOKEN` secret is not passed, the environment variable will simply be empty due to the `cat` failing.
+# However `npm ci` will still run.
+# The npm cache will be reused across stages, but also across builds.
+# The uid of the `node` user is 1000, as defined in:
+# https://github.com/nodejs/docker-node/blob/main/Dockerfile-debian.template
+RUN --mount=type=secret,id=NPM_TOKEN,uid=1000 \
+  --mount=type=cache,target=/home/node/.npm,uid=1000 \
+  NPM_TOKEN=$(cat /run/secrets/NPM_TOKEN) npm ci
 
-COPY nest-cli.jso[n] /home/node/
-COPY tsconfig*.json /home/node/
+COPY nest-cli.jso[n] tsconfig*.json /home/node/
 COPY src/ /home/node/src/
 RUN npm run build
 
 # Image to get production dependencies.
-FROM node-base as builder-prod-dependencies
-ARG NPM_TOKEN
-COPY --from=builder /home/node/.npmr[c] /home/node/
-COPY --from=builder /home/node/package*.json /home/node/
-RUN npm ci --omit=dev
+FROM node-base AS builder-prod-dependencies
+
+COPY --from=builder /home/node/.npmr[c] /home/node/package*.json /home/node/
+
+RUN --mount=type=secret,id=NPM_TOKEN,uid=1000 \
+  --mount=type=cache,target=/home/node/.npm,uid=1000 \
+  NPM_TOKEN=$(cat /run/secrets/NPM_TOKEN) npm ci --omit=dev
 
 # Final image, only containing production dependencies and the compiled JavaScript code.
 FROM gcr.io/distroless/nodejs${NODE_MAJOR_VERSION}

@@ -120,10 +120,5 @@ export type TypeScriptConfiguration = {
        */
       definitionFileFormat?: string;
     };
-
-    /**
-     * The path to the Dockerfile used to build service containers for projects in TypeScript.
-     */
-    serviceContainerDockerfile?: string;
   };
 };
