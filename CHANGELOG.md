@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.6.0 (2023-10-03)
+
 Breaking changes:
 
 - The `typescript.serviceContainerDockerfile` configuration has been removed and replaced by the `serviceContainer.buildFile` parameter.
