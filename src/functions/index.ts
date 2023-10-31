@@ -15,6 +15,7 @@ import { ProjectTestForJavaScript } from './project-test-javascript.js';
 import {
   TypeScriptGetDecoratorRendererForCausaValidator,
   TypeScriptGetDecoratorRendererForClassValidator,
+  TypeScriptGetDecoratorRendererForOpenApi,
 } from './typescript/index.js';
 
 export function registerFunctions(context: ModuleRegistrationContext) {
@@ -34,5 +35,6 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ProjectTestForJavaScript,
     TypeScriptGetDecoratorRendererForCausaValidator,
     TypeScriptGetDecoratorRendererForClassValidator,
+    TypeScriptGetDecoratorRendererForOpenApi,
   );
 }
