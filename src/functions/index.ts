@@ -12,6 +12,9 @@ import { ProjectPushArtefactForNpmPackage } from './project-push-artefact-npm-pa
 import { ProjectReadVersionForJavaScript } from './project-read-version-javascript.js';
 import { ProjectSecurityCheckForJavaScript } from './project-security-check.js';
 import { ProjectTestForJavaScript } from './project-test-javascript.js';
+import {
+  TypeScriptGetDecoratorRendererForCausaValidator,
+} from './typescript/index.js';
 
 export function registerFunctions(context: ModuleRegistrationContext) {
   context.registerFunctionImplementations(
@@ -28,5 +31,6 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ProjectReadVersionForJavaScript,
     ProjectSecurityCheckForJavaScript,
     ProjectTestForJavaScript,
+    TypeScriptGetDecoratorRendererForCausaValidator,
   );
 }
