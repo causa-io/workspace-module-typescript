@@ -1,6 +1,7 @@
 import { ModuleRegistrationFunction } from '@causa/workspace';
 import { registerFunctions } from './functions/index.js';
 
+export * from './code-generation/index.js';
 export * from './configurations/index.js';
 export * from './services/index.js';
 
