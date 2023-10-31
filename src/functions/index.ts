@@ -1,5 +1,4 @@
 import { ModuleRegistrationContext } from '@causa/workspace';
-import { EventTopicGenerateCodeForTypeScriptAndJsonEvents } from './event-topic-generate-json.js';
 import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './openapi-generate-specification-js-service-container.js';
 import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';
 import { ProjectBuildArtefactForTypeScriptServerlessFunctions } from './project-build-artefact-ts-serverless-functions.js';
@@ -16,7 +15,6 @@ import { ProjectTestForJavaScript } from './project-test-javascript.js';
 
 export function registerFunctions(context: ModuleRegistrationContext) {
   context.registerFunctionImplementations(
-    EventTopicGenerateCodeForTypeScriptAndJsonEvents,
     OpenApiGenerateSpecificationForJavaScriptServiceContainer,
     ProjectBuildArtefactForTypeScriptPackage,
     ProjectBuildArtefactForTypeScriptServerlessFunctions,
