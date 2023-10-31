@@ -5,3 +5,4 @@ export {
   ClassPropertyContext,
   TypeScriptDecoratorsRenderer,
 } from './ts-decorators-renderer.js';
+export * from './utilities.js';
