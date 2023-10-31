@@ -14,6 +14,7 @@ import { ProjectSecurityCheckForJavaScript } from './project-security-check.js';
 import { ProjectTestForJavaScript } from './project-test-javascript.js';
 import {
   TypeScriptGetDecoratorRendererForCausaValidator,
+  TypeScriptGetDecoratorRendererForClassValidator,
 } from './typescript/index.js';
 
 export function registerFunctions(context: ModuleRegistrationContext) {
@@ -32,5 +33,6 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ProjectSecurityCheckForJavaScript,
     ProjectTestForJavaScript,
     TypeScriptGetDecoratorRendererForCausaValidator,
+    TypeScriptGetDecoratorRendererForClassValidator,
   );
 }
