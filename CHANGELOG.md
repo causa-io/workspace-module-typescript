@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Features:
+
+- Adapt to the core module breaking changes by implementing `EventTopicMakeCodeGenerationTargetLanguage` rather than `EventTopicGenerateCode`. The new implementation uses [quicktype](https://github.com/glideapps/quicktype) to generate classes. It can be extended by implementing `TypeScriptGetDecoratorRenderer` to add decorators to classes and their properties.
+- Implement the `causaValidator`, `classValidator`, and `openapi` decorator renderers.
+
 ## v0.6.0 (2023-10-03)
 
 Breaking changes:
