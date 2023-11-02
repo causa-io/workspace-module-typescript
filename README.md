@@ -54,3 +54,44 @@ javascript:
       # The name of the class representing the application module.
       name: AppModule
 ```
+
+### Code generation for events
+
+Code generation using `cs events generateCode` is supported for JSONSchema definitions. By default, the generated code will be written in the project to `src/model.ts`. This can be configured, along with other options, using the [TypeScript configuration](./src/configurations/typescript.ts).
+
+In JSONSchema definitions, a custom `causa` attribute can be added to object types and their properties. This attribute can customize the generated code for the object or property:
+
+- `tsExcludedDecorators`: Provides a list of decorators that should not be added to the class or property by decorator renderers (see below). The exclusion list at the object level in inherited by all properties.
+- `tsDecorators`: A list of decorators that should be added to the class or property.
+- `tsType`: Properties only. Forces the type of the property to the provided TypeScript code.
+- `tsDefault`: Properties only. Uses the provided TypeScript code as the default value for the property.
+
+For example:
+
+```yaml
+title: MyClass
+type: object
+causa:
+  tsDecorators:
+    - source: @ClassDecorator()
+      imports:
+        my-module: [ClassDecorator]
+properties:
+  myBigInt:
+    type: integer
+    causa:
+      tsType: bigint
+      tsDefault: 123n
+  myString:
+    type: string
+    causa:
+      tsExcludedDecorators: [IsString]
+required:
+  - myBigInt
+```
+
+By default, several decorator renderers are enabled. Those renderers automatically add decorators to classes and properties:
+
+- `causaValidator`: Adds the `@IsNullable` and `@AllowMissing` decorators from the `@causa/runtime` package.
+- `classValidator`: Adds `class-validator` and `class-transformer` decorators based on the property type.
+- `openapi`: Adds `@ApiProperty` decorators from the `@nestjs/swagger` package. This is only enabled for objects with the `causa.tsOpenApi` attribute set to `true` in their JSONSchema definition.
