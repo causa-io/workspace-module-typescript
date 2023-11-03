@@ -1,5 +1,5 @@
 import { ModuleRegistrationContext } from '@causa/workspace';
-import { EventTopicGenerateCodeForTypeScriptAndJsonEvents } from './event-topic-generate-json.js';
+import { EventTopicMakeCodeGenerationTargetLanguageForTypeScript } from './event-topic/index.js';
 import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './openapi-generate-specification-js-service-container.js';
 import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';
 import { ProjectBuildArtefactForTypeScriptServerlessFunctions } from './project-build-artefact-ts-serverless-functions.js';
@@ -13,10 +13,15 @@ import { ProjectPushArtefactForNpmPackage } from './project-push-artefact-npm-pa
 import { ProjectReadVersionForJavaScript } from './project-read-version-javascript.js';
 import { ProjectSecurityCheckForJavaScript } from './project-security-check.js';
 import { ProjectTestForJavaScript } from './project-test-javascript.js';
+import {
+  TypeScriptGetDecoratorRendererForCausaValidator,
+  TypeScriptGetDecoratorRendererForClassValidator,
+  TypeScriptGetDecoratorRendererForOpenApi,
+} from './typescript/index.js';
 
 export function registerFunctions(context: ModuleRegistrationContext) {
   context.registerFunctionImplementations(
-    EventTopicGenerateCodeForTypeScriptAndJsonEvents,
+    EventTopicMakeCodeGenerationTargetLanguageForTypeScript,
     OpenApiGenerateSpecificationForJavaScriptServiceContainer,
     ProjectBuildArtefactForTypeScriptPackage,
     ProjectBuildArtefactForTypeScriptServerlessFunctions,
@@ -30,5 +35,8 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ProjectReadVersionForJavaScript,
     ProjectSecurityCheckForJavaScript,
     ProjectTestForJavaScript,
+    TypeScriptGetDecoratorRendererForCausaValidator,
+    TypeScriptGetDecoratorRendererForClassValidator,
+    TypeScriptGetDecoratorRendererForOpenApi,
   );
 }

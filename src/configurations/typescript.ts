@@ -5,75 +5,80 @@ export type TypeScriptConfiguration = {
   /**
    * Configuration for JavaScript-related tools, usually for TypeScript projects.
    */
-  javascript?: {
+  readonly javascript?: {
     /**
      * Configuration for running npm commands.
      */
-    npm?: {
+    readonly npm?: {
       /**
        * Environment variables to set when running npm.
        * Supports formatting.
        */
-      environment?: Record<string, string>;
+      readonly environment?: Record<string, string>;
 
       /**
        * The version of npm to use.
        * Can be a semver version, or `latest`.
        */
-      version?: string;
+      readonly version?: string;
     };
 
     /**
      * Configuration related to Node.
      */
-    node?: {
+    readonly node?: {
       /**
        * The Node version to use, for example when building Docker images.
        * Can be a semver version, or `latest`.
        */
-      version?: string;
+      readonly version?: string;
     };
 
     /**
      * Configuration related to JavaScript dependencies.
      */
-    dependencies?: {
+    readonly dependencies?: {
       /**
        * Configuration used when checking dependencies for vulnerabilities.
        */
-      check?: {
+      readonly check?: {
         /**
          * Whether to ignore vulnerabilities in dev dependencies.
          */
-        skipDev?: boolean;
+        readonly skipDev?: boolean;
 
         /**
          * The minimum severity level of vulnerabilities to fail the check.
          */
-        level?: 'low' | 'moderate' | 'high' | 'critical';
+        readonly level?: 'low' | 'moderate' | 'high' | 'critical';
 
         /**
          * A list of vulnerabilities to allow.
          * See: https://github.com/IBM/audit-ci#allowlisting
          */
-        allowlist?: string[];
+        readonly allowlist?: string[];
       };
 
       /**
        * Configuration related to the update of dependencies.
        */
-      update?: {
+      readonly update?: {
         /**
          * The default target version when updating dependencies.
          * Defaults to `latest`.
          */
-        defaultTarget?: 'latest' | 'newest' | 'greatest' | 'minor' | 'patch';
+        readonly defaultTarget?:
+          | 'latest'
+          | 'newest'
+          | 'greatest'
+          | 'minor'
+          | 'patch';
 
         /**
          * The target version for specific packages when updating dependencies.
          * Keys are package names, values are target versions.
          */
-        packageTargets?: Record<
+        readonly packageTargets?: Record<
           string,
           'latest' | 'newest' | 'greatest' | 'minor' | 'patch'
         >;
@@ -83,25 +88,25 @@ export type TypeScriptConfiguration = {
     /**
      * Configuration related to the generation of OpenAPI specifications.
      */
-    openApi?: {
+    readonly openApi?: {
       /**
        * Defines the location of the NestJS application module when generating the OpenAPI specification for a
        * `serviceContainer` project.
        * If this is not set, the OpenAPI specification will not be generated.
        */
-      applicationModule?: {
+      readonly applicationModule?: {
         /**
          * The JavaScript source file containing the NestJS application module.
          * This path is relative to the Docker container's `/app` directory (the working directory), which is usually
          * also the project's root.
          */
-        sourceFile: string;
+        readonly sourceFile: string;
 
         /**
          * The name of the JavaScript class for NestJS application module.
          * It should be exported from the source file.
          */
-        name: string;
+        readonly name: string;
       };
     };
   };
@@ -109,16 +114,50 @@ export type TypeScriptConfiguration = {
   /**
    * Configuration for TypeScript projects.
    */
-  typescript?: {
+  readonly typescript?: {
     /**
-     * Configuration related to the handling of events in TypeScript code.
+     * Configuration related to the generation of TypeScript code, e.g. models.
      */
-    events?: {
+    readonly codeGeneration?: {
       /**
-       * The format string used to generate the file path for event schema definition files.
-       * The path is relative to the project's root.
+       * The path, relative to the project root, to the file where generated event definitions should be written.
+       * Defaults to `src/model.ts`.
        */
-      definitionFileFormat?: string;
+      readonly outputFile?: string;
+
+      /**
+       * Whether to add non-null assertions (`!`) on properties of model classes.
+       * Defaults to `true`.
+       */
+      readonly nonNullAssertionOnProperties?: boolean;
+
+      /**
+       * Whether to add the `readonly` keyword to properties of model classes.
+       * Defaults to `true`.
+       */
+      readonly readonlyProperties?: boolean;
+
+      /**
+       * Whether to add an “assign” constructor to model classes.
+       * Defaults to `true`.
+       */
+      readonly assignConstructor?: boolean;
+
+      /**
+       * The comment to add at the top of the generated file.
+       */
+      readonly leadingComment?: string;
+
+      /**
+       * The list of decorator renderers to apply during code generation.
+       * By default, all renderers are used.
+       */
+      readonly decoratorRenderers?: string[];
+
+      /**
+       * Options used to configure decorator renderers.
+       */
+      readonly decoratorOptions?: Record<string, any>;
     };
   };
 };
