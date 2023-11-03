@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.7.0 (2023-11-03)
+
 Features:
 
 - Adapt to the core module breaking changes by implementing `EventTopicMakeCodeGenerationTargetLanguage` rather than `EventTopicGenerateCode`. The new implementation uses [quicktype](https://github.com/glideapps/quicktype) to generate classes. It can be extended by implementing `TypeScriptGetDecoratorRenderer` to add decorators to classes and their properties.
