@@ -19,6 +19,16 @@ class DummyDecoratorRenderer extends TypeScriptDecoratorsRenderer {
   }
 }
 
+class OtherDecoratorRenderer extends TypeScriptDecoratorsRenderer {
+  decoratorsForClass(): TypeScriptDecorator[] {
+    return [];
+  }
+
+  decoratorsForProperty(): TypeScriptDecorator[] {
+    return [];
+  }
+}
+
 describe('EventTopicMakeCodeGenerationTargetLanguageForTypeScript', () => {
   it('should not support a language other than TypeScript', async () => {
     const { context } = createContext({
@@ -50,6 +60,12 @@ describe('EventTopicMakeCodeGenerationTargetLanguageForTypeScript', () => {
       },
       functions: [EventTopicMakeCodeGenerationTargetLanguageForTypeScript],
     });
+    // Registering the mock renderers in reverse order to ensure that they are sorted by name in the result.
+    registerMockFunction(
+      functionRegistry,
+      TypeScriptGetDecoratorRenderer,
+      () => OtherDecoratorRenderer,
+    );
     registerMockFunction(
       functionRegistry,
       TypeScriptGetDecoratorRenderer,
@@ -67,7 +83,7 @@ describe('EventTopicMakeCodeGenerationTargetLanguageForTypeScript', () => {
     const actualTypeScriptLanguage =
       actualLanguage as TypeScriptWithDecoratorsTargetLanguage;
     expect(actualTypeScriptLanguage.options).toEqual({
-      decoratorRenderers: [DummyDecoratorRenderer],
+      decoratorRenderers: [DummyDecoratorRenderer, OtherDecoratorRenderer],
       nonNullAssertionOnProperties: true,
       readonlyProperties: true,
       assignConstructor: true,
