@@ -51,7 +51,8 @@ export class EventTopicMakeCodeGenerationTargetLanguageForTypeScript extends Eve
 
     const decoratorRenderers = context
       .getFunctionImplementations(TypeScriptGetDecoratorRenderer, {})
-      .map((f) => f._call(context));
+      .map((f) => f._call(context))
+      .sort((r1, r2) => r1.name.localeCompare(r2.name));
 
     return new TypeScriptWithDecoratorsTargetLanguage(outputPath, {
       decoratorRenderers,

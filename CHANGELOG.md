@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Ensure the TypeScript decorator renderers are ordered, such that decorators are always listed in the same order in generated files.
+
 ## v0.7.0 (2023-11-03)
 
 Features:
