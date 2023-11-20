@@ -40,7 +40,7 @@ describe('ClassValidatorTransformerPropertyDecoratorsRenderer', () => {
         },
         myArray: {
           type: 'array',
-          items: { type: 'string' },
+          items: { type: 'string', format: 'uuid' },
         },
         myOverride: { type: 'integer', causa: { tsType: 'bigint' } },
         myObject: { type: 'object', additionalProperties: true },
@@ -55,7 +55,7 @@ describe('ClassValidatorTransformerPropertyDecoratorsRenderer', () => {
     expect(actualCode).toMatch(
       /@IsDate\(\)\n\s+@Type\(\(\) => Date\)\n\s+readonly myDate/,
     );
-    expect(actualCode).toMatch(/@IsUUID\(\)\n\s+readonly myUuid/);
+    expect(actualCode).toMatch(/@IsUUID\(undefined\)\n\s+readonly myUuid/);
     expect(actualCode).toMatch(
       /@IsIn\(\["a", "b", "c"\]\)\n\s+readonly myEnum/,
     );
@@ -66,7 +66,7 @@ describe('ClassValidatorTransformerPropertyDecoratorsRenderer', () => {
       /@ValidateNested\(\)\n\s+@IsDefined\(\)\n\s+@Type\(\(\) => MyClass\)\s+readonly myClass/,
     );
     expect(actualCode).toMatch(
-      /@IsArray\(\)\n\s+@IsString\({ each: true }\)\n\s+readonly myArray/,
+      /@IsArray\(\)\n\s+@IsUUID\(undefined, { each: true }\)\n\s+readonly myArray/,
     );
     expect(actualCode).toMatch(/[^@]*\n\s+readonly myOverride/);
     expect(actualCode).toMatch(/@IsObject\(\)\n\s+readonly myObject/);
