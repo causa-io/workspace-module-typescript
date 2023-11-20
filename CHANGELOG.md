@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Set the UUID version of the generated `@IsUUID` decorator to `undefined`, as it cannot be known from the schema. This ensures the decorator is valid and can be used for arrays as well.
+
 ## v0.7.1 (2023-11-07)
 
 Fixes:

@@ -50,7 +50,13 @@ const TYPE_KIND_TO_DECORATORS: Partial<
   class: [{ name: 'ValidateNested', source: () => '@ValidateNested()' }],
   date: [{ name: 'IsDate' }],
   'date-time': [{ name: 'IsDate' }],
-  uuid: [{ name: 'IsUUID' }],
+  uuid: [
+    {
+      name: 'IsUUID',
+      // The first argument is the UUID version, which is not specified in the schema.
+      source: (_, opts) => ['@IsUUID(undefined', opts ? ', ' : '', opts, ')'],
+    },
+  ],
   string: [{ name: 'IsString' }],
   enum: [
     {
