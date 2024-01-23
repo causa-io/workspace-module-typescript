@@ -30,6 +30,8 @@ const TYPE_KIND_TO_JSONSCHEMA_TYPE: Partial<Record<TypeKind, string>> = {
   double: 'number',
   bool: 'boolean',
   map: 'object',
+  // Only string enums are supported by Quicktype.
+  enum: 'string',
 };
 
 /**

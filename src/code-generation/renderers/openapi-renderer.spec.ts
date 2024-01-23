@@ -123,7 +123,7 @@ describe('OpenApiRenderer', () => {
       /@ApiProperty\({\s*type: "string"\s*}\)\n\s+readonly myString/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*enum: \["a", "b", "c"\]\s*}\)\n\s+readonly myEnum/,
+      /@ApiProperty\({\s*type: "string",\s*enum: \["a", "b", "c"\]\s*}\)\n\s+readonly myEnum/,
     );
     expect(actualCode).toMatch(
       /@ApiProperty\({\s*oneOf: \[\s*\{ type: "integer" \},\s*\{ type: "null" \}\s*\]\s*}\)\n\s+readonly myInt/,
