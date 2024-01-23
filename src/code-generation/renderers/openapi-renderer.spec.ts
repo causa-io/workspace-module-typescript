@@ -123,7 +123,7 @@ describe('OpenApiRenderer', () => {
       /@ApiProperty\({\s*type: "string"\s*}\)\n\s+readonly myString/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*enum: \["a", "b", "c"\]\s*}\)\n\s+readonly myEnum/,
+      /@ApiProperty\({\s*type: "string",\s*enum: \["a", "b", "c"\]\s*}\)\n\s+readonly myEnum/,
     );
     expect(actualCode).toMatch(
       /@ApiProperty\({\s*oneOf: \[\s*\{ type: "integer" \},\s*\{ type: "null" \}\s*\]\s*}\)\n\s+readonly myInt/,
@@ -135,7 +135,7 @@ describe('OpenApiRenderer', () => {
       /@ApiProperty\({\s*type: "boolean"\s*}\)\n\s+readonly myBool/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*oneOf: \[\{\s*\$ref: getSchemaPath\(MyClass\)\s*\}\]\s*}\)\n\s+readonly myClass/,
+      /@ApiProperty\(\{\s*(?!oneOf)\}\)\n\s+readonly myClass/,
     );
     expect(actualCode).toMatch(
       /@ApiProperty\(\{\s*oneOf: \[\{\s*\$ref: getSchemaPath\(MyClass3\)\s*\},\s*\{ type: "null" \}\]\s*\}\)\n\s+readonly myNullableClass/,
@@ -150,7 +150,7 @@ describe('OpenApiRenderer', () => {
       /@ApiProperty\({\s*type: "object",\s*additionalProperties: true\s*}\)\n\s+readonly myObjectWithAny/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\(\{\s*type: "array",\s*items:\s*\{\s*oneOf: \[\{\s*\$ref: getSchemaPath\(MyClass2\)\s*\}\]\s*\},\s*\}\)\n\s+readonly myArrayOfClasses/,
+      /@ApiProperty\(\{\s*type: "array",\s*items:\s*\{\s*\$ref: getSchemaPath\(MyClass2\)\s*\}\s*\}\)\n\s+readonly myArrayOfClasses/,
     );
     expect(actualCode).toMatch(
       /@ApiProperty\(\{\s*type: "array",\s*items:\s*\{\s*oneOf: \[\{\s*type: "boolean"\s*\},\s*\{ type: "null" \}\s*\]\s*\},\s*\}\)\n\s+readonly myArrayOfNullables/,

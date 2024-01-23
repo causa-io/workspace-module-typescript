@@ -1,4 +1,4 @@
-import { EnumType, MapType, Sourcelike, Type, TypeKind } from 'quicktype-core';
+import { EnumType, MapType, Type, TypeKind } from 'quicktype-core';
 import { SourcelikeArray } from 'quicktype-core/dist/Source.js';
 import { TypeScriptDecorator } from '../decorator.js';
 import {
@@ -30,6 +30,8 @@ const TYPE_KIND_TO_JSONSCHEMA_TYPE: Partial<Record<TypeKind, string>> = {
   double: 'number',
   bool: 'boolean',
   map: 'object',
+  // Only string enums are supported by Quicktype.
+  enum: 'string',
 };
 
 /**
@@ -37,9 +39,13 @@ const TYPE_KIND_TO_JSONSCHEMA_TYPE: Partial<Record<TypeKind, string>> = {
  * This function is recursive, and will generate options for array types as well.
  *
  * @param type The type for which the decorator options should be generated.
+ * @param isArrayItem Whether the type is the item of an array.
  * @returns The source code for the decorator options.
  */
-function typeToDecoratorOptions(type: Type): SourcelikeArray {
+function typeToDecoratorOptions(
+  type: Type,
+  isArrayItem: boolean = false,
+): SourcelikeArray {
   const singleTypeInfo = getSingleType(type);
   if (!singleTypeInfo) {
     return [];
@@ -49,7 +55,7 @@ function typeToDecoratorOptions(type: Type): SourcelikeArray {
   const decoratorOptions: SourcelikeArray = [];
 
   if (isArray) {
-    const itemOptions = typeToDecoratorOptions(singleType);
+    const itemOptions = typeToDecoratorOptions(singleType, true);
     decoratorOptions.push(`type: 'array', `, 'items: { ', itemOptions, ' }, ');
   } else {
     const jsonSchemaType = TYPE_KIND_TO_JSONSCHEMA_TYPE[singleType.kind];
@@ -67,12 +73,14 @@ function typeToDecoratorOptions(type: Type): SourcelikeArray {
         decoratorOptions.push(`enum: ${JSON.stringify(cases)}, `);
         break;
       case 'class':
+        // If the type is not nullable and is not a nested item (i.e. in an array), NestJS will automatically infer the
+        // type and declare it using `allOf`. Other type information should not be added in the decorator.
+        if (!isNullable && !isArrayItem) {
+          return [];
+        }
+
         const typeName = singleType.getCombinedName();
-        const refOption: Sourcelike = `$ref: getSchemaPath(${typeName})`;
-        // If the type is nullable, `oneOf` will be added before returning the decorator options.
-        decoratorOptions.push(
-          isNullable ? refOption : ['oneOf: [{', refOption, '}]'],
-        );
+        decoratorOptions.push(`$ref: getSchemaPath(${typeName})`);
         break;
       case 'map':
         const additionalProperties = (
