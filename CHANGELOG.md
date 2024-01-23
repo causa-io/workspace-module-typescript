@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Fixes:
+
+- Do not set a class type in the `@ApiProperty` decorator when NestJS can infer it.
+- Explicitly set the type of string enums in generated ApiProperty decorators.
+
 ## v0.8.0 (2024-01-23)
 
 Breaking changes:
