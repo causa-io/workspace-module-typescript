@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.8.0 (2024-01-23)
+
 Breaking changes:
 
 - The `@ApiProperty` decorators from code generation now produce OpenAPI 3.1-compatible specifications.
