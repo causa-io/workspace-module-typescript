@@ -41,6 +41,8 @@ async function generateOpenApi(packageInfo, moduleInfo, openApiConfig) {
   const config = { ...baseConfig, ...openApiConfig };
 
   const document = SwaggerModule.createDocument(app, config);
+  // This currently cannot be set by the `DocumentBuilder` due to https://github.com/nestjs/swagger/issues/2361.
+  document.openapi = '3.1.0';
 
   console.log(JSON.stringify(document));
 
