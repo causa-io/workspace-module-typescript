@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.8.1 (2024-01-23)
+
 Fixes:
 
 - Do not set a class type in the `@ApiProperty` decorator when NestJS can infer it.
