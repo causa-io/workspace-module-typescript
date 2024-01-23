@@ -2,6 +2,7 @@ import { EnumType, MapType, Sourcelike, Type, TypeKind } from 'quicktype-core';
 import { SourcelikeArray } from 'quicktype-core/dist/Source.js';
 import { TypeScriptDecorator } from '../decorator.js';
 import {
+  ClassContext,
   ClassPropertyContext,
   TypeScriptDecoratorsRenderer,
 } from '../ts-decorators-renderer.js';
@@ -36,13 +37,9 @@ const TYPE_KIND_TO_JSONSCHEMA_TYPE: Partial<Record<TypeKind, string>> = {
  * This function is recursive, and will generate options for array types as well.
  *
  * @param type The type for which the decorator options should be generated.
- * @param nameForNamedType A function that can be called to fetch the name of a type.
  * @returns The source code for the decorator options.
  */
-function typeToDecoratorOptions(
-  type: Type,
-  nameForNamedType: (type: Type) => Sourcelike,
-): SourcelikeArray {
+function typeToDecoratorOptions(type: Type): SourcelikeArray {
   const singleTypeInfo = getSingleType(type);
   if (!singleTypeInfo) {
     return [];
@@ -51,65 +48,75 @@ function typeToDecoratorOptions(
   const { type: singleType, isNullable, isArray } = singleTypeInfo;
   const decoratorOptions: SourcelikeArray = [];
 
-  if (isNullable) {
-    decoratorOptions.push('nullable: true, ');
-  }
-
   if (isArray) {
-    const itemSingleType = getSingleType(singleType);
-    if (itemSingleType && itemSingleType.type.kind === 'class') {
-      const itemTypeName = nameForNamedType(itemSingleType.type);
-      decoratorOptions.push('type: () => [', itemTypeName, '], ');
-    } else {
-      const itemOptions = typeToDecoratorOptions(singleType, nameForNamedType);
-      decoratorOptions.push(
-        `type: 'array', `,
-        'items: { ',
-        itemOptions,
-        ' }, ',
-      );
+    const itemOptions = typeToDecoratorOptions(singleType);
+    decoratorOptions.push(`type: 'array', `, 'items: { ', itemOptions, ' }, ');
+  } else {
+    const jsonSchemaType = TYPE_KIND_TO_JSONSCHEMA_TYPE[singleType.kind];
+    if (jsonSchemaType) {
+      decoratorOptions.push(`type: '${jsonSchemaType}', `);
     }
-    return decoratorOptions;
+    switch (singleType.kind) {
+      case 'date':
+      case 'date-time':
+      case 'uuid':
+        decoratorOptions.push(`format: '${singleType.kind}', `);
+        break;
+      case 'enum':
+        const cases = [...(singleType as EnumType).cases];
+        decoratorOptions.push(`enum: ${JSON.stringify(cases)}, `);
+        break;
+      case 'class':
+        const typeName = singleType.getCombinedName();
+        const refOption: Sourcelike = `$ref: getSchemaPath(${typeName})`;
+        // If the type is nullable, `oneOf` will be added before returning the decorator options.
+        decoratorOptions.push(
+          isNullable ? refOption : ['oneOf: [{', refOption, '}]'],
+        );
+        break;
+      case 'map':
+        const additionalProperties = (
+          singleType as MapType
+        ).getAdditionalProperties();
+        if (additionalProperties) {
+          const options = typeToDecoratorOptions(additionalProperties);
+          if (options.length > 0) {
+            decoratorOptions.push('additionalProperties: { ', options, ' }, ');
+          } else {
+            // This can for example occur if the additional properties are of type `any`.
+            decoratorOptions.push('additionalProperties: true, ');
+          }
+        }
+        break;
+    }
   }
 
-  const jsonSchemaType = TYPE_KIND_TO_JSONSCHEMA_TYPE[singleType.kind];
-  if (jsonSchemaType) {
-    decoratorOptions.push(`type: '${jsonSchemaType}', `);
-  }
-  switch (singleType.kind) {
-    case 'date':
-    case 'date-time':
-    case 'uuid':
-      decoratorOptions.push(`format: '${singleType.kind}', `);
-      break;
-    case 'enum':
-      const cases = [...(singleType as EnumType).cases];
-      decoratorOptions.push(`enum: ${JSON.stringify(cases)}, `);
-      break;
-    case 'class':
-      const typeName = nameForNamedType(singleType);
-      decoratorOptions.push('type: () => ', typeName, ', ');
-      break;
-    case 'map':
-      const additionalProperties = (
-        singleType as MapType
-      ).getAdditionalProperties();
-      if (additionalProperties) {
-        const options = typeToDecoratorOptions(
-          additionalProperties,
-          nameForNamedType,
-        );
-        if (options.length > 0) {
-          decoratorOptions.push('additionalProperties: { ', options, ' }, ');
-        } else {
-          // This can for example occur if the additional properties are of type `any`.
-          decoratorOptions.push('additionalProperties: true, ');
-        }
-      }
-      break;
+  if (isNullable) {
+    return ['oneOf: [{', decoratorOptions, `}, { type: 'null' }]`];
   }
 
   return decoratorOptions;
+}
+
+/**
+ * Returns the name of the class used by the given type, or an empty array if it is a basic type.
+ *
+ * @param type The property type that may be a class, or contain a class within an array.
+ * @returns The list of classes used by the type.
+ */
+function listReferencedClasses(type: Type): string[] {
+  const singleTypeInfo = getSingleType(type);
+  if (!singleTypeInfo) {
+    return [];
+  }
+
+  if (singleTypeInfo.isArray) {
+    return listReferencedClasses(singleTypeInfo.type);
+  }
+
+  return singleTypeInfo.type.kind === 'class'
+    ? [singleTypeInfo.type.getCombinedName()]
+    : [];
 }
 
 /**
@@ -117,8 +124,30 @@ function typeToDecoratorOptions(
  * Decorators are only added if the type schema has the `tsOpenApi` Causa attribute.
  */
 export class OpenApiRenderer extends TypeScriptDecoratorsRenderer {
-  decoratorsForClass(): TypeScriptDecorator[] {
-    return [];
+  decoratorsForClass(context: ClassContext): TypeScriptDecorator[] {
+    if (!context.objectAttributes[OPENAPI_ATTRIBUTE]) {
+      return [];
+    }
+
+    const references = new Set<string>();
+    for (const propType of context.classType.getProperties().values()) {
+      listReferencedClasses(propType.type).forEach((r) => references.add(r));
+    }
+    if (references.size === 0) {
+      return [];
+    }
+
+    const decorators: TypeScriptDecorator[] = [];
+    this.addDecoratorToList(
+      decorators,
+      context,
+      'ApiExtraModels',
+      NESTJS_SWAGGER_MODULE,
+      ['@ApiExtraModels(', [...references].flatMap((r) => [r, ',']), ')'],
+      // This will get used by `decoratorsForProperty`, when writing the `references` in the decorators.
+      { imports: { '@nestjs/swagger': ['getSchemaPath'] } },
+    );
+    return decorators;
   }
 
   decoratorsForProperty(context: ClassPropertyContext): TypeScriptDecorator[] {
@@ -136,11 +165,7 @@ export class OpenApiRenderer extends TypeScriptDecoratorsRenderer {
     if (description) {
       apiPropertySource.push(`description: ${JSON.stringify(description)}, `);
     }
-    apiPropertySource.push(
-      typeToDecoratorOptions(context.property.type, (type) =>
-        type.getCombinedName(),
-      ),
-    );
+    apiPropertySource.push(typeToDecoratorOptions(context.property.type));
     apiPropertySource.push(' })');
 
     const decorators: TypeScriptDecorator[] = [];

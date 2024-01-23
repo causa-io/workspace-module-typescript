@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- The `@ApiProperty` decorators from code generation now produce OpenAPI 3.1-compatible specifications.
+- OpenAPI generation for service containers now produce a specification marked with version `3.1.0`.
+
 ## v0.7.2 (2023-11-20)
 
 Fixes:
