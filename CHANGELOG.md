@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.8.2 (2024-02-21)
+
 Fixes:
 
 - Disable pino logs when generating the OpenAPI specification. This prevents (non-error) logs from interfering with the outputted OpenAPI document.
