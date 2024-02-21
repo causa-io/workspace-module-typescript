@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { updatePinoConfiguration } from '@causa/runtime';
 import { createApp } from '@causa/runtime/nestjs';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 /**
  * Reads the package information from the `package.json` file.
@@ -29,6 +30,10 @@ async function readPackageInfo() {
 async function generateOpenApi(packageInfo, moduleInfo, openApiConfig) {
   const sourceModule = await import(moduleInfo.sourceFile);
   const AppModule = sourceModule[moduleInfo.name];
+
+  // The output should only contain the OpenAPI document.
+  // Only errors are allowed for debugging.
+  updatePinoConfiguration({ level: 'error' });
 
   const app = await createApp(AppModule);
 
