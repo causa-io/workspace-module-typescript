@@ -1,6 +1,6 @@
 import { WorkspaceContext } from '@causa/workspace';
 import { GitService, ProjectDependenciesUpdate } from '@causa/workspace-core';
-import ncu from 'npm-check-updates';
+import { run } from 'npm-check-updates';
 import { join } from 'path';
 import { NpmService, TypeScriptConfiguration } from '../index.js';
 import { PACKAGE_FILE, PACKAGE_LOCK_FILE } from '../utils.js';
@@ -87,7 +87,7 @@ export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesU
     const environment = await context.service(NpmService).environment;
     process.env = { ...previousEnv, ...environment };
 
-    const upgrades = await ncu.run({
+    const upgrades = await run({
       cwd: projectPath,
       target: (dependencyName) =>
         packageTargets[dependencyName] ?? defaultTarget,

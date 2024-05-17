@@ -72,6 +72,7 @@ export type TypeScriptWithDecoratorsRendererOptions = {
  * Configuration for the base {@link TypeScriptRenderer}.
  */
 const TSFLOW_OPTIONS: OptionValues<typeof tsFlowOptions> = {
+  readonly: false,
   acronymStyle: AcronymStyleOptions.Pascal,
   preferTypes: true,
   converters: ConvertersOptions.TopLevel,

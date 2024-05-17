@@ -1,5 +1,6 @@
 import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
+import 'quicktype-core';
 import { CausaValidatorRenderer } from '../../code-generation/renderers/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
 import { TypeScriptGetDecoratorRendererForCausaValidator } from './get-decorator-renderer-causa-validator.js';

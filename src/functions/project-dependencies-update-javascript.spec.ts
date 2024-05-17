@@ -16,6 +16,7 @@ const ncuRunMock = jest.fn((() => Promise.resolve({})) as (
 ) => Promise<Record<string, string>>);
 jest.unstable_mockModule('npm-check-updates', () => ({
   default: { run: ncuRunMock },
+  run: ncuRunMock,
 }));
 
 describe('ProjectDependenciesUpdateForJavaScript', () => {
