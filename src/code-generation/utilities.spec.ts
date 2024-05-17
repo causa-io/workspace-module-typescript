@@ -1,3 +1,4 @@
+import 'quicktype-core';
 import { SourcelikeArray } from 'quicktype-core/dist/Source.js';
 import { typeScriptSourceForObject } from './utilities.js';
 
