@@ -89,7 +89,23 @@ describe('OpenApiRenderer', () => {
           },
         },
       },
-      required: ['myClass'],
+      required: [
+        'myDate',
+        'myUuid',
+        'myString',
+        // `myEnum` is not required.
+        'myInt',
+        'myNumber',
+        'myBool',
+        'myClass',
+        'myArray',
+        'myObject',
+        'myNullableClass',
+        'myObjectWithAny',
+        'myArrayOfClasses',
+        'myArrayOfNullables',
+        'myArrayOfNullableClasses',
+      ],
       additionalProperties: false,
     };
 
@@ -114,49 +130,49 @@ describe('OpenApiRenderer', () => {
       /import \{.*getSchemaPath.*\} from "@nestjs\/swagger"/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*description: "📆",\s*type: "string",\s*format: "date-time"\s*}\)\n\s+readonly myDate/,
+      /@ApiProperty\({[\n\s]*required: true,[\n\s]*description: "📆",[\n\s]*type: "string",[\n\s]*format: "date-time",?[\n\s]*}\)\n\s+readonly myDate/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*type: "string",\s*format: "uuid"\s*}\)\n\s+readonly myUuid/,
+      /@ApiProperty\({\s*required: true,\s*type: "string",\s*format: "uuid"\s*}\)\n\s+readonly myUuid/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*type: "string"\s*}\)\n\s+readonly myString/,
+      /@ApiProperty\({\s*required: true,\s*type: "string"\s*}\)\n\s+readonly myString/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*type: "string",\s*enum: \["a", "b", "c"\]\s*}\)\n\s+readonly myEnum/,
+      /@ApiProperty\({\s*required: false,\s*type: "string",\s*enum: \["a", "b", "c"\]\s*}\)\n\s+readonly myEnum/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*oneOf: \[\s*\{ type: "integer" \},\s*\{ type: "null" \}\s*\]\s*}\)\n\s+readonly myInt/,
+      /@ApiProperty\({[\s\n]*required: true,[\n\s]*oneOf: \[\s*\{ type: "integer" \},\s*\{ type: "null" \}\s*\],?\s*}\)\n\s+readonly myInt/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*type: "number"\s*}\)\n\s+readonly myNumber/,
+      /@ApiProperty\({\s*required: true,\s*type: "number"\s*}\)\n\s+readonly myNumber/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*type: "boolean"\s*}\)\n\s+readonly myBool/,
+      /@ApiProperty\({\s*required: true,\s*type: "boolean"\s*}\)\n\s+readonly myBool/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\(\{\s*(?!oneOf)\}\)\n\s+readonly myClass/,
+      /@ApiProperty\(\{\s*required: true,?\s*(?!oneOf)\}\)\n\s+readonly myClass/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\(\{\s*oneOf: \[\{\s*\$ref: getSchemaPath\(MyClass3\)\s*\},\s*\{ type: "null" \}\]\s*\}\)\n\s+readonly myNullableClass/,
+      /@ApiProperty\(\{[\n\s]*required: true,[\n\s]*oneOf: \[\{\s*\$ref: getSchemaPath\(MyClass3\)\s*\},\s*\{ type: "null" \}\],?\s*\}\)\n\s+readonly myNullableClass/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\(\{\s*oneOf: \[\s*\{ type: "array",\s*items:\s*\{\s*type: "string"\s*\}\s*\},\s*\{ type: "null" \}\s*\],\s*\}\)\n\s+readonly myArray/,
+      /@ApiProperty\(\{\s*required: true,\s*oneOf: \[\s*\{ type: "array",\s*items:\s*\{\s*type: "string"\s*\}\s*\},\s*\{ type: "null" \}\s*\],\s*\}\)\n\s+readonly myArray/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*type: "object",\s*additionalProperties: { type: "string" }\s*}\)\n\s+readonly myObject/,
+      /@ApiProperty\({[\n\s]*required: true,[\n\s]*type: "object",[\n\s]*additionalProperties: { type: "string" },?[\n\s]*}\)\n\s+readonly myObject/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*type: "object",\s*additionalProperties: true\s*}\)\n\s+readonly myObjectWithAny/,
+      /@ApiProperty\({\s*required: true,\s*type: "object",\s*additionalProperties: true\s*}\)\n\s+readonly myObjectWithAny/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\(\{\s*type: "array",\s*items:\s*\{\s*\$ref: getSchemaPath\(MyClass2\)\s*\}\s*\}\)\n\s+readonly myArrayOfClasses/,
+      /@ApiProperty\(\{[\n\s]*required: true,[\n\s]*type: "array",[\n\s]*items:\s*\{\s*\$ref: getSchemaPath\(MyClass2\)\s*\},?[\n\s]*\}\)\n\s+readonly myArrayOfClasses/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\(\{\s*type: "array",\s*items:\s*\{\s*oneOf: \[\{\s*type: "boolean"\s*\},\s*\{ type: "null" \}\s*\]\s*\},\s*\}\)\n\s+readonly myArrayOfNullables/,
+      /@ApiProperty\(\{[\n\s]*required: true,[\n\s]*type: "array",[\n\s]*items:\s*\{\s*oneOf: \[\{\s*type: "boolean"\s*\},\s*\{ type: "null" \}\s*\]\s*\},[\n\s]*\}\)\n\s+readonly myArrayOfNullables/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\(\{\s*type: "array",\s*items:\s*\{\s*oneOf: \[\{\s*\$ref: getSchemaPath\(MyClass4\)\s*\},\s*\{ type: "null" \}\s*\]\s*\},\s*\}\)\n\s+readonly myArrayOfNullableClasses/,
+      /@ApiProperty\(\{[\n\s]*required: true,[\n\s]*type: "array",[\n\s]*items:\s*\{\s*oneOf: \[\{\s*\$ref: getSchemaPath\(MyClass4\)\s*\},\s*\{ type: "null" \}\s*\]\s*\},?[\n\s]*\}\)\n\s+readonly myArrayOfNullableClasses/,
     );
   });
 

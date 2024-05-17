@@ -170,6 +170,7 @@ export class OpenApiRenderer extends TypeScriptDecoratorsRenderer {
     const description = (descriptions ?? []).join('\n').trim();
 
     const apiPropertySource: SourcelikeArray = ['@ApiProperty({ '];
+    apiPropertySource.push(`required: ${!context.property.isOptional}, `);
     if (description) {
       apiPropertySource.push(`description: ${JSON.stringify(description)}, `);
     }
