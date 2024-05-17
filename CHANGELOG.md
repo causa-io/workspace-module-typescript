@@ -10,6 +10,10 @@ Chore:
 
 - Upgrade dependencies.
 
+Fixes:
+
+- Always set the `required` attribute in the generated `ApiProperty` decorator.
+
 ## v0.8.2 (2024-02-21)
 
 Fixes:
