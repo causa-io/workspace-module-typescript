@@ -1,7 +1,6 @@
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import 'quicktype-core';
 import { TypeScriptWithDecoratorsTargetLanguage } from '../language.js';
 import { generateFromSchema } from '../utils.test.js';
 import { ClassValidatorTransformerPropertyDecoratorsRenderer } from './class-validator-transformer-renderer.js';
