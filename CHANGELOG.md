@@ -13,6 +13,7 @@ Chore:
 Fixes:
 
 - Always set the `required` attribute in the generated `ApiProperty` decorator.
+- Use a file instead of the standard output to emit the OpenAPI specification. This prevents errors when the service produces logs.
 
 ## v0.8.2 (2024-02-21)
 
