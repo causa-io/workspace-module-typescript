@@ -1,6 +1,5 @@
 import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
-import 'quicktype-core';
 import { ClassValidatorTransformerPropertyDecoratorsRenderer } from '../../code-generation/renderers/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
 import { TypeScriptGetDecoratorRendererForClassValidator } from './get-decorator-renderer-class-validator.js';

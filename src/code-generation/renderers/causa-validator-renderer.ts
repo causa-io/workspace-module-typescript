@@ -1,4 +1,3 @@
-import 'quicktype-core';
 import { removeNullFromType } from 'quicktype-core/dist/TypeUtils.js';
 import { TypeScriptDecorator } from '../decorator.js';
 import {
