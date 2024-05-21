@@ -1,5 +1,4 @@
-import { readFile } from 'fs/promises';
-import { updatePinoConfiguration } from '@causa/runtime';
+import { readFile, writeFile } from 'fs/promises';
 import { createApp } from '@causa/runtime/nestjs';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -25,15 +24,17 @@ async function readPackageInfo() {
  * @param {string} moduleInfo.sourceFile - The path to the file containing the NestJS application module.
  * @param {string} moduleInfo.name - The name of the NestJS application module in the source file.
  * @param {OpenAPIObject} openApiConfig - A base OpenAPI document to merge with the generated document.
+ * @param {string} outputFile - The path to the file where the OpenAPI document should be saved.
  * @returns {Promise<void>}
  */
-async function generateOpenApi(packageInfo, moduleInfo, openApiConfig) {
+async function generateOpenApi(
+  packageInfo,
+  moduleInfo,
+  openApiConfig,
+  outputFile,
+) {
   const sourceModule = await import(moduleInfo.sourceFile);
   const AppModule = sourceModule[moduleInfo.name];
-
-  // The output should only contain the OpenAPI document.
-  // Only errors are allowed for debugging.
-  updatePinoConfiguration({ level: 'error' });
 
   const app = await createApp(AppModule);
 
@@ -49,7 +50,8 @@ async function generateOpenApi(packageInfo, moduleInfo, openApiConfig) {
   // This currently cannot be set by the `DocumentBuilder` due to https://github.com/nestjs/swagger/issues/2361.
   document.openapi = '3.1.0';
 
-  console.log(JSON.stringify(document));
+  const jsonDocument = JSON.stringify(document);
+  await writeFile(outputFile, jsonDocument);
 
   await app.close();
 }
@@ -85,14 +87,16 @@ async function main() {
   if (
     !configuration.module ||
     !configuration.module.sourceFile ||
-    !configuration.module.name
+    !configuration.module.name ||
+    !configuration.outputFile
   ) {
     console.error(`The configuration must contain the 'module' information, for example:
 {
   "module": {
     "sourceFile": "./api.module.js",
     "name": "ApiModule"
-  }
+  },
+  "outputFile": "openapi.json"
 }`);
     process.exit(1);
   }
@@ -102,6 +106,7 @@ async function main() {
     packageInfo,
     configuration.module,
     configuration.baseOpenApi ?? {},
+    configuration.outputFile,
   );
 }
 

@@ -14,7 +14,7 @@ import {
   registerMockFunction,
 } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
-import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -61,6 +61,85 @@ describe('OpenApiGenerateSpecificationForJavaScriptServiceContainer', () => {
   afterEach(async () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
+
+  function mockDockerRun(
+    error?: Error,
+  ): jest.SpiedFunction<typeof dockerService.run> {
+    return jest
+      .spyOn(dockerService, 'run')
+      .mockImplementationOnce(async (_, options) => {
+        const commandAndArgs = options?.commandAndArgs?.at(1) ?? '{}';
+        const { outputFile } = JSON.parse(commandAndArgs);
+        const localOutputFile = options?.mounts?.find(
+          (m) => m.destination === outputFile,
+        )?.source;
+        if (!localOutputFile) {
+          throw new Error('Missing output file mount.');
+        }
+
+        // The file should be created before being mounted.
+        await stat(localOutputFile);
+
+        await writeFile(localOutputFile, JSON.stringify({ openapi: '3.1.0' }));
+
+        if (error) {
+          throw error;
+        }
+
+        return { stdout: '', code: 0 };
+      });
+  }
+
+  function expectDockerRunCall(
+    runMock: jest.SpiedFunction<typeof dockerService.run>,
+    options: Parameters<typeof dockerService.run>[1] = {},
+  ) {
+    expect(dockerService.run).toHaveBeenCalledOnce();
+
+    const actualScriptDestination =
+      runMock.mock.calls[0][1]?.mounts?.at(0)?.destination;
+    expect(actualScriptDestination).toMatch(/\/app\/dist\/.+\.js/);
+
+    expect(dockerService.run).toHaveBeenCalledWith('🐳🔖', {
+      rm: true,
+      network: 'host',
+      mounts: expect.toContainAllValues([
+        {
+          source: fileURLToPath(
+            new URL('../assets/generate-openapi.js', import.meta.url),
+          ),
+          destination: actualScriptDestination,
+          type: 'bind',
+          readonly: true,
+        },
+        {
+          source: expect.not.toBeEmpty(),
+          destination: '/openapi.json',
+          type: 'bind',
+        },
+      ]),
+      capture: { stdout: true },
+      logging: 'debug',
+      envFile: undefined,
+      commandAndArgs: [
+        actualScriptDestination,
+        JSON.stringify({
+          module: { sourceFile: './app.module.ts', name: 'AppModule' },
+          outputFile: '/openapi.json',
+        }),
+      ],
+      ...options,
+    });
+  }
+
+  async function expectLocalOutputFileDeleted(
+    runMock: jest.SpiedFunction<typeof dockerService.run>,
+  ) {
+    const runCallArgs = runMock.mock.calls[0][1];
+    const actualLocalFilePath = runCallArgs?.mounts?.at(1)?.source;
+    expect(actualLocalFilePath).toStartWith(tmpdir());
+    await expect(stat(actualLocalFilePath as string)).rejects.toThrow();
+  }
 
   it('should not support non-JavaScript or TypeScript projects', () => {
     ({ context } = createContext({
@@ -118,95 +197,36 @@ describe('OpenApiGenerateSpecificationForJavaScriptServiceContainer', () => {
   });
 
   it('should return the OpenAPI specification as YAML', async () => {
-    const runMock = jest.spyOn(dockerService, 'run').mockResolvedValueOnce({
-      stdout: JSON.stringify({ openapi: '3.0.0' }),
-      code: 0,
-    });
+    const runMock = mockDockerRun();
 
     const actualResult = await context.call(OpenApiGenerateSpecification, {
       returnSpecification: true,
     });
 
-    expect(actualResult).toEqual('openapi: 3.0.0\n');
+    expect(actualResult).toEqual('openapi: 3.1.0\n');
     expect(buildMock).toHaveBeenCalledWith(context, {});
-    expect(dockerService.run).toHaveBeenCalledOnce();
-    const actualScriptDestination =
-      runMock.mock.calls[0][1]?.mounts?.at(0)?.destination;
-    expect(actualScriptDestination).toMatch(/\/app\/dist\/.+\.js/);
-    expect(dockerService.run).toHaveBeenCalledWith('🐳🔖', {
-      rm: true,
-      network: 'host',
-      mounts: [
-        {
-          source: fileURLToPath(
-            new URL('../assets/generate-openapi.js', import.meta.url),
-          ),
-          destination: actualScriptDestination,
-          type: 'bind',
-          readonly: true,
-        },
-      ],
-      capture: { stdout: true },
-      logging: 'debug',
-      envFile: undefined,
-      commandAndArgs: [
-        actualScriptDestination,
-        JSON.stringify({
-          module: { sourceFile: './app.module.ts', name: 'AppModule' },
-        }),
-      ],
-    });
+    expectDockerRunCall(runMock);
+    await expectLocalOutputFileDeleted(runMock);
   });
 
   it('should set the env file when running the container', async () => {
     const envFile = join(tmpDir, '.env');
     await writeFile(envFile, '🔑=🔐');
-    const runMock = jest.spyOn(dockerService, 'run').mockResolvedValueOnce({
-      stdout: JSON.stringify({ openapi: '3.0.0' }),
-      code: 0,
-    });
+    const runMock = mockDockerRun();
 
     const actualResult = await context.call(OpenApiGenerateSpecification, {
       returnSpecification: true,
     });
 
-    expect(actualResult).toEqual('openapi: 3.0.0\n');
+    expect(actualResult).toEqual('openapi: 3.1.0\n');
     expect(buildMock).toHaveBeenCalledWith(context, {});
-    expect(dockerService.run).toHaveBeenCalledOnce();
-    const actualScriptDestination =
-      runMock.mock.calls[0][1]?.mounts?.at(0)?.destination;
-    expect(actualScriptDestination).toMatch(/\/app\/dist\/.+\.js/);
-    expect(dockerService.run).toHaveBeenCalledWith('🐳🔖', {
-      rm: true,
-      network: 'host',
-      mounts: [
-        {
-          source: fileURLToPath(
-            new URL('../assets/generate-openapi.js', import.meta.url),
-          ),
-          destination: actualScriptDestination,
-          type: 'bind',
-          readonly: true,
-        },
-      ],
-      capture: { stdout: true },
-      logging: 'debug',
-      envFile,
-      commandAndArgs: [
-        actualScriptDestination,
-        JSON.stringify({
-          module: { sourceFile: './app.module.ts', name: 'AppModule' },
-        }),
-      ],
-    });
+    expectDockerRunCall(runMock, { envFile });
+    await expectLocalOutputFileDeleted(runMock);
   });
 
   it('should write the OpenAPI specification to the specified file', async () => {
     const outputFile = join(tmpDir, 'test.yaml');
-    const runMock = jest.spyOn(dockerService, 'run').mockResolvedValueOnce({
-      stdout: JSON.stringify({ openapi: '3.0.0' }),
-      code: 0,
-    });
+    const runMock = mockDockerRun();
 
     const actualResult = await context.call(OpenApiGenerateSpecification, {
       output: outputFile,
@@ -214,34 +234,22 @@ describe('OpenApiGenerateSpecificationForJavaScriptServiceContainer', () => {
 
     expect(actualResult).toEqual(outputFile);
     expect(buildMock).toHaveBeenCalledWith(context, {});
-    expect(dockerService.run).toHaveBeenCalledOnce();
-    const actualScriptDestination =
-      runMock.mock.calls[0][1]?.mounts?.at(0)?.destination;
-    expect(actualScriptDestination).toMatch(/\/app\/dist\/.+\.js/);
-    expect(dockerService.run).toHaveBeenCalledWith('🐳🔖', {
-      rm: true,
-      network: 'host',
-      mounts: [
-        {
-          source: fileURLToPath(
-            new URL('../assets/generate-openapi.js', import.meta.url),
-          ),
-          destination: actualScriptDestination,
-          type: 'bind',
-          readonly: true,
-        },
-      ],
-      capture: { stdout: true },
-      logging: 'debug',
-      envFile: undefined,
-      commandAndArgs: [
-        actualScriptDestination,
-        JSON.stringify({
-          module: { sourceFile: './app.module.ts', name: 'AppModule' },
-        }),
-      ],
-    });
+    expectDockerRunCall(runMock);
     const actualFile = await readFile(outputFile);
-    expect(actualFile.toString()).toEqual('openapi: 3.0.0\n');
+    expect(actualFile.toString()).toEqual('openapi: 3.1.0\n');
+    await expectLocalOutputFileDeleted(runMock);
+  });
+
+  it('should remove the temporary local file if the Docker run fails', async () => {
+    const runMock = mockDockerRun(new Error('🔥'));
+
+    const actualPromise = context.call(OpenApiGenerateSpecification, {
+      returnSpecification: true,
+    });
+
+    await expect(actualPromise).rejects.toThrow('🔥');
+    expect(buildMock).toHaveBeenCalledWith(context, {});
+    expectDockerRunCall(runMock);
+    await expectLocalOutputFileDeleted(runMock);
   });
 });
