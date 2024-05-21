@@ -1,11 +1,13 @@
 import { WorkspaceContext } from '@causa/workspace';
 import {
+  DockerContainerMount,
   DockerService,
   OpenApiGenerateSpecification,
   ProjectBuildArtefact,
 } from '@causa/workspace-core';
-import { stat, writeFile } from 'fs/promises';
+import { open, readFile, rm, stat, writeFile } from 'fs/promises';
 import { dump } from 'js-yaml';
+import { tmpdir } from 'os';
 import { basename, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import * as uuid from 'uuid';
@@ -16,6 +18,11 @@ import * as uuid from 'uuid';
 const GENERATION_SCRIPT_FILE = fileURLToPath(
   new URL('../assets/generate-openapi.js', import.meta.url),
 );
+
+/**
+ * The location of the output file for the OpenAPI specification within the Docker container.
+ */
+const CONTAINER_OUTPUT_FILE = '/openapi.json';
 
 /**
  * The default output file for the OpenAPI specification.
@@ -45,29 +52,48 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
         sourceFile: `./${basename(sourceFile)}`,
         name: moduleName,
       },
+      outputFile: CONTAINER_OUTPUT_FILE,
     };
+
+    const localOutputFile = join(tmpdir(), `${uuid.v4()}.json`);
+    const localFd = await open(localOutputFile, 'w');
+    await localFd.close();
 
     const envFile = join(context.getProjectPathOrThrow(), '.env');
     const envFileExists = !!(await stat(envFile).catch(() => false));
 
-    const result = await context.service(DockerService).run(dockerTag, {
-      rm: true,
-      network: 'host',
-      mounts: [
+    let openApiSpec: object;
+    try {
+      const mounts: DockerContainerMount[] = [
         {
           source: GENERATION_SCRIPT_FILE,
           destination: dockerScriptPath,
           type: 'bind',
           readonly: true,
         },
-      ],
-      capture: { stdout: true },
-      logging: 'debug',
-      envFile: envFileExists ? envFile : undefined,
-      commandAndArgs: [dockerScriptPath, JSON.stringify(configuration)],
-    });
+        {
+          source: localOutputFile,
+          destination: CONTAINER_OUTPUT_FILE,
+          type: 'bind',
+        },
+      ];
 
-    const openApiSpec = JSON.parse(result.stdout ?? '');
+      await context.service(DockerService).run(dockerTag, {
+        rm: true,
+        network: 'host',
+        mounts,
+        capture: { stdout: true },
+        logging: 'debug',
+        envFile: envFileExists ? envFile : undefined,
+        commandAndArgs: [dockerScriptPath, JSON.stringify(configuration)],
+      });
+
+      const openApiSpecBuffer = await readFile(localOutputFile);
+      openApiSpec = JSON.parse(openApiSpecBuffer.toString());
+    } finally {
+      await rm(localOutputFile, { force: true });
+    }
+
     const openApiSpecYaml = dump(openApiSpec);
 
     if (this.returnSpecification) {
