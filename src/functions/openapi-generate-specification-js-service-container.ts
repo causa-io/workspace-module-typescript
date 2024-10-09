@@ -1,6 +1,6 @@
 import { WorkspaceContext } from '@causa/workspace';
 import {
-  DockerContainerMount,
+  type DockerContainerMount,
   DockerService,
   OpenApiGenerateSpecification,
   ProjectBuildArtefact,

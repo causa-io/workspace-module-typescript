@@ -4,11 +4,11 @@ import { mkdtemp, rm } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { TypeScriptDecorator } from './decorator.js';
+import type { TypeScriptDecorator } from './decorator.js';
 import { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
 import {
-  ClassContext,
-  ClassPropertyContext,
+  type ClassContext,
+  type ClassPropertyContext,
   TypeScriptDecoratorsRenderer,
 } from './ts-decorators-renderer.js';
 import { expectToMatchRegexParts, generateFromSchema } from './utils.test.js';

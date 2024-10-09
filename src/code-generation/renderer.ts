@@ -1,5 +1,5 @@
 import {
-  CausaPropertyAttributes,
+  type CausaPropertyAttributes,
   causaTypeAttributeKind,
 } from '@causa/workspace-core';
 import {
@@ -7,24 +7,24 @@ import {
   ClassType,
   Name,
   ObjectType,
-  OptionValues,
-  RenderContext,
-  Sourcelike,
+  type OptionValues,
+  type RenderContext,
+  type Sourcelike,
   TargetLanguage,
   Type,
   tsFlowOptions,
 } from 'quicktype-core';
-import { SourcelikeArray } from 'quicktype-core/dist/Source.js';
+import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
 import {
   descriptionTypeAttributeKind,
   propertyDescriptionsTypeAttributeKind,
 } from 'quicktype-core/dist/attributes/Description.js';
 import { AcronymStyleOptions } from 'quicktype-core/dist/support/Acronyms.js';
 import { ConvertersOptions } from 'quicktype-core/dist/support/Converters.js';
-import { TypeScriptDecorator } from './decorator.js';
+import type { TypeScriptDecorator } from './decorator.js';
 import {
-  ClassContext,
-  ClassPropertyContext,
+  type ClassContext,
+  type ClassPropertyContext,
   TypeScriptDecoratorsRenderer,
 } from './ts-decorators-renderer.js';
 

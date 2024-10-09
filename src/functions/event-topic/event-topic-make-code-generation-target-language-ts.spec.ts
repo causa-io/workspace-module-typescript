@@ -2,7 +2,7 @@ import { EventTopicMakeCodeGenerationTargetLanguage } from '@causa/workspace-cor
 import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext, registerMockFunction } from '@causa/workspace/testing';
 import {
-  TypeScriptDecorator,
+  type TypeScriptDecorator,
   TypeScriptDecoratorsRenderer,
   TypeScriptWithDecoratorsTargetLanguage,
 } from '../../code-generation/index.js';

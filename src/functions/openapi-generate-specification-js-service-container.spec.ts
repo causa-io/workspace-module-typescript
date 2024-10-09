@@ -9,7 +9,7 @@ import {
   NoImplementationFoundError,
 } from '@causa/workspace/function-registry';
 import {
-  WorkspaceFunctionCallMock,
+  type WorkspaceFunctionCallMock,
   createContext,
   registerMockFunction,
 } from '@causa/workspace/testing';

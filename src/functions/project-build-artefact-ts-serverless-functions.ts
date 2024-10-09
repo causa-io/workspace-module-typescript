@@ -1,7 +1,7 @@
 import { WorkspaceContext } from '@causa/workspace';
 import {
   ProjectBuildArtefact,
-  ServerlessFunctionsConfiguration,
+  type ServerlessFunctionsConfiguration,
 } from '@causa/workspace-core';
 import archiver from 'archiver';
 import { createWriteStream } from 'fs';

@@ -1,4 +1,4 @@
-import { ArrayType, Sourcelike, Type } from 'quicktype-core';
+import { ArrayType, type Sourcelike, Type } from 'quicktype-core';
 import { removeNullFromType } from 'quicktype-core/dist/TypeUtils.js';
 
 /**

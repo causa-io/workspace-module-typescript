@@ -2,8 +2,8 @@ import { WorkspaceContext } from '@causa/workspace';
 import {
   ProcessService,
   ProcessServiceExitCodeError,
-  SpawnOptions,
-  SpawnedProcessResult,
+  type SpawnOptions,
+  type SpawnedProcessResult,
 } from '@causa/workspace-core';
 import { satisfies } from 'semver';
 import { IncompatibleNpmVersionError, NpmExitCodeError } from './npm.errors.js';

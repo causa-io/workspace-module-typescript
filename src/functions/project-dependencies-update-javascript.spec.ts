@@ -84,7 +84,7 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
       'The package file(s) contain uncommitted changes but would be modified during the update. Changes should be committed or stashed before running the update.',
     );
     expect(gitService.filesDiff).toHaveBeenCalledExactlyOnceWith({
-      commit: 'HEAD',
+      commits: ['HEAD'],
       paths: [join(tmpDir, 'package.json'), join(tmpDir, 'package-lock.json')],
     });
   });

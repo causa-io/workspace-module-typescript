@@ -12,11 +12,9 @@ const AllowlistMock = {
 };
 const npmAuditMock = jest.fn(() => Promise.resolve());
 jest.unstable_mockModule('audit-ci', () => ({
-  default: {
-    Allowlist: AllowlistMock,
-    npmAudit: npmAuditMock,
-    mapVulnerabilityLevelInput: (object: any) => ({ levelInput: object }),
-  },
+  Allowlist: AllowlistMock,
+  npmAudit: npmAuditMock,
+  mapVulnerabilityLevelInput: (object: any) => ({ levelInput: object }),
 }));
 
 describe('ProjectDependenciesCheckForJavaScript', () => {
@@ -60,15 +58,13 @@ describe('ProjectDependenciesCheckForJavaScript', () => {
     expect(npmAuditMock).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         directory: context.projectPath,
+        'report-type': 'summary',
+        allowlist: [],
         'skip-dev': false,
         // Expected from the output of the mocked mapVulnerabilityLevelInput function.
-        levels: { levelInput: { low: true } },
         levelInput: { low: true },
       }),
     );
-    expect(AllowlistMock.mapConfigToAllowlist).toHaveBeenCalledExactlyOnceWith({
-      allowlist: [],
-    });
   });
 
   it('should pass an allowlist, skip dev dependencies and set the correct level', async () => {
@@ -94,15 +90,13 @@ describe('ProjectDependenciesCheckForJavaScript', () => {
     expect(npmAuditMock).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         directory: context.projectPath,
+        'report-type': 'summary',
+        allowlist: ['foo'],
         'skip-dev': true,
         // Expected from the output of the mocked mapVulnerabilityLevelInput function.
-        levels: { levelInput: { moderate: true } },
         levelInput: { moderate: true },
       }),
     );
-    expect(AllowlistMock.mapConfigToAllowlist).toHaveBeenCalledExactlyOnceWith({
-      allowlist: ['foo'],
-    });
   });
 
   it('should throw for an invalid level', async () => {

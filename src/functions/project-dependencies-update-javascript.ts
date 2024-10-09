@@ -2,7 +2,7 @@ import { WorkspaceContext } from '@causa/workspace';
 import { GitService, ProjectDependenciesUpdate } from '@causa/workspace-core';
 import { run } from 'npm-check-updates';
 import { join } from 'path';
-import { NpmService, TypeScriptConfiguration } from '../index.js';
+import { NpmService, type TypeScriptConfiguration } from '../index.js';
 import { PACKAGE_FILE, PACKAGE_LOCK_FILE } from '../utils.js';
 
 /**
@@ -54,7 +54,7 @@ export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesU
     );
 
     const changedFiles = await context.service(GitService).filesDiff({
-      commit: 'HEAD',
+      commits: ['HEAD'],
       paths: packageFiles,
     });
 

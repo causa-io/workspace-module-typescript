@@ -1,7 +1,7 @@
 import { WorkspaceContext } from '@causa/workspace';
 import { TypeScriptDecoratorsRenderer } from '../../code-generation/index.js';
 import { CausaValidatorRenderer } from '../../code-generation/renderers/index.js';
-import { TypeScriptConfiguration } from '../../configurations/index.js';
+import type { TypeScriptConfiguration } from '../../configurations/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
 
 /**
