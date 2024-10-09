@@ -54,7 +54,7 @@ export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesU
     );
 
     const changedFiles = await context.service(GitService).filesDiff({
-      commit: 'HEAD',
+      commits: ['HEAD'],
       paths: packageFiles,
     });
 
