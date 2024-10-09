@@ -1,4 +1,4 @@
-import {
+import type {
   CausaObjectAttributes,
   CausaPropertyAttributes,
 } from '@causa/workspace-core';
@@ -6,14 +6,14 @@ import {
   ClassProperty,
   ClassType,
   Name,
-  OptionValues,
-  RenderContext,
-  Sourcelike,
+  type OptionValues,
+  type RenderContext,
+  type Sourcelike,
   TargetLanguage,
   TypeScriptRenderer,
   tsFlowOptions,
 } from 'quicktype-core';
-import { TypeScriptDecorator } from './decorator.js';
+import type { TypeScriptDecorator } from './decorator.js';
 
 /**
  * The TypeScript-specific Causa attributes that can be added to an object schema.

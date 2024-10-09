@@ -1,4 +1,4 @@
-import { ModuleRegistrationContext } from '@causa/workspace';
+import type { ModuleRegistrationContext } from '@causa/workspace';
 import { EventTopicMakeCodeGenerationTargetLanguageForTypeScript } from './event-topic/index.js';
 import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './openapi-generate-specification-js-service-container.js';
 import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';

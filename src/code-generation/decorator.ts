@@ -1,4 +1,4 @@
-import { Sourcelike } from 'quicktype-core';
+import type { Sourcelike } from 'quicktype-core';
 
 /**
  * A decorator that can be added to a class or property.

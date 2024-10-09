@@ -1,11 +1,11 @@
 import { WorkspaceContext } from '@causa/workspace';
 import {
   EventTopicMakeCodeGenerationTargetLanguage,
-  TargetLanguageWithWriter,
+  type TargetLanguageWithWriter,
 } from '@causa/workspace-core';
 import { resolve } from 'path';
 import { TypeScriptWithDecoratorsTargetLanguage } from '../../code-generation/index.js';
-import { TypeScriptConfiguration } from '../../configurations/index.js';
+import type { TypeScriptConfiguration } from '../../configurations/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
 
 /**

@@ -2,14 +2,14 @@ import {
   ArrayType,
   EnumType,
   Name,
-  Sourcelike,
+  type Sourcelike,
   Type,
-  TypeKind,
+  type TypeKind,
 } from 'quicktype-core';
 import { removeNullFromType } from 'quicktype-core/dist/TypeUtils.js';
-import { TypeScriptDecorator } from '../decorator.js';
+import type { TypeScriptDecorator } from '../decorator.js';
 import {
-  ClassPropertyContext,
+  type ClassPropertyContext,
   TypeScriptDecoratorsRenderer,
 } from '../ts-decorators-renderer.js';
 import { typeScriptSourceForObject } from '../utilities.js';

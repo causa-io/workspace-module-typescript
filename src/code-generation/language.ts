@@ -1,11 +1,11 @@
-import { TargetLanguageWithWriter } from '@causa/workspace-core';
+import type { TargetLanguageWithWriter } from '@causa/workspace-core';
 import { writeFile } from 'fs/promises';
 import prettier from 'prettier';
-import { Option, StringTypeMapping, TargetLanguage } from 'quicktype-core';
-import { RenderContext, Renderer } from 'quicktype-core/dist/Renderer.js';
+import { Option, type StringTypeMapping, TargetLanguage } from 'quicktype-core';
+import { type RenderContext, Renderer } from 'quicktype-core/dist/Renderer.js';
 import {
   TypeScriptWithDecoratorsRenderer,
-  TypeScriptWithDecoratorsRendererOptions,
+  type TypeScriptWithDecoratorsRendererOptions,
 } from './renderer.js';
 
 /**

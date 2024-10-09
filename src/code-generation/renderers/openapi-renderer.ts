@@ -1,9 +1,9 @@
-import { EnumType, MapType, Type, TypeKind } from 'quicktype-core';
-import { SourcelikeArray } from 'quicktype-core/dist/Source.js';
-import { TypeScriptDecorator } from '../decorator.js';
+import { EnumType, MapType, Type, type TypeKind } from 'quicktype-core';
+import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
+import type { TypeScriptDecorator } from '../decorator.js';
 import {
-  ClassContext,
-  ClassPropertyContext,
+  type ClassContext,
+  type ClassPropertyContext,
   TypeScriptDecoratorsRenderer,
 } from '../ts-decorators-renderer.js';
 import { getSingleType } from '../utilities.js';

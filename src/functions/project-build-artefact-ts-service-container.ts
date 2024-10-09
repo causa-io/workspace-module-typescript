@@ -6,7 +6,7 @@ import {
 import { major } from 'semver';
 import { fileURLToPath } from 'url';
 import * as uuid from 'uuid';
-import { TypeScriptConfiguration } from '../index.js';
+import type { TypeScriptConfiguration } from '../index.js';
 
 /**
  * The default Dockerfile for TypeScript service containers.
