@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Chores:
+
+- Upgrade dependencies.
+
 ## v0.9.0 (2024-05-21)
 
 Breaking change:
