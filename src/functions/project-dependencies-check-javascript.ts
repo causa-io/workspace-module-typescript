@@ -1,7 +1,7 @@
 import { WorkspaceContext } from '@causa/workspace';
 import { ProjectDependenciesCheck } from '@causa/workspace-core';
 import type { VulnerabilityLevels } from 'audit-ci';
-import auditCi from 'audit-ci';
+import { mapVulnerabilityLevelInput, npmAudit } from 'audit-ci';
 import { TypeScriptConfiguration } from '../configurations/index.js';
 
 /**
@@ -72,28 +72,13 @@ export class ProjectDependenciesCheckForJavaScript extends ProjectDependenciesCh
     const skipDev = options.skipDev ?? false;
     const level = options.level ?? DEFAULT_VULNERABILITY_LEVEL;
 
-    const levels = auditCi.mapVulnerabilityLevelInput({ [level]: true });
+    const levels = mapVulnerabilityLevelInput({ [level]: true });
 
-    await auditCi.npmAudit({
-      // Defaults obtained from the `audit-ci` source code.
-      // Some may not even be used (e.g. `package-manager`), as `npmAudit` is called directly.
-      // However they are all required.
-      'pass-enoaudit': false,
-      'retry-count': 5,
-      report: false,
-      'package-manager': 'npm',
-      'show-not-found': true,
-      'show-found': true,
-      registry: undefined,
-      summary: false,
-      'output-format': 'text',
-      'extra-args': [],
-      // Options actually set to a value.
+    await npmAudit({
       directory: projectPath,
       'report-type': 'summary',
-      allowlist: auditCi.Allowlist.mapConfigToAllowlist({ allowlist }),
+      allowlist,
       ...levels,
-      levels,
       'skip-dev': skipDev,
     });
   }
