@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.10.0 (2024-11-18)
+
 Breaking changes:
 
 - Use `@nestjs/swagger` `selfRequired` property when generating OpenAPI decorators. This property is only available with `@nestjs/swagger` version 8.
