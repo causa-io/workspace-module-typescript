@@ -130,7 +130,7 @@ describe('OpenApiRenderer', () => {
       /import \{.*getSchemaPath.*\} from "@nestjs\/swagger"/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({[\n\s]*required: true,[\n\s]*description: "📆",[\n\s]*type: "string",[\n\s]*format: "date-time",?[\n\s]*}\)\n\s+readonly myDate/,
+      /@ApiProperty\({[\n\s]*description: "📆",[\n\s]*required: true,[\n\s]*type: "string",[\n\s]*format: "date-time",?[\n\s]*}\)\n\s+readonly myDate/,
     );
     expect(actualCode).toMatch(
       /@ApiProperty\({\s*required: true,\s*type: "string",\s*format: "uuid"\s*}\)\n\s+readonly myUuid/,
@@ -160,10 +160,10 @@ describe('OpenApiRenderer', () => {
       /@ApiProperty\(\{\s*required: true,\s*oneOf: \[\s*\{ type: "array",\s*items:\s*\{\s*type: "string"\s*\}\s*\},\s*\{ type: "null" \}\s*\],\s*\}\)\n\s+readonly myArray/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({[\n\s]*required: true,[\n\s]*type: "object",[\n\s]*additionalProperties: { type: "string" },?[\n\s]*}\)\n\s+readonly myObject/,
+      /@ApiProperty\({[\n\s]*selfRequired: true,[\n\s]*type: "object",[\n\s]*additionalProperties: { type: "string" },?[\n\s]*}\)\n\s+readonly myObject/,
     );
     expect(actualCode).toMatch(
-      /@ApiProperty\({\s*required: true,\s*type: "object",\s*additionalProperties: true\s*}\)\n\s+readonly myObjectWithAny/,
+      /@ApiProperty\({[\n\s]*selfRequired: true,[\n\s]*type: "object",[\n\s]*additionalProperties: true,?[\n\s]*}\)\n\s+readonly myObjectWithAny/,
     );
     expect(actualCode).toMatch(
       /@ApiProperty\(\{[\n\s]*required: true,[\n\s]*type: "array",[\n\s]*items:\s*\{\s*\$ref: getSchemaPath\(MyClass2\)\s*\},?[\n\s]*\}\)\n\s+readonly myArrayOfClasses/,

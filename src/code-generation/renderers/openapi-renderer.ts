@@ -1,5 +1,8 @@
 import { EnumType, MapType, Type, type TypeKind } from 'quicktype-core';
-import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
+import type {
+  Sourcelike,
+  SourcelikeArray,
+} from 'quicktype-core/dist/Source.js';
 import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassContext,
@@ -39,23 +42,42 @@ const TYPE_KIND_TO_JSONSCHEMA_TYPE: Partial<Record<TypeKind, string>> = {
  * This function is recursive, and will generate options for array types as well.
  *
  * @param type The type for which the decorator options should be generated.
- * @param isArrayItem Whether the type is the item of an array.
+ * @param options Additional options when generating the code.
  * @returns The source code for the decorator options.
  */
 function typeToDecoratorOptions(
   type: Type,
-  isArrayItem: boolean = false,
+  options: {
+    /**
+     * Whether the type is the item of an array.
+     */
+    isArrayItem?: boolean;
+
+    /**
+     * Whether the type is required.
+     * This should be set for "decorator-level" types (i.e. that will be directly added to the `@ApiProperty`
+     * decorator).
+     */
+    required?: boolean;
+  } = {},
 ): SourcelikeArray {
+  const { isArrayItem, required } = options;
   const singleTypeInfo = getSingleType(type);
   if (!singleTypeInfo) {
     return [];
   }
 
   const { type: singleType, isNullable, isArray } = singleTypeInfo;
-  const decoratorOptions: SourcelikeArray = [];
+  let decoratorOptions: SourcelikeArray = [];
+  // If `required` is set, add it to the options using the `required` property.
+  // This is how it should be done except for the `object` type.
+  let requiredOption: Sourcelike | undefined =
+    required !== undefined ? `required: ${required}, ` : undefined;
 
   if (isArray) {
-    const itemOptions = typeToDecoratorOptions(singleType, true);
+    const itemOptions = typeToDecoratorOptions(singleType, {
+      isArrayItem: true,
+    });
     decoratorOptions.push(`type: 'array', `, 'items: { ', itemOptions, ' }, ');
   } else {
     const jsonSchemaType = TYPE_KIND_TO_JSONSCHEMA_TYPE[singleType.kind];
@@ -76,13 +98,19 @@ function typeToDecoratorOptions(
         // If the type is not nullable and is not a nested item (i.e. in an array), NestJS will automatically infer the
         // type and declare it using `allOf`. Other type information should not be added in the decorator.
         if (!isNullable && !isArrayItem) {
-          return [];
+          break;
         }
 
         const typeName = singleType.getCombinedName();
         decoratorOptions.push(`$ref: getSchemaPath(${typeName})`);
         break;
       case 'map':
+        // For `object` types, the `@ApiProperty` decorator `required` option is ambiguous and `selfRequired` must be
+        // used instead.
+        if (requiredOption) {
+          requiredOption = 'selfRequired: true, ';
+        }
+
         const additionalProperties = (
           singleType as MapType
         ).getAdditionalProperties();
@@ -100,7 +128,11 @@ function typeToDecoratorOptions(
   }
 
   if (isNullable) {
-    return ['oneOf: [{', decoratorOptions, `}, { type: 'null' }]`];
+    decoratorOptions = ['oneOf: [{', decoratorOptions, `}, { type: 'null' }],`];
+  }
+
+  if (requiredOption) {
+    decoratorOptions.splice(0, 0, requiredOption);
   }
 
   return decoratorOptions;
@@ -168,13 +200,15 @@ export class OpenApiRenderer extends TypeScriptDecoratorsRenderer {
       context.jsonName,
     );
     const description = (descriptions ?? []).join('\n').trim();
+    const required = !context.property.isOptional;
 
     const apiPropertySource: SourcelikeArray = ['@ApiProperty({ '];
-    apiPropertySource.push(`required: ${!context.property.isOptional}, `);
     if (description) {
       apiPropertySource.push(`description: ${JSON.stringify(description)}, `);
     }
-    apiPropertySource.push(typeToDecoratorOptions(context.property.type));
+    apiPropertySource.push(
+      typeToDecoratorOptions(context.property.type, { required }),
+    );
     apiPropertySource.push(' })');
 
     const decorators: TypeScriptDecorator[] = [];
