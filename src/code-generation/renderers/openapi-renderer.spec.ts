@@ -49,6 +49,10 @@ describe('OpenApiRenderer', () => {
           type: 'object',
           additionalProperties: { type: 'string' },
         },
+        myOptionalObject: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+        },
         myNullableClass: {
           oneOf: [
             { type: 'null' },
@@ -100,6 +104,7 @@ describe('OpenApiRenderer', () => {
         'myClass',
         'myArray',
         'myObject',
+        // `myOptionalObject` is not required.
         'myNullableClass',
         'myObjectWithAny',
         'myArrayOfClasses',
@@ -161,6 +166,9 @@ describe('OpenApiRenderer', () => {
     );
     expect(actualCode).toMatch(
       /@ApiProperty\({[\n\s]*selfRequired: true,[\n\s]*type: "object",[\n\s]*additionalProperties: { type: "string" },?[\n\s]*}\)\n\s+readonly myObject/,
+    );
+    expect(actualCode).toMatch(
+      /@ApiProperty\({[\n\s]*selfRequired: false,[\n\s]*type: "object",[\n\s]*additionalProperties: { type: "string" },?[\n\s]*}\)\n\s+readonly myOptionalObject/,
     );
     expect(actualCode).toMatch(
       /@ApiProperty\({[\n\s]*selfRequired: true,[\n\s]*type: "object",[\n\s]*additionalProperties: true,?[\n\s]*}\)\n\s+readonly myObjectWithAny/,
