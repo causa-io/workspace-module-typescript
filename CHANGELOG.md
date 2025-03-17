@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Chores:
+
+- Upgrade dependencies.
+
+Fixes:
+
+- Set `selfRequired` to the correct boolean value in the `ApiProperty` decorator.
+
 ## v0.10.0 (2024-11-18)
 
 Breaking changes:
