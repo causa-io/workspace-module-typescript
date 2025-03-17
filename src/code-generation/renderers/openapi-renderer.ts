@@ -108,7 +108,7 @@ function typeToDecoratorOptions(
         // For `object` types, the `@ApiProperty` decorator `required` option is ambiguous and `selfRequired` must be
         // used instead.
         if (requiredOption) {
-          requiredOption = 'selfRequired: true, ';
+          requiredOption = `selfRequired: ${required}, `;
         }
 
         const additionalProperties = (
