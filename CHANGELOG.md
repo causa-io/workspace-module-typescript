@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.10.2 (2025-05-12)
+
 Chores:
 
 - Adapt to `quicktype` breaking changes.
