@@ -6,7 +6,7 @@ import {
   Type,
   type TypeKind,
 } from 'quicktype-core';
-import { removeNullFromType } from 'quicktype-core/dist/TypeUtils.js';
+import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassPropertyContext,

@@ -1,5 +1,5 @@
 import { ArrayType, type Sourcelike, Type } from 'quicktype-core';
-import { removeNullFromType } from 'quicktype-core/dist/TypeUtils.js';
+import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 
 /**
  * Constructs the TypeScript source code for the given object.

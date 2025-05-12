@@ -26,11 +26,15 @@ export class TypeScriptWithDecoratorsTargetLanguage
     readonly outputPath: string,
     readonly options: TypeScriptWithDecoratorsRendererOptions = {},
   ) {
-    super('TypeScript', ['typescript'], 'ts');
+    super({
+      displayName: 'TypeScript',
+      names: ['typescript'],
+      extension: 'ts',
+    });
   }
 
-  protected getOptions(): Option<any>[] {
-    return [];
+  protected getOptions(): Record<string, Option<string, unknown>> {
+    return {};
   }
 
   get stringTypeMapping(): StringTypeMapping {
