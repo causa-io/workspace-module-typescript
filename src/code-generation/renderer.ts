@@ -2,6 +2,7 @@ import {
   type CausaPropertyAttributes,
   causaTypeAttributeKind,
 } from '@causa/workspace-core';
+import type { Logger } from 'pino';
 import {
   ClassProperty,
   ClassType,
@@ -128,17 +129,20 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
    *
    * @param targetLanguage The target language.
    * @param context The render context.
+   * @param logger The logger to use for non-error messages.
    * @param options Options for the renderer.
    */
   constructor(
     targetLanguage: TargetLanguage,
     context: RenderContext,
+    logger: Logger,
     options: TypeScriptWithDecoratorsRendererOptions = {},
   ) {
     super(
       targetLanguage,
       context,
       TSFLOW_OPTIONS,
+      logger,
       options.decoratorOptions ?? {},
     );
 

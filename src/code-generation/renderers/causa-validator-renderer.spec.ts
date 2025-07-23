@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { pino } from 'pino';
 import { TypeScriptWithDecoratorsTargetLanguage } from '../language.js';
 import { generateFromSchema } from '../utils.test.js';
 import { CausaValidatorRenderer } from './causa-validator-renderer.js';
@@ -13,7 +14,7 @@ describe('CausaValidatorRenderer', () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), 'causa-test-'));
     outputFile = join(tmpDir, 'test-output.ts');
-    language = new TypeScriptWithDecoratorsTargetLanguage(outputFile, {
+    language = new TypeScriptWithDecoratorsTargetLanguage(outputFile, pino(), {
       decoratorRenderers: [CausaValidatorRenderer],
     });
   });

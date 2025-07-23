@@ -1,5 +1,6 @@
 import type { TargetLanguageWithWriter } from '@causa/workspace-core';
 import { writeFile } from 'fs/promises';
+import type { Logger } from 'pino';
 import prettier from 'prettier';
 import { Option, type StringTypeMapping, TargetLanguage } from 'quicktype-core';
 import { type RenderContext, Renderer } from 'quicktype-core/dist/Renderer.js';
@@ -24,6 +25,7 @@ export class TypeScriptWithDecoratorsTargetLanguage
    */
   constructor(
     readonly outputPath: string,
+    readonly logger: Logger,
     readonly options: TypeScriptWithDecoratorsRendererOptions = {},
   ) {
     super({
@@ -59,6 +61,7 @@ export class TypeScriptWithDecoratorsTargetLanguage
     return new TypeScriptWithDecoratorsRenderer(
       this,
       renderContext,
+      this.logger,
       this.options,
     );
   }
