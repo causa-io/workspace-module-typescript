@@ -431,7 +431,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     });
 
     Object.entries(imports).forEach(([modulePath, symbols]) => {
-      const symbolsList = [...symbols].join(', ');
+      const symbolsList = [...symbols].toSorted().join(', ');
       this.emitLine(`import { ${symbolsList} } from '${modulePath}';`);
     });
   }
