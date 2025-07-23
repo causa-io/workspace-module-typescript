@@ -4,6 +4,7 @@ import { mkdtemp, rm } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { pino } from 'pino';
 import type { TypeScriptDecorator } from './decorator.js';
 import { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
 import {
@@ -126,9 +127,11 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
   });
 
   it('should generate a class with properties and decorators', async () => {
-    const language = new TypeScriptWithDecoratorsTargetLanguage(outputFile, {
-      decoratorRenderers: [MyDecoratorRenderer],
-    });
+    const language = new TypeScriptWithDecoratorsTargetLanguage(
+      outputFile,
+      pino(),
+      { decoratorRenderers: [MyDecoratorRenderer] },
+    );
 
     const actualCode = await generateFromSchema(language, SCHEMA, outputFile);
 
@@ -167,14 +170,18 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
   });
 
   it('should enforce options', async () => {
-    const language = new TypeScriptWithDecoratorsTargetLanguage(outputFile, {
-      readonlyProperties: false,
-      assignConstructor: false,
-      nonNullAssertionOnProperties: false,
-      leadingComment: '🚨 Very important',
-      decoratorRenderers: [MyDecoratorRenderer],
-      decoratorOptions: { myArg: 'true' },
-    });
+    const language = new TypeScriptWithDecoratorsTargetLanguage(
+      outputFile,
+      pino(),
+      {
+        readonlyProperties: false,
+        assignConstructor: false,
+        nonNullAssertionOnProperties: false,
+        leadingComment: '🚨 Very important',
+        decoratorRenderers: [MyDecoratorRenderer],
+        decoratorOptions: { myArg: 'true' },
+      },
+    );
 
     const actualCode = await generateFromSchema(language, SCHEMA, outputFile);
 

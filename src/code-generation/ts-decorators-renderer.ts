@@ -2,6 +2,7 @@ import type {
   CausaObjectAttributes,
   CausaPropertyAttributes,
 } from '@causa/workspace-core';
+import type { Logger } from 'pino';
 import {
   ClassProperty,
   ClassType,
@@ -113,20 +114,21 @@ export type ClassPropertyContext = ClassContext & {
  * utilities. They can also retrieve options from {@link TypeScriptDecoratorsRenderer.decoratorOptions}.
  */
 export abstract class TypeScriptDecoratorsRenderer extends TypeScriptRenderer {
-  /**
-   * Options for decorator renderers, retrieved from the Causa configuration.
-   */
-  readonly decoratorOptions: Record<string, any>;
-
   constructor(
     targetLanguage: TargetLanguage,
     renderContext: RenderContext,
     _tsFlowOptions: OptionValues<typeof tsFlowOptions>,
-    decoratorOptions: Record<string, any>,
+    /**
+     * The logger to use for non-error messages.
+     * Use `panic` from `quicktype-core` for errors.
+     */
+    protected readonly logger: Logger,
+    /**
+     * Options for decorator renderers, retrieved from the Causa configuration.
+     */
+    readonly decoratorOptions: Record<string, any>,
   ) {
     super(targetLanguage, renderContext, _tsFlowOptions);
-
-    this.decoratorOptions = decoratorOptions;
   }
 
   /**

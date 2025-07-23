@@ -54,14 +54,18 @@ export class EventTopicMakeCodeGenerationTargetLanguageForTypeScript extends Eve
       .map((f) => f._call(context))
       .sort((r1, r2) => r1.name.localeCompare(r2.name));
 
-    return new TypeScriptWithDecoratorsTargetLanguage(outputPath, {
-      decoratorRenderers,
-      nonNullAssertionOnProperties,
-      readonlyProperties,
-      assignConstructor,
-      leadingComment,
-      decoratorOptions,
-    });
+    return new TypeScriptWithDecoratorsTargetLanguage(
+      outputPath,
+      context.logger,
+      {
+        decoratorRenderers,
+        nonNullAssertionOnProperties,
+        readonlyProperties,
+        assignConstructor,
+        leadingComment,
+        decoratorOptions,
+      },
+    );
   }
 
   _supports(context: WorkspaceContext): boolean {
