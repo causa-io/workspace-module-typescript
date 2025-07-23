@@ -1,5 +1,5 @@
 import {
-  type CausaPropertyAttributes,
+  type CausaAttribute,
   causaTypeAttributeKind,
   findTypeForUri,
 } from '@causa/workspace-core';
@@ -193,26 +193,51 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
 
   /**
    * Constructs the {@link ClassContext} for the given class type.
-   * Also returns the dictionary of property attributes for the class, which can be used to construct the
+   * Also returns the {@link CausaAttribute} for the class, which can be used to construct the
    * {@link ClassPropertyContext}.
    *
    * @param classType The type of the class.
-   * @returns The {@link ClassContext}, along with the dictionary of property attributes.
+   * @returns The {@link ClassContext}, along with the {@link CausaAttribute} for the class (if available).
    */
   protected contextForClassType(
     classType: ClassType,
-  ): [ClassContext, Record<string, CausaPropertyAttributes>] {
+  ): [ClassContext, CausaAttribute | undefined] {
     const causaAttributes = causaTypeAttributeKind.tryGetInAttributes(
       classType.getAttributes(),
     );
 
-    return [
-      {
-        classType,
-        objectAttributes: causaAttributes?.objectAttributes ?? {},
-      },
-      causaAttributes?.propertiesAttributes ?? {},
-    ];
+    const objectAttributes = causaAttributes?.objectAttributes ?? {};
+    return [{ classType, objectAttributes }, causaAttributes];
+  }
+
+  /**
+   * Constructs the {@link ClassPropertyContext} for the given property.
+   *
+   * @param name The name of the property.
+   * @param jsonName The original name of the property in the schema.
+   * @param property The property definition.
+   * @param classContext The {@link ClassContext} of the parent class.
+   * @param causaAttribute The {@link CausaAttribute} for the class, or `undefined` if not available.
+   * @returns The {@link ClassPropertyContext} for the property.
+   */
+  protected contextForClassProperty(
+    name: Name,
+    jsonName: string,
+    property: ClassProperty,
+    classContext: ClassContext,
+    causaAttribute: CausaAttribute | undefined,
+  ): ClassPropertyContext {
+    const propertyAttributes =
+      causaAttribute?.propertiesAttributes[jsonName] ?? {};
+    const isConst = causaAttribute?.constProperties.includes(jsonName) ?? false;
+    return {
+      ...classContext,
+      name,
+      jsonName,
+      property,
+      propertyAttributes,
+      isConst,
+    };
   }
 
   // This is overridden to:
@@ -318,19 +343,18 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
       p: ClassProperty,
     ) => Sourcelike[],
   ): void {
-    const [classContext, propertiesAttributes] =
-      this.contextForClassType(classType);
+    const [classContext, causaAttribute] = this.contextForClassType(classType);
 
     this.forEachClassProperty(classType, 'none', (name, jsonName, property) => {
       this.ensureBlankLine();
 
-      const context: ClassPropertyContext = {
-        ...classContext,
+      const context = this.contextForClassProperty(
         name,
         jsonName,
         property,
-        propertyAttributes: propertiesAttributes[jsonName] ?? {},
-      };
+        classContext,
+        causaAttribute,
+      );
 
       const description = this.descriptionForClassProperty(classType, jsonName);
       if (description) {
@@ -397,7 +421,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     }
 
     this.forEachObject('none', (classType) => {
-      const [classContext, propertiesAttributes] =
+      const [classContext, causaAttribute] =
         this.contextForClassType(classType);
 
       classContext.objectAttributes.tsDecorators?.forEach((d) =>
@@ -411,13 +435,13 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
         classType,
         'none',
         (name, jsonName, property) => {
-          const context: ClassPropertyContext = {
-            ...classContext,
+          const context = this.contextForClassProperty(
             name,
             jsonName,
             property,
-            propertyAttributes: propertiesAttributes[jsonName] ?? {},
-          };
+            classContext,
+            causaAttribute,
+          );
 
           this.propertyDecoratorRenderers
             .flatMap((renderer) => renderer(context))
