@@ -6,6 +6,10 @@ Breaking changes:
 
 - Upgrade the minimum Node.js version to `20`.
 
+Features:
+
+- Decorate `null` properties with `@Equals(null)` during code generation.
+
 ## v0.10.2 (2025-05-12)
 
 Chores:
