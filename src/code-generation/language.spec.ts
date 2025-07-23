@@ -87,12 +87,24 @@ const SCHEMA = {
       type: 'string',
       causa: { enumHint: '#/$defs/MyEnum' },
     },
+    myConst: {
+      type: 'string',
+      const: 'a',
+    },
+    myOtherEnum: {
+      oneOf: [{ $ref: '#/$defs/MyOtherEnum' }],
+    },
   },
   required: ['myProperty', 'myDefaultRequiredProperty'],
   $defs: {
     MyEnum: {
       type: 'string',
       enum: ['a', 'b', 'c'],
+    },
+    MyOtherEnum: {
+      title: 'MyOtherEnum',
+      type: 'string',
+      enum: ['b'],
     },
   },
 };
@@ -190,7 +202,12 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
     expectToMatchRegexParts(actualCode, [
       'readonly myEnumHint\\?: string \\| MyEnum;',
     ]);
+    expectToMatchRegexParts(actualCode, ['readonly myConst\\?: "a";']);
+    expectToMatchRegexParts(actualCode, [
+      'readonly myOtherEnum\\?: MyOtherEnum;',
+    ]);
     expect(actualCode).not.toContain('@ExcludedDecorator()');
+    expect(actualCode).not.toContain('enum MyConst');
   });
 
   it('should enforce options', async () => {
