@@ -98,6 +98,12 @@ export type ClassPropertyContext = ClassContext & {
    */
   propertyAttributes: CausaPropertyAttributes &
     TypeScriptCausaPropertyAttributes;
+
+  /**
+   * Whether the property is defined as a constant.
+   * The `quicktype` type should be an enum with a single value.
+   */
+  isConst: boolean;
 };
 
 /**
