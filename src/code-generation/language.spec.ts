@@ -80,8 +80,21 @@ const SCHEMA = {
         { type: 'null' },
       ],
     },
+    myEnum: {
+      oneOf: [{ $ref: '#/$defs/MyEnum' }],
+    },
+    myEnumHint: {
+      type: 'string',
+      causa: { enumHint: '#/$defs/MyEnum' },
+    },
   },
   required: ['myProperty', 'myDefaultRequiredProperty'],
+  $defs: {
+    MyEnum: {
+      type: 'string',
+      enum: ['a', 'b', 'c'],
+    },
+  },
 };
 
 class MyDecoratorRenderer extends TypeScriptDecoratorsRenderer {
@@ -149,6 +162,13 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
       '}',
     ]);
     expectToMatchRegexParts(actualCode, [
+      'export enum MyEnum\\s+{',
+      'A = "a",',
+      'B = "b",',
+      'C = "c",',
+      '}',
+    ]);
+    expectToMatchRegexParts(actualCode, [
       '🎉',
       '@MyDecorator\\(\\)\\n\\s+readonly myProperty!: string;',
     ]);
@@ -165,6 +185,10 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
     ]);
     expectToMatchRegexParts(actualCode, [
       'readonly myChildClass\\?: (MyChildClass \\| null|null \\| MyChildClass);',
+    ]);
+    expectToMatchRegexParts(actualCode, ['readonly myEnum\\?: MyEnum;']);
+    expectToMatchRegexParts(actualCode, [
+      'readonly myEnumHint\\?: string \\| MyEnum;',
     ]);
     expect(actualCode).not.toContain('@ExcludedDecorator()');
   });

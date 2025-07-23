@@ -1,6 +1,7 @@
 import {
   type CausaPropertyAttributes,
   causaTypeAttributeKind,
+  findTypeForUri,
 } from '@causa/workspace-core';
 import type { Logger } from 'pino';
 import {
@@ -13,6 +14,7 @@ import {
   type Sourcelike,
   TargetLanguage,
   Type,
+  panic,
   tsFlowOptions,
 } from 'quicktype-core';
 import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
@@ -272,6 +274,39 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
       .map((l) => l.trim());
   }
 
+  /**
+   * Renders the source for the property type.
+   * This is heavily based on {@link TypeScriptDecoratorsRenderer.sourceFor}, however it includes Causa-specific logic,
+   * like enum hints.
+   *
+   * @param context The {@link ClassPropertyContext} for the property.
+   * @returns The source for the property type.
+   */
+  protected sourceForPropertyType(context: ClassPropertyContext): Sourcelike {
+    const { property, propertyAttributes, classType, jsonName } = context;
+    const { type } = property;
+
+    const baseType = this.sourceFor(type).source;
+    const { enumHint } = propertyAttributes;
+    if (!enumHint) {
+      return baseType;
+    }
+
+    if (typeof enumHint !== 'string') {
+      panic(`Invalid enum hint for property '${context.jsonName}'.`);
+    }
+
+    const enumType = findTypeForUri(this.typeGraph, classType, enumHint);
+    if (!enumType) {
+      this.logger.warn(
+        `Could not find type for enum hint '${enumHint}' in property '${jsonName}'.`,
+      );
+      return baseType;
+    }
+
+    return [baseType, ' | ', this.sourceFor(enumType).source];
+  }
+
   // This is overridden to emit the decorators for each property.
   // Unfortunately, the base class makes it difficult to override the behavior, so we have to rely on internal
   // implementations that may break at some point.
@@ -334,7 +369,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
           propertySource.unshift('readonly ');
         }
 
-        const typeSource = tsType ?? this.sourceFor(property.type).source;
+        const typeSource = tsType ?? this.sourceForPropertyType(context);
         const defaultAssignment = tsDefault ? [' = ', tsDefault] : [];
         row[1] = [typeSource, ...defaultAssignment, ';'];
       }
