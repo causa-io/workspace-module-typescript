@@ -7,6 +7,7 @@ import type { Logger } from 'pino';
 import {
   ClassProperty,
   ClassType,
+  EnumType,
   Name,
   ObjectType,
   type OptionValues,
@@ -302,14 +303,25 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
   /**
    * Renders the source for the property type.
    * This is heavily based on {@link TypeScriptDecoratorsRenderer.sourceFor}, however it includes Causa-specific logic,
-   * like enum hints.
+   * like enum hints and constant values.
    *
    * @param context The {@link ClassPropertyContext} for the property.
    * @returns The source for the property type.
    */
   protected sourceForPropertyType(context: ClassPropertyContext): Sourcelike {
-    const { property, propertyAttributes, classType, jsonName } = context;
-    const { type } = property;
+    const {
+      property: { type },
+      propertyAttributes,
+      classType,
+      jsonName,
+      isConst,
+    } = context;
+    if (isConst && type instanceof EnumType) {
+      const constValue = type.cases.values().next().value;
+      if (constValue !== undefined) {
+        return JSON.stringify(constValue);
+      }
+    }
 
     const baseType = this.sourceFor(type).source;
     const { enumHint } = propertyAttributes;
@@ -402,6 +414,39 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
       // Here, `emitTable` is simply called for each property.
       this.emitTable([row]);
     });
+  }
+
+  // This is overridden to avoid emitting the enum if it is a constant property of a class.
+  protected emitEnum(e: EnumType, enumName: Name): void {
+    // If at least one of the parents of the enum is not a class, or the property using the enum is not a constant, then
+    // the enum is emitted as usual. Otherwise, it is not emitted.
+    const parents = this.typeGraph.getParentsOfType(e);
+    if (parents.size === 0) {
+      return super.emitEnum(e, enumName);
+    }
+
+    for (const parent of parents) {
+      if (!(parent instanceof ClassType)) {
+        return super.emitEnum(e, enumName);
+      }
+
+      const constProperties = causaTypeAttributeKind.tryGetInAttributes(
+        parent.getAttributes(),
+      )?.constProperties;
+      if (!constProperties) {
+        return super.emitEnum(e, enumName);
+      }
+
+      for (const [jsonName, property] of parent.getProperties()) {
+        if (property.type !== e) {
+          continue;
+        }
+
+        if (!constProperties.includes(jsonName)) {
+          return super.emitEnum(e, enumName);
+        }
+      }
+    }
   }
 
   /**
