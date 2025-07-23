@@ -2,11 +2,14 @@
   "name": "@causa/workspace-typescript",
   "version": "0.10.2",
   "description": "The Causa workspace module providing functionalities for projects coded in TypeScript.",
-  "repository": "github:causa-io/workspace-module-typescript",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/causa-io/workspace-module-typescript.git"
+  },
   "license": "ISC",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
