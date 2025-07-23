@@ -44,6 +44,7 @@ describe('ClassValidatorTransformerPropertyDecoratorsRenderer', () => {
         },
         myOverride: { type: 'integer', causa: { tsType: 'bigint' } },
         myObject: { type: 'object', additionalProperties: true },
+        myNull: { type: 'null' },
       },
       required: ['myClass'],
       additionalProperties: false,
@@ -70,5 +71,6 @@ describe('ClassValidatorTransformerPropertyDecoratorsRenderer', () => {
     );
     expect(actualCode).toMatch(/[^@]*\n\s+readonly myOverride/);
     expect(actualCode).toMatch(/@IsObject\(\)\n\s+readonly myObject/);
+    expect(actualCode).toMatch(/@Equals\(null\)\n\s+readonly myNull/);
   });
 });

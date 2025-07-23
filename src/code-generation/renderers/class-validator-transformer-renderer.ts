@@ -91,7 +91,18 @@ export class ClassValidatorTransformerPropertyDecoratorsRenderer extends TypeScr
     }
 
     const propertyType = removeNullFromType(context.property.type)[1];
-    if (propertyType.size !== 1) {
+    if (propertyType.size < 1) {
+      const decorators: TypeScriptDecorator[] = [];
+      this.addDecoratorToList(
+        decorators,
+        context,
+        'Equals',
+        CLASS_VALIDATOR_MODULE,
+        '@Equals(null)',
+      );
+      return decorators;
+    }
+    if (propertyType.size > 1) {
       return [];
     }
 
