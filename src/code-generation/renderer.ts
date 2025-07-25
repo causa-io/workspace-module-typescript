@@ -91,6 +91,11 @@ const TSFLOW_OPTIONS: OptionValues<typeof tsFlowOptions> = {
 };
 
 /**
+ * The default suffix for constraint types.
+ */
+const DEFAULT_CONSTRAINT_SUFFIX = 'Constraint';
+
+/**
  * A renderer that generates TypeScript classes with decorators.
  *
  * {@link TypeScriptDecoratorsRenderer} is subclassed instead of `TypeScriptRenderer` only to provide utility methods to
@@ -128,6 +133,11 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
   readonly leadingComment?: string;
 
   /**
+   * The suffix used for constraint types.
+   */
+  protected readonly constraintSuffix: string;
+
+  /**
    * Creates a new TypeScript renderer.
    *
    * @param targetLanguage The target language.
@@ -163,6 +173,12 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     this.readonlyProperties = options.readonlyProperties ?? true;
     this.assignConstructor = options.assignConstructor ?? true;
     this.leadingComment = options.leadingComment;
+
+    this.constraintSuffix =
+      this.generatorOptions.constraintSuffix ?? DEFAULT_CONSTRAINT_SUFFIX;
+    if (typeof this.constraintSuffix !== 'string') {
+      panic('The constraintSuffix option must be a string.');
+    }
   }
 
   decoratorsForClass(): TypeScriptDecorator[] {
@@ -245,11 +261,11 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
    * Adds a type being emitted to the list of generated schemas.
    *
    * @param causaAttribute The {@link CausaAttribute} for the generated type (either a class or an enum).
-   * @param generatedName The {@link Name} of the generated type.
+   * @param generatedName The {@link Name} of the generated type, or a string (if it has already been looked up).
    */
   protected addGeneratedSchema(
     causaAttribute: CausaAttribute | undefined,
-    generatedName: Name,
+    generatedName: Name | string,
   ): void {
     const uri = causaAttribute?.uri;
     if (!uri) {
@@ -263,7 +279,10 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     const normalizedUri = uri.replace(/#$/, '');
 
     const file = this.targetLanguage.outputPath;
-    const name = this.names.get(generatedName);
+    const name =
+      typeof generatedName === 'string'
+        ? generatedName
+        : this.names.get(generatedName);
     if (!name) {
       panic(`Could not find name for generated schema '${normalizedUri}'.`);
     }
@@ -271,15 +290,75 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     this.targetLanguage.generatedSchemas[normalizedUri] = { name, file };
   }
 
+  /**
+   * Emits a `type` which is the intersection of the base type and the constraint type.
+   *
+   * @param baseName The name of the base type being constrained.
+   * @param constraintName The name of the constraint type.
+   * @returns The name given to the intersection type that combines the base type and the constraint.
+   */
+  protected emitConstrainedClassType(
+    baseName: Name,
+    constraintName: Name,
+  ): string {
+    const constraintString = this.names.get(constraintName);
+    if (!constraintString) {
+      panic('Could not find name for constraint.');
+    }
+
+    if (!constraintString.endsWith(this.constraintSuffix)) {
+      panic(
+        `Constraint name '${constraintString}' does not end with '${this.constraintSuffix}'.`,
+      );
+    }
+
+    const constrainedClassName = constraintString.slice(
+      0,
+      -this.constraintSuffix.length,
+    );
+
+    this.emitLine([
+      'export type ',
+      constrainedClassName,
+      ' = ',
+      baseName,
+      ' & ',
+      constraintName,
+      ';',
+    ]);
+
+    return constrainedClassName;
+  }
+
   // This is overridden to:
   // - Create a `class` rather than a `type` or `interface`.
   // - Add decorators to the class, using the decorator renderers.
   // - Emit a class constructor before the rest of the body.
   // - Track the generated class in `generatedSchemas`.
+  // - Emit an additional type when the class is marked as being a constraint for another type.
   protected emitClassBlock(classType: ClassType, className: Name): void {
     const [context, causaAttribute] = this.contextForClassType(classType);
 
-    this.addGeneratedSchema(causaAttribute, className);
+    const { constraintFor } = context.objectAttributes;
+    if (constraintFor) {
+      const baseType = findTypeForUri(this.typeGraph, classType, constraintFor);
+      if (!baseType) {
+        panic(
+          `Could not find base type for constraint '${classType.getCombinedName()}'.`,
+        );
+      }
+
+      const constrainedClassName = this.emitConstrainedClassType(
+        this.nameForNamedType(baseType),
+        className,
+      );
+      this.ensureBlankLine();
+      this.emitDescription(this.descriptionForType(classType));
+
+      this.addGeneratedSchema(causaAttribute, constrainedClassName);
+    } else {
+      this.addGeneratedSchema(causaAttribute, className);
+    }
 
     [
       ...(context.objectAttributes.tsDecorators ?? []),
