@@ -67,9 +67,9 @@ export type TypeScriptWithDecoratorsRendererOptions = {
   readonly leadingComment?: string;
 
   /**
-   * Options for decorator renderers.
+   * Causa-level options for the generator and the decorators.
    */
-  readonly decoratorOptions?: Record<string, any>;
+  readonly generatorOptions?: Record<string, any>;
 };
 
 /**
@@ -146,7 +146,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
       context,
       TSFLOW_OPTIONS,
       logger,
-      options.decoratorOptions ?? {},
+      options.generatorOptions ?? {},
     );
 
     const renderers = (options.decoratorRenderers ?? []).map(

@@ -117,7 +117,7 @@ class MyDecoratorRenderer extends TypeScriptDecoratorsRenderer {
       context,
       'OtherDecorator',
       'some-module',
-      `@OtherDecorator(${this.decoratorOptions.myArg ?? ''})`,
+      `@OtherDecorator(${this.generatorOptions.myArg ?? ''})`,
     );
     this.addDecoratorToList(
       decorators,
@@ -220,7 +220,7 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
         nonNullAssertionOnProperties: false,
         leadingComment: '🚨 Very important',
         decoratorRenderers: [MyDecoratorRenderer],
-        decoratorOptions: { myArg: 'true' },
+        generatorOptions: { myArg: 'true' },
       },
     );
 

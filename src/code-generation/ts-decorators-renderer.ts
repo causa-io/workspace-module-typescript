@@ -117,7 +117,7 @@ export type ClassPropertyContext = ClassContext & {
  * {@link TypeScriptDecoratorsRenderer.decoratorsForProperty} against a base {@link TypeScriptRenderer}. This means
  * subclasses should not hold a state nor define any other methods. However, they can call {@link TypeScriptRenderer}
  * (and {@link TypeScriptDecoratorsRenderer}) methods, which will let them access the TypeScript code generation
- * utilities. They can also retrieve options from {@link TypeScriptDecoratorsRenderer.decoratorOptions}.
+ * utilities. They can also retrieve options from {@link TypeScriptDecoratorsRenderer.generatorOptions}.
  */
 export abstract class TypeScriptDecoratorsRenderer extends TypeScriptRenderer {
   constructor(
@@ -130,9 +130,9 @@ export abstract class TypeScriptDecoratorsRenderer extends TypeScriptRenderer {
      */
     protected readonly logger: Logger,
     /**
-     * Options for decorator renderers, retrieved from the Causa configuration.
+     * Options available for the base rending logic and decorator renderers, retrieved from the Causa configuration.
      */
-    readonly decoratorOptions: Record<string, any>,
+    readonly generatorOptions: Record<string, any>,
   ) {
     super(targetLanguage, renderContext, _tsFlowOptions);
   }

@@ -63,7 +63,7 @@ export class EventTopicMakeCodeGenerationTargetLanguageForTypeScript extends Eve
         readonlyProperties,
         assignConstructor,
         leadingComment,
-        decoratorOptions,
+        generatorOptions: decoratorOptions,
       },
     );
   }
