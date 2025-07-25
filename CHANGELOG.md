@@ -5,10 +5,17 @@
 Breaking changes:
 
 - Upgrade the minimum Node.js version to `20`.
+- Rename `decoratorOptions` to `generatorOptions` in the `TypeScriptWithDecoratorsRendererOptions`.
+- Remove `EventTopicMakeCodeGenerationTargetLanguageForTypeScript`.
+- Adapt `TypeScriptGetDecoratorRenderer` to the new code generators logic.
 
 Features:
 
 - Decorate `null` properties with `@Equals(null)` during code generation.
+- Support the `enumHint` Causa attribute during code generation.
+- Sort imports during code generation.
+- Generate `const` JSONSchema properties as constants rather than enums.
+- Implement the `typescriptModelClass` code generator.
 
 ## v0.10.2 (2025-05-12)
 
