@@ -1,5 +1,6 @@
 import type { ModuleRegistrationContext } from '@causa/workspace';
 import { EventTopicMakeCodeGenerationTargetLanguageForTypeScript } from './event-topic/index.js';
+import { ModelRunCodeGeneratorForTypeScriptModelClass } from './model/run-code-generator-model-class.js';
 import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './openapi-generate-specification-js-service-container.js';
 import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';
 import { ProjectBuildArtefactForTypeScriptServerlessFunctions } from './project-build-artefact-ts-serverless-functions.js';
@@ -22,6 +23,7 @@ import {
 export function registerFunctions(context: ModuleRegistrationContext) {
   context.registerFunctionImplementations(
     EventTopicMakeCodeGenerationTargetLanguageForTypeScript,
+    ModelRunCodeGeneratorForTypeScriptModelClass,
     OpenApiGenerateSpecificationForJavaScriptServiceContainer,
     ProjectBuildArtefactForTypeScriptPackage,
     ProjectBuildArtefactForTypeScriptServerlessFunctions,
