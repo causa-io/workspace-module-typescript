@@ -9,6 +9,9 @@ Breaking changes:
 Features:
 
 - Decorate `null` properties with `@Equals(null)` during code generation.
+- Support the `enumHint` Causa attribute during code generation.
+- Sort imports during code generation.
+- Generate `const` JSONSchema properties as constants rather than enums.
 
 ## v0.10.2 (2025-05-12)
 
