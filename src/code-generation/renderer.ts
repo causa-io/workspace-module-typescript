@@ -4,12 +4,16 @@ import {
   type CausaAttribute,
   type CausaObjectAttributes,
   type CausaPropertyAttributes,
+  type GeneratedSchema,
 } from '@causa/workspace-core';
+import { dirname, relative, sep } from 'path';
 import type { Logger } from 'pino';
 import {
   ClassProperty,
   ClassType,
+  EnumType,
   Name,
+  ObjectType,
   TypeScriptRenderer,
   panic,
   tsFlowOptions,
@@ -153,6 +157,11 @@ export type TypeScriptWithDecoratorsOptions = {
    * Causa-level options for the generator and the decorators.
    */
   readonly generatorOptions?: Record<string, any>;
+
+  /**
+   * Model class schemas for looking up generated types.
+   */
+  readonly modelClassSchemas?: Record<string, GeneratedSchema>;
 };
 
 /**
@@ -254,6 +263,10 @@ export abstract class TypeScriptWithDecoratorsRenderer<
     Object.entries(imports)
       .sort(([path1], [path2]) => path1.localeCompare(path2))
       .forEach(([path, symbols]) => {
+        if (symbols.size === 0) {
+          return;
+        }
+
         const symbolsList = [...symbols].toSorted().join(', ');
         this.emitLine(`import { ${symbolsList} } from '${path}';`);
       });
@@ -283,7 +296,7 @@ export abstract class TypeScriptWithDecoratorsRenderer<
         classType,
         objectAttributes.constraintFor,
       );
-      if (!baseType || !(baseType instanceof ClassType)) {
+      if (!baseType || !(baseType instanceof ObjectType)) {
         panic(
           `Could not find base type for constraint '${classType.getCombinedName()}'.`,
         );
@@ -370,6 +383,147 @@ export abstract class TypeScriptWithDecoratorsRenderer<
   abstract decoratorsForProperty(
     context: ClassPropertyContext,
   ): TypeScriptDecorator[];
+
+  /**
+   * Finds the model class {@link GeneratedSchema} for a given class or enum type.
+   *
+   * @param type The type to find the model schema for.
+   * @returns The {@link GeneratedSchema}.
+   */
+  protected findModelClassSchema(type: ClassType | EnumType): GeneratedSchema {
+    const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
+      type.getAttributes(),
+    );
+    if (!causaAttribute) {
+      panic(
+        `Class type '${type.getCombinedName()}' has no Causa attribute URI.`,
+      );
+    }
+
+    const { uri } = causaAttribute;
+    const modelClassSchemas = this.targetLanguage.options.modelClassSchemas;
+    if (!modelClassSchemas) {
+      panic('No model class schemas found in target language options.');
+    }
+
+    const schema = modelClassSchemas[uri];
+    if (!schema) {
+      panic(
+        `No model class schema found for URI '${uri}' in class type '${type.getCombinedName()}'.`,
+      );
+    }
+
+    return schema;
+  }
+
+  /**
+   * Emits properties for a class type with custom logic for each property.
+   * This method provides the common structure for iterating through properties while allowing subclasses to provide
+   * custom logic for handling each property.
+   *
+   * @param context The class context.
+   * @param propertyHandler A function that handles each property and returns the source code to emit.
+   *   If `null` is returned, the property is skipped.
+   */
+  protected emitPropertiesWithHandler(
+    context: ClassContext,
+    propertyHandler: (
+      jsonName: string,
+      property: ClassProperty,
+      isConst: boolean,
+    ) => Sourcelike | null,
+  ): void {
+    const { classType: type, constraintFor: baseType } = context;
+    const [, causaAttribute] = this.contextForClassType(type);
+    const constProperties = causaAttribute?.constProperties ?? [];
+
+    const allProperties = new Map<string, [Name, ClassProperty]>();
+    this.forEachClassProperty(type, 'none', (name, jsonName, property) =>
+      allProperties.set(jsonName, [name, property]),
+    );
+
+    if (baseType) {
+      this.forEachClassProperty(
+        baseType,
+        'none',
+        (name, jsonName, property) => {
+          if (!allProperties.has(jsonName)) {
+            allProperties.set(jsonName, [name, property]);
+          }
+        },
+      );
+    }
+
+    for (const [jsonName, [name, property]] of allProperties) {
+      const isConst = constProperties.includes(jsonName);
+      const sourceCode = propertyHandler(jsonName, property, isConst);
+      if (!sourceCode) {
+        continue;
+      }
+
+      this.emitLine([name, ': ', sourceCode, ',']);
+    }
+  }
+
+  /**
+   * Collects imports for model classes with customizable filtering.
+   * This method provides the common structure for collecting model class imports
+   * while allowing subclasses to filter which objects should be processed.
+   *
+   * @param shouldProcessObject A predicate function that determines whether to process each object.
+   * @returns A record mapping import paths to sets of names to import.
+   */
+  protected collectModelClassImportsWithFilter(
+    shouldProcessObject?: (context: ClassContext) => boolean,
+  ): Record<string, Set<string>> {
+    const imports: Record<string, Set<string>> = {};
+
+    this.forEachObject('none', (classType) => {
+      const [context, causaAttribute] = this.contextForClassType(classType);
+      if (shouldProcessObject && !shouldProcessObject(context)) {
+        return;
+      }
+
+      const { constraintFor } = context;
+      const { file, name } = this.findModelClassSchema(classType);
+      const importName = constraintFor ? `type ${name}` : name;
+      this.mergeImports(imports, { [file]: new Set([importName]) });
+
+      // For constraint types, also import the base class.
+      if (constraintFor) {
+        const { file, name } = this.findModelClassSchema(constraintFor);
+        this.mergeImports(imports, { [file]: new Set([name]) });
+      }
+
+      // Collect enum imports from properties.
+      const constProperties = causaAttribute?.constProperties ?? [];
+      this.forEachClassProperty(
+        classType,
+        'none',
+        (_name, jsonName, { type }) => {
+          if (type.kind !== 'enum' || constProperties.includes(jsonName)) {
+            return;
+          }
+
+          const { file, name } = this.findModelClassSchema(type as EnumType);
+          this.mergeImports(imports, { [file]: new Set([name]) });
+        },
+      );
+    });
+
+    const outputDir = dirname(this.targetLanguage.outputPath);
+
+    return Object.fromEntries(
+      Object.entries(imports).map(([file, names]) => {
+        let relativePath = relative(outputDir, file);
+        if (!relativePath.startsWith('.')) {
+          relativePath = `.${sep}${relativePath}`;
+        }
+        const importPath = relativePath.replace(/\.ts$/, '.js');
+        return [importPath, names];
+      }),
+    );
+  }
 
   /**
    * A utility method to add a decorator to a list of decorators.
