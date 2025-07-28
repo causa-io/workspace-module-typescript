@@ -10,8 +10,8 @@ import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassPropertyContext,
-  TypeScriptDecoratorsRenderer,
-} from '../ts-decorators-renderer.js';
+  TypeScriptWithDecoratorsRenderer,
+} from '../renderer.js';
 import { typeScriptSourceForObject } from '../utilities.js';
 
 /**
@@ -77,10 +77,10 @@ const TYPE_KIND_TO_DECORATORS: Partial<
 };
 
 /**
- * A {@link TypeScriptDecoratorsRenderer} that adds `class-validator` and `class-transformer` decorators to the
+ * A {@link TypeScriptWithDecoratorsRenderer} that adds `class-validator` and `class-transformer` decorators to the
  * properties of a class.
  */
-export class ClassValidatorTransformerPropertyDecoratorsRenderer extends TypeScriptDecoratorsRenderer {
+export class ClassValidatorTransformerPropertyDecoratorsRenderer extends TypeScriptWithDecoratorsRenderer {
   decoratorsForClass(): TypeScriptDecorator[] {
     return [];
   }

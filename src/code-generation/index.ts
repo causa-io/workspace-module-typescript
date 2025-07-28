@@ -1,8 +1,6 @@
 export type { TypeScriptDecorator } from './decorator.js';
 export { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
-export { TypeScriptDecoratorsRenderer } from './ts-decorators-renderer.js';
-export type {
-  ClassContext,
-  ClassPropertyContext,
-} from './ts-decorators-renderer.js';
+export * from './model-class/index.js';
+export { TypeScriptWithDecoratorsRenderer } from './renderer.js';
+export type { ClassContext, ClassPropertyContext } from './renderer.js';
 export * from './utilities.js';

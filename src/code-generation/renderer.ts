@@ -1,76 +1,31 @@
 import {
-  type CausaAttribute,
   causaTypeAttributeKind,
   findTypeForUri,
+  type CausaAttribute,
+  type CausaObjectAttributes,
+  type CausaPropertyAttributes,
 } from '@causa/workspace-core';
 import type { Logger } from 'pino';
 import {
   ClassProperty,
   ClassType,
-  EnumType,
   Name,
-  ObjectType,
-  type OptionValues,
+  TypeScriptRenderer,
   panic,
+  tsFlowOptions,
+  type OptionValues,
   type RenderContext,
   type Sourcelike,
-  tsFlowOptions,
-  Type,
 } from 'quicktype-core';
-import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
-import {
-  descriptionTypeAttributeKind,
-  propertyDescriptionsTypeAttributeKind,
-} from 'quicktype-core/dist/attributes/Description.js';
 import { AcronymStyleOptions } from 'quicktype-core/dist/support/Acronyms.js';
 import { ConvertersOptions } from 'quicktype-core/dist/support/Converters.js';
 import type { TypeScriptDecorator } from './decorator.js';
 import type { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
-import {
-  type ClassContext,
-  type ClassPropertyContext,
-  TypeScriptDecoratorsRenderer,
-} from './ts-decorators-renderer.js';
 
 /**
- * Options for the {@link TypeScriptWithDecoratorsRenderer}.
+ * The default suffix for constraint types.
  */
-export type TypeScriptWithDecoratorsRendererOptions = {
-  /**
-   * A list of decorators renderers that can add decorators to classes and their properties.
-   */
-  readonly decoratorRenderers?: {
-    new (...args: any[]): TypeScriptDecoratorsRenderer;
-  }[];
-
-  /**
-   * Whether to add non-null assertions (`!`) on class properties.
-   * Defaults to `true`.
-   */
-  readonly nonNullAssertionOnProperties?: boolean;
-
-  /**
-   * Whether to add the `readonly` keyword to class properties.
-   * Defaults to `true`.
-   */
-  readonly readonlyProperties?: boolean;
-
-  /**
-   * Whether to add an “assign” constructor to model classes.
-   * Defaults to `true`.
-   */
-  readonly assignConstructor?: boolean;
-
-  /**
-   * The comment to add at the top of the generated file.
-   */
-  readonly leadingComment?: string;
-
-  /**
-   * Causa-level options for the generator and the decorators.
-   */
-  readonly generatorOptions?: Record<string, any>;
-};
+const DEFAULT_CONSTRAINT_SUFFIX = 'Constraint';
 
 /**
  * Configuration for the base {@link TypeScriptRenderer}.
@@ -91,102 +46,157 @@ const TSFLOW_OPTIONS: OptionValues<typeof tsFlowOptions> = {
 };
 
 /**
- * The default suffix for constraint types.
+ * The TypeScript-specific Causa attributes that can be added to an object schema.
  */
-const DEFAULT_CONSTRAINT_SUFFIX = 'Constraint';
+type TypeScriptCausaObjectAttributes = {
+  /**
+   * A list of decorator names that should not be added to the class.
+   * This can override the behavior of renderers.
+   */
+  tsExcludedDecorators?: string[];
+
+  /**
+   * A list of decorators that should be added to the class.
+   */
+  tsDecorators?: TypeScriptDecorator[];
+};
 
 /**
- * A renderer that generates TypeScript classes with decorators.
- *
- * {@link TypeScriptDecoratorsRenderer} is subclassed instead of `TypeScriptRenderer` only to provide utility methods to
- * decorators renderers.
+ * The TypeScript-specific Causa attributes that can be added to a property schema.
  */
-export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRenderer {
+type TypeScriptCausaPropertyAttributes = {
   /**
-   * The list of {@link TypeScriptDecoratorsRenderer.decoratorsForClass} functions, bound to this renderer.
+   * A list of decorator names that should not be added to the property.
+   * This can override the behavior of renderers.
    */
-  private readonly classDecoratorRenderers: TypeScriptDecoratorsRenderer['decoratorsForClass'][];
+  tsExcludedDecorators?: string[];
 
   /**
-   * The list of {@link TypeScriptDecoratorsRenderer.decoratorsForProperty} functions, bound to this renderer.
+   * The type of the property.
+   * This overrides the default JavaScript type for the property.
    */
-  private readonly propertyDecoratorRenderers: TypeScriptDecoratorsRenderer['decoratorsForProperty'][];
+  tsType?: string;
 
   /**
-   * Whether to add non-null assertions (`!`) on class properties.
+   * A list of decorators that should be added to the property.
    */
-  readonly nonNullAssertionOnProperties: boolean;
+  tsDecorators?: TypeScriptDecorator[];
 
   /**
-   * Whether to add the `readonly` keyword to class properties.
+   * The default value for the property.
    */
-  readonly readonlyProperties: boolean;
+  tsDefault?: string;
+};
+
+/**
+ * The context passed to determine the decorators for a class.
+ */
+export type ClassContext = {
+  /**
+   * The type of the class.
+   */
+  classType: ClassType;
 
   /**
-   * Whether to add an "assign" constructor to model classes.
+   * If the class declares itself as a constraint for another referenced class, this is the referenced type.
    */
-  readonly assignConstructor: boolean;
+  constraintFor: ClassType | undefined;
 
+  /**
+   * The Causa attributes found in the schema for the class.
+   */
+  objectAttributes: CausaObjectAttributes & TypeScriptCausaObjectAttributes;
+};
+
+/**
+ * The context passed to determine the decorators for a class property.
+ */
+export type ClassPropertyContext = ClassContext & {
+  /**
+   * The name of the property.
+   */
+  name: Name;
+
+  /**
+   * The original name of the property in the schema.
+   */
+  jsonName: string;
+
+  /**
+   * The property definition.
+   */
+  property: ClassProperty;
+
+  /**
+   * The Causa attributes found in the schema for the property.
+   */
+  propertyAttributes: CausaPropertyAttributes &
+    TypeScriptCausaPropertyAttributes;
+
+  /**
+   * Whether the property is defined as a constant.
+   * The `quicktype` type should be an enum with a single value.
+   */
+  isConst: boolean;
+};
+
+/**
+ * Base options for the `TypeScriptWithDecoratorsRenderer` language and renderer.
+ */
+export type TypeScriptWithDecoratorsOptions = {
   /**
    * The comment to add at the top of the generated file.
    */
   readonly leadingComment?: string;
 
   /**
+   * Causa-level options for the generator and the decorators.
+   */
+  readonly generatorOptions?: Record<string, any>;
+};
+
+/**
+ * A base {@link TypeScriptRenderer} that supports decorators.
+ *
+ * This renderer is meant to be subclassed by:
+ * - Renderers that generate TypeScript code and support decorators on classes and properties.
+ * - Renderers whose only job is to list decorators for a given TypeScript feature. For example, this could be
+ *   validation decorators.
+ *
+ * **Decorator renderers should not define any other methods.** The way subclasses are meant to be used is to call
+ * {@link TypeScriptWithDecoratorsRenderer.decoratorsForClass} and
+ * {@link TypeScriptWithDecoratorsRenderer.decoratorsForProperty} against a base
+ * {@link TypeScriptWithDecoratorsRenderer}.
+ * This means subclasses should not hold a state nor define any other methods. However, they can call
+ * {@link TypeScriptRenderer} (and {@link TypeScriptWithDecoratorsRenderer}) methods, which will let them access the
+ * TypeScript code generation utilities. They can also retrieve options from
+ * {@link TypeScriptWithDecoratorsRenderer.targetLanguage}.
+ */
+export abstract class TypeScriptWithDecoratorsRenderer<
+  T extends TypeScriptWithDecoratorsOptions = TypeScriptWithDecoratorsOptions,
+> extends TypeScriptRenderer {
+  /**
    * The suffix used for constraint types.
    */
   protected readonly constraintSuffix: string;
 
-  /**
-   * Creates a new TypeScript renderer.
-   *
-   * @param targetLanguage The target language.
-   * @param context The render context.
-   * @param logger The logger to use for non-error messages.
-   * @param options Options for the renderer.
-   */
   constructor(
-    readonly targetLanguage: TypeScriptWithDecoratorsTargetLanguage,
-    context: RenderContext,
-    logger: Logger,
-    options: TypeScriptWithDecoratorsRendererOptions = {},
+    readonly targetLanguage: TypeScriptWithDecoratorsTargetLanguage<T>,
+    renderContext: RenderContext,
+    /**
+     * The logger to use for non-error messages.
+     * Use `panic` from `quicktype-core` for errors.
+     */
+    protected readonly logger: Logger,
   ) {
-    super(
-      targetLanguage,
-      context,
-      TSFLOW_OPTIONS,
-      logger,
-      options.generatorOptions ?? {},
-    );
-
-    const renderers = (options.decoratorRenderers ?? []).map(
-      (r) => r.prototype as TypeScriptDecoratorsRenderer,
-    );
-    this.classDecoratorRenderers = renderers.map((r) =>
-      r.decoratorsForClass.bind(this),
-    );
-    this.propertyDecoratorRenderers = renderers.map((r) =>
-      r.decoratorsForProperty.bind(this),
-    );
-    this.nonNullAssertionOnProperties =
-      options.nonNullAssertionOnProperties ?? true;
-    this.readonlyProperties = options.readonlyProperties ?? true;
-    this.assignConstructor = options.assignConstructor ?? true;
-    this.leadingComment = options.leadingComment;
+    super(targetLanguage, renderContext, TSFLOW_OPTIONS);
 
     this.constraintSuffix =
-      this.generatorOptions.constraintSuffix ?? DEFAULT_CONSTRAINT_SUFFIX;
+      this.targetLanguage.options.generatorOptions?.constraintSuffix ??
+      DEFAULT_CONSTRAINT_SUFFIX;
     if (typeof this.constraintSuffix !== 'string') {
       panic('The constraintSuffix option must be a string.');
     }
-  }
-
-  decoratorsForClass(): TypeScriptDecorator[] {
-    return [];
-  }
-
-  decoratorsForProperty(): TypeScriptDecorator[] {
-    return [];
   }
 
   protected get needsTypeDeclarationBeforeUse(): boolean {
@@ -198,14 +208,55 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
   }
 
   /**
-   * Emits a class constructor that assigns the given object to the instance.
+   * Ensures the given name ends with the constraint suffix, and removes it.
    *
-   * @param className The name of the generated class.
+   * @param name The name of the constraint type.
+   * @returns The name without the constraint suffix.
    */
-  protected emitClassConstructor(className: Name): void {
-    this.emitBlock(['constructor(init: ', className, ')'], '', () => {
-      this.emitLine('Object.assign(this, init);');
-    });
+  protected removeConstraintSuffix(name: string): string {
+    if (!name.endsWith(this.constraintSuffix)) {
+      panic(
+        `Constraint name '${name}' does not end with '${this.constraintSuffix}'.`,
+      );
+    }
+    return name.slice(0, -this.constraintSuffix.length);
+  }
+
+  /**
+   * Merges the given imports into the existing imports.
+   * Keys are the import paths, and values are either a set of symbols or an array of symbols.
+   *
+   * @param imports The imports in which to merge the new imports.
+   * @param newImports The imports to merge into the existing imports.
+   */
+  protected mergeImports(
+    imports: Record<string, Set<string>>,
+    newImports: Record<string, Set<string> | string[]>,
+  ): void {
+    for (const [path, symbols] of Object.entries(newImports)) {
+      const existing = imports[path];
+      if (!existing) {
+        imports[path] = new Set(symbols);
+        continue;
+      }
+
+      symbols.forEach((s) => existing.add(s));
+    }
+  }
+
+  /**
+   * Emits the given imports.
+   * Keys are the import paths, and values are a set of symbols to import from the path.
+   *
+   * @param imports The imports to emit.
+   */
+  protected emitImports(imports: Record<string, Set<string>>): void {
+    Object.entries(imports)
+      .sort(([path1], [path2]) => path1.localeCompare(path2))
+      .forEach(([path, symbols]) => {
+        const symbolsList = [...symbols].toSorted().join(', ');
+        this.emitLine(`import { ${symbolsList} } from '${path}';`);
+      });
   }
 
   /**
@@ -224,7 +275,24 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     );
 
     const objectAttributes = causaAttributes?.objectAttributes ?? {};
-    return [{ classType, objectAttributes }, causaAttributes];
+
+    let constraintFor: ClassType | undefined;
+    if (objectAttributes.constraintFor) {
+      const baseType = findTypeForUri(
+        this.typeGraph,
+        classType,
+        objectAttributes.constraintFor,
+      );
+      if (!baseType || !(baseType instanceof ClassType)) {
+        panic(
+          `Could not find base type for constraint '${classType.getCombinedName()}'.`,
+        );
+      }
+
+      constraintFor = baseType;
+    }
+
+    return [{ classType, constraintFor, objectAttributes }, causaAttributes];
   }
 
   /**
@@ -275,383 +343,76 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
       return;
     }
 
-    // Ensures there's no trailing empty fragment.
-    const normalizedUri = uri.replace(/#$/, '');
-
     const file = this.targetLanguage.outputPath;
     const name =
       typeof generatedName === 'string'
         ? generatedName
         : this.names.get(generatedName);
     if (!name) {
-      panic(`Could not find name for generated schema '${normalizedUri}'.`);
+      panic(`Could not find name for generated schema '${uri}'.`);
     }
 
-    this.targetLanguage.generatedSchemas[normalizedUri] = { name, file };
+    this.targetLanguage.generatedSchemas[uri] = { name, file };
   }
 
   /**
-   * Emits a `type` which is the intersection of the base type and the constraint type.
+   * Returns the decorators that should be added to the class.
    *
-   * @param baseName The name of the base type being constrained.
-   * @param constraintName The name of the constraint type.
-   * @returns The name given to the intersection type that combines the base type and the constraint.
+   * @param context The context providing information about the class.
    */
-  protected emitConstrainedClassType(
-    baseName: Name,
-    constraintName: Name,
-  ): string {
-    const constraintString = this.names.get(constraintName);
-    if (!constraintString) {
-      panic('Could not find name for constraint.');
-    }
+  abstract decoratorsForClass(context: ClassContext): TypeScriptDecorator[];
 
-    if (!constraintString.endsWith(this.constraintSuffix)) {
-      panic(
-        `Constraint name '${constraintString}' does not end with '${this.constraintSuffix}'.`,
-      );
-    }
+  /**
+   * Returns the decorators that should be added to the class property.
+   *
+   * @param context The context providing information about the class property.
+   */
+  abstract decoratorsForProperty(
+    context: ClassPropertyContext,
+  ): TypeScriptDecorator[];
 
-    const constrainedClassName = constraintString.slice(
-      0,
-      -this.constraintSuffix.length,
-    );
-
-    this.emitLine([
-      'export type ',
-      constrainedClassName,
-      ' = ',
-      baseName,
-      ' & ',
-      constraintName,
-      ';',
-    ]);
-
-    return constrainedClassName;
-  }
-
-  // This is overridden to:
-  // - Create a `class` rather than a `type` or `interface`.
-  // - Add decorators to the class, using the decorator renderers.
-  // - Emit a class constructor before the rest of the body.
-  // - Track the generated class in `generatedSchemas`.
-  // - Emit an additional type when the class is marked as being a constraint for another type.
-  protected emitClassBlock(classType: ClassType, className: Name): void {
-    const [context, causaAttribute] = this.contextForClassType(classType);
-
-    const { constraintFor } = context.objectAttributes;
-    if (constraintFor) {
-      const baseType = findTypeForUri(this.typeGraph, classType, constraintFor);
-      if (!baseType) {
-        panic(
-          `Could not find base type for constraint '${classType.getCombinedName()}'.`,
-        );
-      }
-
-      const constrainedClassName = this.emitConstrainedClassType(
-        this.nameForNamedType(baseType),
-        className,
-      );
-      this.ensureBlankLine();
-      this.emitDescription(this.descriptionForType(classType));
-
-      this.addGeneratedSchema(causaAttribute, constrainedClassName);
-    } else {
-      this.addGeneratedSchema(causaAttribute, className);
-    }
-
-    [
-      ...(context.objectAttributes.tsDecorators ?? []),
-      ...this.classDecoratorRenderers.flatMap((renderer) => renderer(context)),
-    ].forEach((d) => this.emitLine(d.source));
-
-    this.emitBlock(['export class ', className, ' '], '', () => {
-      if (this.assignConstructor) {
-        this.emitClassConstructor(className);
-      }
-
-      this.emitClassBlockBody(classType);
-    });
-  }
-
-  // This is overridden to avoid returning the concatenated descriptions for a type.
-  // The JSONSchema input will merge the description for a type with the descriptions of all the properties where the
-  // type is used into a single set.
-  // Although this is undocumented behavior, the description for the type can be found at the last position of the set.
-  // This also bypasses the hardcoded word wrap behavior of the base class.
-  protected descriptionForType(t: Type): string[] | undefined {
-    const description = this.typeGraph.attributeStore.tryGet(
-      descriptionTypeAttributeKind,
-      t,
-    );
-    const typeDescription = [...(description ?? [])].at(-1);
-    if (!typeDescription) {
-      return undefined;
-    }
-
-    return typeDescription.split('\n').map((l) => l.trim());
-  }
-
-  // This bypasses the hardcoded word wrap behavior of the base class.
-  protected descriptionForClassProperty(
-    o: ObjectType,
+  /**
+   * A utility method to add a decorator to a list of decorators.
+   * This checks the `tsExcludedDecorators` attribute on the class or property to determine if the decorator should be
+   * added.
+   *
+   * @param decorators The list of decorators to which the decorator should be added.
+   * @param context The context providing information about the class or class property.
+   * @param name The name of the decorator. An import will be added for this name.
+   * @param modulePath The path to the module from which the decorator is imported.
+   * @param source The source code for the decorator.
+   * @param options Options for the decorator.
+   */
+  addDecoratorToList(
+    decorators: TypeScriptDecorator[],
+    context: ClassContext | ClassPropertyContext,
     name: string,
-  ): string[] | undefined {
-    const propertiesDescriptions = this.typeGraph.attributeStore.tryGet(
-      propertyDescriptionsTypeAttributeKind,
-      o,
-    );
-    const propertyDescription = propertiesDescriptions?.get(name);
-    if (!propertyDescription) {
-      return undefined;
-    }
-
-    return [...propertyDescription]
-      .join('\n\n')
-      .split('\n')
-      .map((l) => l.trim());
-  }
-
-  /**
-   * Renders the source for the property type.
-   * This is heavily based on {@link TypeScriptDecoratorsRenderer.sourceFor}, however it includes Causa-specific logic,
-   * like enum hints and constant values.
-   *
-   * @param context The {@link ClassPropertyContext} for the property.
-   * @returns The source for the property type.
-   */
-  protected sourceForPropertyType(context: ClassPropertyContext): Sourcelike {
-    const {
-      property: { type },
-      propertyAttributes,
-      classType,
-      jsonName,
-      isConst,
-    } = context;
-    if (isConst && type instanceof EnumType) {
-      const constValue = type.cases.values().next().value;
-      if (constValue !== undefined) {
-        return JSON.stringify(constValue);
-      }
-    }
-
-    const baseType = this.sourceFor(type).source;
-    const { enumHint } = propertyAttributes;
-    if (!enumHint) {
-      return baseType;
-    }
-
-    if (typeof enumHint !== 'string') {
-      panic(`Invalid enum hint for property '${context.jsonName}'.`);
-    }
-
-    const enumType = findTypeForUri(this.typeGraph, classType, enumHint);
-    if (!enumType) {
-      this.logger.warn(
-        `Could not find type for enum hint '${enumHint}' in property '${jsonName}'.`,
-      );
-      return baseType;
-    }
-
-    return [baseType, ' | ', this.sourceFor(enumType).source];
-  }
-
-  // This is overridden to emit the decorators for each property.
-  // Unfortunately, the base class makes it difficult to override the behavior, so we have to rely on internal
-  // implementations that may break at some point.
-  protected emitPropertyTable(
-    classType: ClassType,
-    makePropertyRow: (
-      name: Name,
-      jsonName: string,
-      p: ClassProperty,
-    ) => Sourcelike[],
-  ): void {
-    const [classContext, causaAttribute] = this.contextForClassType(classType);
-
-    this.forEachClassProperty(classType, 'none', (name, jsonName, property) => {
-      this.ensureBlankLine();
-
-      const context = this.contextForClassProperty(
-        name,
-        jsonName,
-        property,
-        classContext,
-        causaAttribute,
-      );
-
-      const description = this.descriptionForClassProperty(classType, jsonName);
-      if (description) {
-        this.emitDescription(description);
-      }
-
-      [
-        ...(context.propertyAttributes.tsDecorators ?? []),
-        ...this.propertyDecoratorRenderers.flatMap((renderer) =>
-          renderer(context),
-        ),
-      ].forEach((d) => this.emitLine(d.source));
-
-      // This makes a lot of assumptions about what `makePropertyRow` returns.
-      // Unfortunately, it cannot be fully replaced by a custom implementation because `quotePropertyName` is not
-      // exported by quicktype.
-      // The expected row should have the following format:
-      // [
-      //   [<propertyName>, '?' | '', ': '],
-      //   [<typeSource>, ';'],
-      // ]
-      const row = makePropertyRow(name, jsonName, property);
-      if (Array.isArray(row) && Array.isArray(row[0])) {
-        const { tsDefault, tsType } = context.propertyAttributes;
-        const propertySource: SourcelikeArray = row[0];
-        if (tsDefault) {
-          propertySource[1] = '';
-        } else if (
-          this.nonNullAssertionOnProperties &&
-          propertySource[1] === ''
-        ) {
-          propertySource[1] = '!';
-        }
-
-        if (this.readonlyProperties) {
-          propertySource.unshift('readonly ');
-        }
-
-        const typeSource = tsType ?? this.sourceForPropertyType(context);
-        const defaultAssignment = tsDefault ? [' = ', tsDefault] : [];
-        row[1] = [typeSource, ...defaultAssignment, ';'];
-      }
-
-      // The custom `emitTable` behavior of the parent class does not really make sense in this case.
-      // Here, `emitTable` is simply called for each property.
-      this.emitTable([row]);
-    });
-  }
-
-  /**
-   * Checks whether the given enum should be emitted.
-   * An enum should not be emitted if it is actually a constant property of a class.
-   *
-   * If at least one of the parents of the enum is not a class, or the property using the enum is not a constant, then
-   * the enum should be emitted. Otherwise, it should not.
-   *
-   * @param e The enum type to check.
-   * @returns Whether the enum should be emitted.
-   */
-  protected shouldEmitEnum(e: EnumType): boolean {
-    const parents = this.typeGraph.getParentsOfType(e);
-    if (parents.size === 0) {
-      return true;
-    }
-
-    for (const parent of parents) {
-      if (!(parent instanceof ClassType)) {
-        return true;
-      }
-
-      const constProperties = causaTypeAttributeKind.tryGetInAttributes(
-        parent.getAttributes(),
-      )?.constProperties;
-      if (!constProperties) {
-        return true;
-      }
-
-      for (const [jsonName, property] of parent.getProperties()) {
-        if (property.type !== e) {
-          continue;
-        }
-
-        if (!constProperties.includes(jsonName)) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  // This is overridden to avoid emitting the enum if it is a constant property of a class.
-  // Also tracks the generated enum in `generatedSchemas`.
-  protected emitEnum(e: EnumType, enumName: Name): void {
-    if (!this.shouldEmitEnum(e)) {
+    modulePath: string,
+    source: Sourcelike,
+    options: {
+      /**
+       * Additional imports required by the decorator.
+       */
+      imports?: Record<string, string[]>;
+    } = {},
+  ) {
+    if (
+      context.objectAttributes.tsExcludedDecorators?.includes(name) ||
+      ('propertyAttributes' in context &&
+        context.propertyAttributes.tsExcludedDecorators?.includes(name))
+    ) {
       return;
     }
 
-    const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
-      e.getAttributes(),
-    );
-    this.addGeneratedSchema(causaAttribute, enumName);
-
-    return super.emitEnum(e, enumName);
-  }
-
-  /**
-   * Emits the imports for the decorators used in the generated classes.
-   */
-  protected emitDecoratorImports(): void {
-    const imports: Record<string, Set<string>> = {};
-    function addImports(decoratorImports: Record<string, string[]>) {
-      Object.entries(decoratorImports).forEach(([modulePath, symbols]) => {
-        if (!imports[modulePath]) {
-          imports[modulePath] = new Set();
-        }
-
-        const symbolsSet = imports[modulePath];
-        symbols.forEach((symbol) => symbolsSet.add(symbol));
-      });
+    const imports = { ...options.imports };
+    if (modulePath in imports) {
+      if (!imports[modulePath].includes(name)) {
+        imports[modulePath].push(name);
+      }
+    } else {
+      imports[modulePath] = [name];
     }
 
-    this.forEachObject('none', (classType) => {
-      const [classContext, causaAttribute] =
-        this.contextForClassType(classType);
-
-      classContext.objectAttributes.tsDecorators?.forEach((d) =>
-        addImports(d.imports),
-      );
-      this.classDecoratorRenderers
-        .flatMap((renderer) => renderer(classContext))
-        .forEach((d) => addImports(d.imports));
-
-      this.forEachClassProperty(
-        classType,
-        'none',
-        (name, jsonName, property) => {
-          const context = this.contextForClassProperty(
-            name,
-            jsonName,
-            property,
-            classContext,
-            causaAttribute,
-          );
-
-          this.propertyDecoratorRenderers
-            .flatMap((renderer) => renderer(context))
-            .map((d) => addImports(d.imports));
-
-          context.propertyAttributes.tsDecorators?.forEach((d) =>
-            addImports(d.imports),
-          );
-        },
-      );
-    });
-
-    Object.entries(imports).forEach(([modulePath, symbols]) => {
-      const symbolsList = [...symbols].toSorted().join(', ');
-      this.emitLine(`import { ${symbolsList} } from '${modulePath}';`);
-    });
-  }
-
-  // This is overridden to:
-  // - Emit the imports required by the decorators.
-  // - Avoid emitting the conversion utilities and the CommonJS module exports.
-  protected emitSourceStructure(): void {
-    if (this.leadingComment) {
-      this.emitCommentLines(this.leadingComment.split('\n'));
-      this.ensureBlankLine();
-    }
-
-    this.emitDecoratorImports();
-
-    this.emitTypes();
+    decorators.push({ source, imports });
   }
 }

@@ -7,8 +7,8 @@ import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassContext,
   type ClassPropertyContext,
-  TypeScriptDecoratorsRenderer,
-} from '../ts-decorators-renderer.js';
+  TypeScriptWithDecoratorsRenderer,
+} from '../renderer.js';
 import { getSingleType } from '../utilities.js';
 
 /**
@@ -160,10 +160,10 @@ function listReferencedClasses(type: Type): string[] {
 }
 
 /**
- * A {@link TypeScriptDecoratorsRenderer} that renders NestJS OpenAPI decorators.
+ * A {@link TypeScriptWithDecoratorsRenderer} that renders NestJS OpenAPI decorators.
  * Decorators are only added if the type schema has the `tsOpenApi` Causa attribute.
  */
-export class OpenApiRenderer extends TypeScriptDecoratorsRenderer {
+export class OpenApiRenderer extends TypeScriptWithDecoratorsRenderer {
   decoratorsForClass(context: ClassContext): TypeScriptDecorator[] {
     if (!context.objectAttributes[OPENAPI_ATTRIBUTE]) {
       return [];
