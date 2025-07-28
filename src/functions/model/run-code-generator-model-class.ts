@@ -21,7 +21,7 @@ export const TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR =
  */
 export class ModelRunCodeGeneratorForTypeScriptModelClass extends ModelRunCodeGenerator {
   async _call(context: WorkspaceContext): Promise<GeneratedSchemas> {
-    const { configuration } = this;
+    const { generator, configuration } = this;
 
     const input = await context.call(ModelMakeGeneratorQuicktypeInputData, {
       configuration,
@@ -37,7 +37,10 @@ export class ModelRunCodeGeneratorForTypeScriptModelClass extends ModelRunCodeGe
     const outputPath = resolve(context.getProjectPathOrThrow(), output);
 
     const decoratorRenderers = context
-      .getFunctionImplementations(TypeScriptGetDecoratorRenderer, {})
+      .getFunctionImplementations(TypeScriptGetDecoratorRenderer, {
+        generator,
+        configuration,
+      })
       .map((f) => f._call(context))
       .sort((r1, r2) => r1.name.localeCompare(r2.name));
 
