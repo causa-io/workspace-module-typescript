@@ -11,12 +11,11 @@ import {
   Name,
   ObjectType,
   type OptionValues,
+  panic,
   type RenderContext,
   type Sourcelike,
-  TargetLanguage,
-  Type,
-  panic,
   tsFlowOptions,
+  Type,
 } from 'quicktype-core';
 import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
 import {
@@ -26,6 +25,7 @@ import {
 import { AcronymStyleOptions } from 'quicktype-core/dist/support/Acronyms.js';
 import { ConvertersOptions } from 'quicktype-core/dist/support/Converters.js';
 import type { TypeScriptDecorator } from './decorator.js';
+import type { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
 import {
   type ClassContext,
   type ClassPropertyContext,
@@ -118,7 +118,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
   readonly readonlyProperties: boolean;
 
   /**
-   * Whether to add an “assign” constructor to model classes.
+   * Whether to add an "assign" constructor to model classes.
    */
   readonly assignConstructor: boolean;
 
@@ -136,7 +136,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
    * @param options Options for the renderer.
    */
   constructor(
-    targetLanguage: TargetLanguage,
+    readonly targetLanguage: TypeScriptWithDecoratorsTargetLanguage,
     context: RenderContext,
     logger: Logger,
     options: TypeScriptWithDecoratorsRendererOptions = {},
@@ -241,12 +241,45 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     };
   }
 
+  /**
+   * Adds a type being emitted to the list of generated schemas.
+   *
+   * @param causaAttribute The {@link CausaAttribute} for the generated type (either a class or an enum).
+   * @param generatedName The {@link Name} of the generated type.
+   */
+  protected addGeneratedSchema(
+    causaAttribute: CausaAttribute | undefined,
+    generatedName: Name,
+  ): void {
+    const uri = causaAttribute?.uri;
+    if (!uri) {
+      this.logger.warn(
+        'Failed to find URI for generated schema in Causa attribute.',
+      );
+      return;
+    }
+
+    // Ensures there's no trailing empty fragment.
+    const normalizedUri = uri.replace(/#$/, '');
+
+    const file = this.targetLanguage.outputPath;
+    const name = this.names.get(generatedName);
+    if (!name) {
+      panic(`Could not find name for generated schema '${normalizedUri}'.`);
+    }
+
+    this.targetLanguage.generatedSchemas[normalizedUri] = { name, file };
+  }
+
   // This is overridden to:
   // - Create a `class` rather than a `type` or `interface`.
   // - Add decorators to the class, using the decorator renderers.
   // - Emit a class constructor before the rest of the body.
+  // - Track the generated class in `generatedSchemas`.
   protected emitClassBlock(classType: ClassType, className: Name): void {
-    const [context] = this.contextForClassType(classType);
+    const [context, causaAttribute] = this.contextForClassType(classType);
+
+    this.addGeneratedSchema(causaAttribute, className);
 
     [
       ...(context.objectAttributes.tsDecorators ?? []),
@@ -416,25 +449,32 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     });
   }
 
-  // This is overridden to avoid emitting the enum if it is a constant property of a class.
-  protected emitEnum(e: EnumType, enumName: Name): void {
-    // If at least one of the parents of the enum is not a class, or the property using the enum is not a constant, then
-    // the enum is emitted as usual. Otherwise, it is not emitted.
+  /**
+   * Checks whether the given enum should be emitted.
+   * An enum should not be emitted if it is actually a constant property of a class.
+   *
+   * If at least one of the parents of the enum is not a class, or the property using the enum is not a constant, then
+   * the enum should be emitted. Otherwise, it should not.
+   *
+   * @param e The enum type to check.
+   * @returns Whether the enum should be emitted.
+   */
+  protected shouldEmitEnum(e: EnumType): boolean {
     const parents = this.typeGraph.getParentsOfType(e);
     if (parents.size === 0) {
-      return super.emitEnum(e, enumName);
+      return true;
     }
 
     for (const parent of parents) {
       if (!(parent instanceof ClassType)) {
-        return super.emitEnum(e, enumName);
+        return true;
       }
 
       const constProperties = causaTypeAttributeKind.tryGetInAttributes(
         parent.getAttributes(),
       )?.constProperties;
       if (!constProperties) {
-        return super.emitEnum(e, enumName);
+        return true;
       }
 
       for (const [jsonName, property] of parent.getProperties()) {
@@ -443,10 +483,27 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
         }
 
         if (!constProperties.includes(jsonName)) {
-          return super.emitEnum(e, enumName);
+          return true;
         }
       }
     }
+
+    return false;
+  }
+
+  // This is overridden to avoid emitting the enum if it is a constant property of a class.
+  // Also tracks the generated enum in `generatedSchemas`.
+  protected emitEnum(e: EnumType, enumName: Name): void {
+    if (!this.shouldEmitEnum(e)) {
+      return;
+    }
+
+    const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
+      e.getAttributes(),
+    );
+    this.addGeneratedSchema(causaAttribute, enumName);
+
+    return super.emitEnum(e, enumName);
   }
 
   /**

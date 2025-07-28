@@ -1,4 +1,7 @@
-import type { TargetLanguageWithWriter } from '@causa/workspace-core';
+import type {
+  GeneratedSchemas,
+  TargetLanguageWithWriter,
+} from '@causa/workspace-core';
 import { writeFile } from 'fs/promises';
 import type { Logger } from 'pino';
 import prettier from 'prettier';
@@ -17,6 +20,12 @@ export class TypeScriptWithDecoratorsTargetLanguage
   extends TargetLanguage
   implements TargetLanguageWithWriter
 {
+  /**
+   * Contains information about the {@link GeneratedSchema}.
+   * This is only populated once the code generation is complete.
+   */
+  readonly generatedSchemas: GeneratedSchemas = {};
+
   /**
    * Creates a new TypeScript target language.
    *

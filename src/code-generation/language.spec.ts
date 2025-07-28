@@ -208,6 +208,16 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
     ]);
     expect(actualCode).not.toContain('@ExcludedDecorator()');
     expect(actualCode).not.toContain('enum MyConst');
+
+    expect(language.generatedSchemas).toEqual({
+      'test.json': { name: 'MyClass', file: outputFile },
+      'test.json#/$defs/MyEnum': { name: 'MyEnum', file: outputFile },
+      'test.json#/$defs/MyOtherEnum': { name: 'MyOtherEnum', file: outputFile },
+      'test.json#/properties/myChildClass/oneOf/0': {
+        name: 'MyChildClass',
+        file: outputFile,
+      },
+    });
   });
 
   it('should enforce options', async () => {
