@@ -17,6 +17,7 @@ Features:
 - Generate `const` JSONSchema properties as constants rather than enums.
 - Implement the `typescriptModelClass` code generator.
 - Support `constraintFor` in code generation.
+- Implement the `typescriptTestObject` generator.
 
 ## v0.10.2 (2025-05-12)
 
