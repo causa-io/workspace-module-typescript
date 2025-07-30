@@ -102,6 +102,11 @@ export type ClassContext = {
   classType: ClassType;
 
   /**
+   * The URI of the schema definition for the class, if available.
+   */
+  uri: string | undefined;
+
+  /**
    * If the class declares itself as a constraint for another referenced class, this is the referenced type.
    */
   constraintFor: ClassType | undefined;
@@ -290,6 +295,7 @@ export abstract class TypeScriptWithDecoratorsRenderer<
       classType.getAttributes(),
     );
 
+    const uri = causaAttributes?.uri;
     const objectAttributes = causaAttributes?.objectAttributes ?? {};
 
     let constraintFor: ClassType | undefined;
@@ -308,7 +314,10 @@ export abstract class TypeScriptWithDecoratorsRenderer<
       constraintFor = baseType;
     }
 
-    return [{ classType, constraintFor, objectAttributes }, causaAttributes];
+    return [
+      { classType, uri, constraintFor, objectAttributes },
+      causaAttributes,
+    ];
   }
 
   /**
