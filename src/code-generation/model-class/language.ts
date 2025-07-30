@@ -9,6 +9,6 @@ import { TypeScriptModelClassRenderer } from './renderer.js';
  */
 export class TypeScriptModelClassTargetLanguage extends TypeScriptWithDecoratorsTargetLanguage<TypeScriptModelClassOptions> {
   protected makeRenderer(renderContext: RenderContext): Renderer {
-    return new TypeScriptModelClassRenderer(this, renderContext, this.logger);
+    return new TypeScriptModelClassRenderer(this, renderContext);
   }
 }

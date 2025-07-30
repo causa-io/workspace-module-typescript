@@ -1,9 +1,9 @@
+import type { WorkspaceContext } from '@causa/workspace';
 import type {
   GeneratedSchemas,
   TargetLanguageWithWriter,
 } from '@causa/workspace-core';
 import { writeFile } from 'fs/promises';
-import type { Logger } from 'pino';
 import prettier from 'prettier';
 import { Option, type StringTypeMapping, TargetLanguage } from 'quicktype-core';
 
@@ -29,11 +29,13 @@ export abstract class TypeScriptWithDecoratorsTargetLanguage<
    * Creates a new TypeScript target language.
    *
    * @param outputPath The path to write the generated source code to.
+   * @param workspaceContext The workspace context, which provides access to functions, workspace / project paths, and
+   *   logging.
    * @param options The options for the TypeScript renderer.
    */
   constructor(
     readonly outputPath: string,
-    readonly logger: Logger,
+    readonly workspaceContext: WorkspaceContext,
     readonly options: T,
   ) {
     super({

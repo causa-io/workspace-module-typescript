@@ -1,7 +1,7 @@
+import { createContext } from '@causa/workspace/testing';
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { pino } from 'pino';
 import { TypeScriptModelClassTargetLanguage } from '../model-class/language.js';
 import { generateFromSchema } from '../utils.test.js';
 import { OpenApiRenderer } from './openapi-renderer.js';
@@ -14,9 +14,11 @@ describe('OpenApiRenderer', () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), 'causa-test-'));
     outputFile = join(tmpDir, 'test-output.ts');
-    language = new TypeScriptModelClassTargetLanguage(outputFile, pino(), {
-      decoratorRenderers: [OpenApiRenderer],
-    });
+    language = new TypeScriptModelClassTargetLanguage(
+      outputFile,
+      createContext().context,
+      { decoratorRenderers: [OpenApiRenderer] },
+    );
   });
 
   afterEach(async () => {

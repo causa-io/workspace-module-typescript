@@ -9,6 +9,6 @@ import { TypeScriptTestObjectRenderer } from './renderer.js';
  */
 export class TypeScriptTestObjectTargetLanguage extends TypeScriptWithDecoratorsTargetLanguage<TypeScriptTestObjectOptions> {
   protected makeRenderer(renderContext: RenderContext): Renderer {
-    return new TypeScriptTestObjectRenderer(this, renderContext, this.logger);
+    return new TypeScriptTestObjectRenderer(this, renderContext);
   }
 }

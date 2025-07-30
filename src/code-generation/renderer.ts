@@ -192,11 +192,6 @@ export abstract class TypeScriptWithDecoratorsRenderer<
   constructor(
     readonly targetLanguage: TypeScriptWithDecoratorsTargetLanguage<T>,
     renderContext: RenderContext,
-    /**
-     * The logger to use for non-error messages.
-     * Use `panic` from `quicktype-core` for errors.
-     */
-    protected readonly logger: Logger,
   ) {
     super(targetLanguage, renderContext, TSFLOW_OPTIONS);
 
@@ -214,6 +209,14 @@ export abstract class TypeScriptWithDecoratorsRenderer<
 
   protected canBeForwardDeclared(): boolean {
     return false;
+  }
+
+  /**
+   * The logger to use for non-error messages.
+   * Use `panic` from `quicktype-core` for errors.
+   */
+  protected get logger(): Logger {
+    return this.targetLanguage.workspaceContext.logger;
   }
 
   /**

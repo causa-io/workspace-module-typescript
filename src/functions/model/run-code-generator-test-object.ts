@@ -45,7 +45,7 @@ export class ModelRunCodeGeneratorForTypeScriptTestObject extends ModelRunCodeGe
 
     const language = new TypeScriptTestObjectTargetLanguage(
       outputPath,
-      context.logger,
+      context,
       {
         leadingComment: LEADING_COMMENT,
         generatorOptions: configuration,

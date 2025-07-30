@@ -1,10 +1,11 @@
 // This file tests the language, but also the underlying renderer, by actually using the language with quicktype.
 
+import type { WorkspaceContext } from '@causa/workspace';
+import { createContext } from '@causa/workspace/testing';
 import { mkdtemp, rm } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { pino } from 'pino';
 import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassContext,
@@ -160,10 +161,12 @@ class MyDecoratorRenderer extends TypeScriptWithDecoratorsRenderer<TypeScriptMod
 describe('TypeScriptModelClassLanguage', () => {
   let tmpDir: string;
   let outputFile: string;
+  let context: WorkspaceContext;
 
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), 'causa-test-'));
     outputFile = join(tmpDir, 'test-output.ts');
+    ({ context } = createContext());
   });
 
   afterEach(async () => {
@@ -173,7 +176,7 @@ describe('TypeScriptModelClassLanguage', () => {
   it('should generate a class with properties and decorators', async () => {
     const language = new TypeScriptModelClassTargetLanguage(
       outputFile,
-      pino(),
+      context,
       { decoratorRenderers: [MyDecoratorRenderer] },
     );
 
@@ -272,7 +275,7 @@ describe('TypeScriptModelClassLanguage', () => {
     };
     const language = new TypeScriptModelClassTargetLanguage(
       outputFile,
-      pino(),
+      context,
       { generatorOptions: { constraintSuffix: 'Rule' } },
     );
 
@@ -298,7 +301,7 @@ describe('TypeScriptModelClassLanguage', () => {
   it('should enforce options', async () => {
     const language = new TypeScriptModelClassTargetLanguage(
       outputFile,
-      pino(),
+      context,
       {
         readonlyProperties: false,
         assignConstructor: false,

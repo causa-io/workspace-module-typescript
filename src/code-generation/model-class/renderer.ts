@@ -1,5 +1,4 @@
 import { causaTypeAttributeKind, findTypeForUri } from '@causa/workspace-core';
-import type { Logger } from 'pino';
 import {
   ClassProperty,
   ClassType,
@@ -67,9 +66,8 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
   constructor(
     targetLanguage: TypeScriptWithDecoratorsTargetLanguage<TypeScriptModelClassOptions>,
     context: RenderContext,
-    logger: Logger,
   ) {
-    super(targetLanguage, context, logger);
+    super(targetLanguage, context);
 
     const { options } = targetLanguage;
     const renderers = (options.decoratorRenderers ?? []).map(
