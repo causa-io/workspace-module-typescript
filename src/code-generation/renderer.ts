@@ -21,6 +21,7 @@ import {
   type RenderContext,
   type Sourcelike,
 } from 'quicktype-core';
+import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
 import { AcronymStyleOptions } from 'quicktype-core/dist/support/Acronyms.js';
 import { ConvertersOptions } from 'quicktype-core/dist/support/Converters.js';
 import type { TypeScriptDecorator } from './decorator.js';
@@ -194,6 +195,17 @@ export abstract class TypeScriptWithDecoratorsRenderer<
    */
   protected readonly constraintSuffix: string;
 
+  /**
+   * The imports collected during the rendering process.
+   * Keys are the import paths, and values are a set of symbols to import from the path.
+   */
+  protected readonly imports: Record<string, Set<string>> = {};
+
+  /**
+   * A placeholder for imports, emitted at the beginning of the file and filled when the rendering finishes.
+   */
+  private readonly importsPlaceholder: SourcelikeArray = [];
+
   constructor(
     readonly targetLanguage: TypeScriptWithDecoratorsTargetLanguage<T>,
     renderContext: RenderContext,
@@ -243,17 +255,13 @@ export abstract class TypeScriptWithDecoratorsRenderer<
    * Merges the given imports into the existing imports.
    * Keys are the import paths, and values are either a set of symbols or an array of symbols.
    *
-   * @param imports The imports in which to merge the new imports.
-   * @param newImports The imports to merge into the existing imports.
+   * @param imports The imports to merge into the existing imports.
    */
-  protected mergeImports(
-    imports: Record<string, Set<string>>,
-    newImports: Record<string, Set<string> | string[]>,
-  ): void {
-    for (const [path, symbols] of Object.entries(newImports)) {
-      const existing = imports[path];
+  protected addImports(imports: Record<string, Set<string> | string[]>): void {
+    for (const [path, symbols] of Object.entries(imports)) {
+      const existing = this.imports[path];
       if (!existing) {
-        imports[path] = new Set(symbols);
+        this.imports[path] = new Set(symbols);
         continue;
       }
 
@@ -262,21 +270,45 @@ export abstract class TypeScriptWithDecoratorsRenderer<
   }
 
   /**
-   * Emits the given imports.
-   * Keys are the import paths, and values are a set of symbols to import from the path.
-   *
-   * @param imports The imports to emit.
+   * Emits a placeholder for imports, which will be filled when the rendering finishes.
    */
-  protected emitImports(imports: Record<string, Set<string>>): void {
-    Object.entries(imports)
-      .sort(([path1], [path2]) => path1.localeCompare(path2))
+  protected emitImportsPlaceholder(): void {
+    this.emitItem(this.importsPlaceholder);
+    this.emitLine();
+  }
+
+  /**
+   * Fills the imports placeholder with the imports collected during rendering.
+   */
+  protected fillImportsPlaceholder(): void {
+    const outputDir = dirname(this.targetLanguage.outputPath);
+
+    Object.entries(this.imports)
+      .toSorted(
+        ([path1], [path2]) =>
+          Number(path1.startsWith('/')) - Number(path2.startsWith('/')) ||
+          path1.localeCompare(path2),
+      )
       .forEach(([path, symbols]) => {
-        if (symbols.size === 0) {
-          return;
+        if (path.startsWith('/')) {
+          let relativePath = relative(outputDir, path);
+          if (!relativePath.startsWith('.')) {
+            relativePath = `.${sep}${relativePath}`;
+          }
+          path = relativePath.replace(/\.ts$/, '.js');
         }
 
-        const symbolsList = [...symbols].toSorted().join(', ');
-        this.emitLine(`import { ${symbolsList} } from '${path}';`);
+        if (symbols.size === 0) {
+          this.importsPlaceholder.push(`import '${path}';\n`);
+        } else {
+          const symbolsList = [...symbols]
+            .filter((s) => !s.startsWith('type ') || !symbols.has(s.slice(5)))
+            .toSorted()
+            .join(', ');
+          this.importsPlaceholder.push(
+            `import { ${symbolsList} } from '${path}';\n`,
+          );
+        }
       });
   }
 
@@ -475,66 +507,6 @@ export abstract class TypeScriptWithDecoratorsRenderer<
 
       this.emitLine([name, ': ', sourceCode, ',']);
     }
-  }
-
-  /**
-   * Collects imports for model classes with customizable filtering.
-   * This method provides the common structure for collecting model class imports
-   * while allowing subclasses to filter which objects should be processed.
-   *
-   * @param shouldProcessObject A predicate function that determines whether to process each object.
-   * @returns A record mapping import paths to sets of names to import.
-   */
-  protected collectModelClassImportsWithFilter(
-    shouldProcessObject?: (context: ClassContext) => boolean,
-  ): Record<string, Set<string>> {
-    const imports: Record<string, Set<string>> = {};
-
-    this.forEachObject('none', (classType) => {
-      const [context, causaAttribute] = this.contextForClassType(classType);
-      if (shouldProcessObject && !shouldProcessObject(context)) {
-        return;
-      }
-
-      const { constraintFor } = context;
-      const { file, name } = this.findModelClassSchema(classType);
-      const importName = constraintFor ? `type ${name}` : name;
-      this.mergeImports(imports, { [file]: new Set([importName]) });
-
-      // For constraint types, also import the base class.
-      if (constraintFor) {
-        const { file, name } = this.findModelClassSchema(constraintFor);
-        this.mergeImports(imports, { [file]: new Set([name]) });
-      }
-
-      // Collect enum imports from properties.
-      const constProperties = causaAttribute?.constProperties ?? [];
-      this.forEachClassProperty(
-        classType,
-        'none',
-        (_name, jsonName, { type }) => {
-          if (type.kind !== 'enum' || constProperties.includes(jsonName)) {
-            return;
-          }
-
-          const { file, name } = this.findModelClassSchema(type as EnumType);
-          this.mergeImports(imports, { [file]: new Set([name]) });
-        },
-      );
-    });
-
-    const outputDir = dirname(this.targetLanguage.outputPath);
-
-    return Object.fromEntries(
-      Object.entries(imports).map(([file, names]) => {
-        let relativePath = relative(outputDir, file);
-        if (!relativePath.startsWith('.')) {
-          relativePath = `.${sep}${relativePath}`;
-        }
-        const importPath = relativePath.replace(/\.ts$/, '.js');
-        return [importPath, names];
-      }),
-    );
   }
 
   /**

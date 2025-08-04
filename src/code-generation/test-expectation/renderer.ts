@@ -114,13 +114,28 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
    * @param className The name of the class.
    */
   protected emitEntityExpectation(context: ClassContext): string[] {
-    const { name: expectationTypeName } = this.findModelClassSchema(
-      context.classType,
-    );
+    const { name: expectationTypeName, file: expectationTypeFile } =
+      this.findModelClassSchema(context.classType);
+    this.addImports({
+      [expectationTypeFile]: context.constraintFor
+        ? [`type ${expectationTypeName}`]
+        : [expectationTypeName],
+    });
 
-    const entityTypeName = context.constraintFor
-      ? this.findModelClassSchema(context.constraintFor).name
-      : expectationTypeName;
+    let entityTypeName = expectationTypeName;
+    if (context.constraintFor) {
+      const { name, file } = this.findModelClassSchema(context.constraintFor);
+      entityTypeName = name;
+      this.addImports({ [file]: [name] });
+    }
+
+    this.addImports({
+      '@causa/runtime': [
+        'type Transaction',
+        'type TransactionRunner',
+        'type ReadOnlyStateTransaction',
+      ],
+    });
 
     const existFunctionName = this.getFunctionNameForClassType(
       context.classType,
@@ -206,6 +221,8 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
       isConst?: boolean;
     } = {},
   ): Sourcelike {
+    this.addImports({ 'jest-extended': [] });
+
     if (type instanceof UnionType) {
       const [hasNull, nonNullTypes] = removeNullFromUnion(type);
       const matchers = [...nonNullTypes].map((t) => this.getMatcherForType(t));
@@ -219,24 +236,11 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
     }
 
     if (type instanceof EnumType) {
-      const enumType = type as EnumType;
-
-      if (!options.isConst) {
-        const { name: enumName } = this.findModelClassSchema(enumType);
-        return options.isOptional
-          ? `expect.toBeOneOf([undefined, ...Object.values(${enumName})])`
-          : `expect.toBeOneOf(Object.values(${enumName}))`;
+      const cases = [...type.cases].map((c) => JSON.stringify(c));
+      if (options.isOptional) {
+        cases.unshift('undefined');
       }
-
-      const firstCase = enumType.cases.values().next().value;
-      if (!firstCase) {
-        panic(`Enum type '${enumType.getCombinedName()}' has no cases.`);
-      }
-
-      const constantValue = JSON.stringify(firstCase);
-      return options.isOptional
-        ? `expect.toBeOneOf([undefined, ${constantValue}])`
-        : constantValue;
+      return `expect.toBeOneOf([${cases.join(', ')}])`;
     }
 
     if (options.isOptional) {
@@ -246,10 +250,12 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
     switch (type.kind) {
       case 'class':
       case 'object':
-        const { name: className } = this.findModelClassSchema(
-          type as ClassType,
+        const [{ constraintFor }] = this.contextForClassType(type as ClassType);
+        const { name, file } = this.findModelClassSchema(
+          constraintFor ?? (type as ClassType),
         );
-        return `expect.any(${className})`;
+        this.addImports({ [file]: [name] });
+        return `expect.any(${name})`;
       case 'array':
         return 'expect.any(Array)';
       case 'null':
@@ -282,9 +288,10 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
     context: ClassContext,
     eventTopic: EventTopicDefinition,
   ): string[] {
-    const { name: eventClassName } = this.findModelClassSchema(
+    const { name: eventClassName, file } = this.findModelClassSchema(
       context.classType,
     );
+    this.addImports({ [file]: [eventClassName] });
 
     const expectEventFunctionName = this.getFunctionNameForClassType(
       context.classType,
@@ -293,6 +300,8 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
       context.classType,
       { prefix: 'expectNo' },
     );
+
+    this.addImports({ '@causa/runtime/nestjs/testing': ['type EventFixture'] });
 
     this.ensureBlankLine();
     this.emitLine(`export async function ${expectEventFunctionName}(`);
@@ -349,9 +358,16 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
     eventTopic: EventTopicDefinition,
   ): string[] {
     const dataType = this.getEventDataType(classType);
-    const { name: entityClassName } = this.findModelClassSchema(dataType);
+    const { name: entityClassName, file } = this.findModelClassSchema(dataType);
+    this.addImports({ [file]: [entityClassName] });
+
     const functionName = this.getFunctionNameForClassType(dataType, {
       suffix: 'NotMutated',
+    });
+
+    this.addImports({
+      '@causa/runtime/testing': ['VersionedEntityFixture'],
+      '@causa/runtime/nestjs/testing': ['type AppFixture'],
     });
 
     this.ensureBlankLine();
@@ -404,10 +420,19 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
       mutationEventType,
       baseEventType,
     );
-    const { name: constrainedEntityName } = this.findModelClassSchema(
+    const { name: constrainedEntityName, file: constrainedEntityFile } =
+      this.findModelClassSchema(constrainedEntityType);
+    const [{ constraintFor: isConstrained }] = this.contextForClassType(
       constrainedEntityType,
     );
-    const { name: entityName } = this.findModelClassSchema(entityType);
+    const { name: entityName, file: entityFile } =
+      this.findModelClassSchema(entityType);
+    this.addImports({
+      [constrainedEntityFile]: isConstrained
+        ? [`type ${constrainedEntityName}`]
+        : [constrainedEntityName],
+      [entityFile]: [entityName],
+    });
 
     const eventNameType =
       mutationEventType.getProperties().get('name')?.type ??
@@ -417,6 +442,13 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
         `Entity mutation ${mutationEventType.getCombinedName()} or its parent event should have an enum or constant 'name' property.`,
       );
     }
+
+    this.addImports({
+      'jest-extended': [],
+      '@causa/runtime': ['type EventAttributes'],
+      '@causa/runtime/testing': ['VersionedEntityFixture'],
+      '@causa/runtime/nestjs/testing': ['type AppFixture'],
+    });
 
     const eventNameMatcher = `expect.toBeOneOf(${JSON.stringify([...eventNameType.cases])})`;
 
@@ -485,59 +517,6 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
     this.emitLine('...updates,');
   }
 
-  /**
-   * Collects runtime imports required by analyzing all types and their properties.
-   *
-   * @returns A record mapping package names to sets of symbols to import.
-   */
-  protected collectRuntimeImports(): Record<string, Set<string>> {
-    const causaRuntimeImports = new Set<string>();
-    const causaTestingImports = new Set<string>();
-    const causaNestjsTestingImports = new Set<string>();
-
-    this.forEachObject('none', (classType) => {
-      const [context] = this.contextForClassType(classType);
-      const [expectation] = this.getExpectationForClass(context);
-
-      switch (expectation) {
-        case 'entityEventTopic':
-          causaTestingImports.add('VersionedEntityFixture');
-          causaNestjsTestingImports.add('type AppFixture');
-        case 'eventTopic':
-          causaNestjsTestingImports.add('type EventFixture');
-          break;
-        case 'entityMutation':
-          causaRuntimeImports.add('type EventAttributes');
-          causaTestingImports.add('VersionedEntityFixture');
-          causaNestjsTestingImports.add('type AppFixture');
-          break;
-        case 'entity':
-          causaRuntimeImports.add('type ReadOnlyStateTransaction');
-          causaRuntimeImports.add('type Transaction');
-          causaRuntimeImports.add('type TransactionRunner');
-          break;
-      }
-    });
-
-    return {
-      '@causa/runtime': causaRuntimeImports,
-      '@causa/runtime/testing': causaTestingImports,
-      '@causa/runtime/nestjs/testing': causaNestjsTestingImports,
-    };
-  }
-
-  /**
-   * Collects imports for model classes.
-   *
-   * @returns A record mapping import paths to sets of names to import.
-   */
-  protected collectModelClassImports(): Record<string, Set<string>> {
-    return this.collectModelClassImportsWithFilter((context) => {
-      const [expectation] = this.getExpectationForClass(context);
-      return !!expectation && expectation !== 'entityMutation';
-    });
-  }
-
   emitSourceStructure(): void {
     if (this.targetLanguage.options.leadingComment) {
       this.emitCommentLines(
@@ -546,14 +525,11 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
       this.ensureBlankLine();
     }
 
-    const runtimeImports = this.collectRuntimeImports();
-    this.emitImports(runtimeImports);
-    if (Object.values(runtimeImports).some((i) => i.size > 0)) {
-      this.emitLine(`import 'jest-extended';`);
-    }
-    this.emitImports(this.collectModelClassImports());
+    this.emitImportsPlaceholder();
 
     this.emitTypes();
+
+    this.fillImportsPlaceholder();
   }
 
   /**
