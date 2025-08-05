@@ -1,22 +1,21 @@
+import type { WorkspaceContext } from '@causa/workspace';
 import type {
   GeneratedSchemas,
   TargetLanguageWithWriter,
 } from '@causa/workspace-core';
 import { writeFile } from 'fs/promises';
-import type { Logger } from 'pino';
 import prettier from 'prettier';
 import { Option, type StringTypeMapping, TargetLanguage } from 'quicktype-core';
-import { type RenderContext, Renderer } from 'quicktype-core/dist/Renderer.js';
-import {
-  TypeScriptWithDecoratorsRenderer,
-  type TypeScriptWithDecoratorsRendererOptions,
-} from './renderer.js';
 
 /**
- * The quicktype {@link TargetLanguage} for TypeScript.
- * This language uses a renderer that generates classes and supports decorators on them.
+ * A base quicktype {@link TargetLanguage} for TypeScript.
+ * This language enables support for decorators on classes and properties.
+ * It also implements {@link TargetLanguageWithWriter} by formatting the generated code with `prettier` before writing
+ * it to disk.
  */
-export class TypeScriptWithDecoratorsTargetLanguage
+export abstract class TypeScriptWithDecoratorsTargetLanguage<
+    T extends object = object,
+  >
   extends TargetLanguage
   implements TargetLanguageWithWriter
 {
@@ -30,12 +29,14 @@ export class TypeScriptWithDecoratorsTargetLanguage
    * Creates a new TypeScript target language.
    *
    * @param outputPath The path to write the generated source code to.
+   * @param workspaceContext The workspace context, which provides access to functions, workspace / project paths, and
+   *   logging.
    * @param options The options for the TypeScript renderer.
    */
   constructor(
     readonly outputPath: string,
-    readonly logger: Logger,
-    readonly options: TypeScriptWithDecoratorsRendererOptions = {},
+    readonly workspaceContext: WorkspaceContext,
+    readonly options: T,
   ) {
     super({
       displayName: 'TypeScript',
@@ -64,15 +65,6 @@ export class TypeScriptWithDecoratorsTargetLanguage
 
   get supportsFullObjectType(): boolean {
     return true;
-  }
-
-  protected makeRenderer(renderContext: RenderContext): Renderer {
-    return new TypeScriptWithDecoratorsRenderer(
-      this,
-      renderContext,
-      this.logger,
-      this.options,
-    );
   }
 
   async writeFile(source: string): Promise<void> {

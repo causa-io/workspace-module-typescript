@@ -2,8 +2,8 @@ import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassPropertyContext,
-  TypeScriptDecoratorsRenderer,
-} from '../ts-decorators-renderer.js';
+  TypeScriptWithDecoratorsRenderer,
+} from '../renderer.js';
 
 /**
  * The name of the Causa module for the TypeScript runtime.
@@ -11,14 +11,14 @@ import {
 const CAUSA_MODULE = '@causa/runtime';
 
 /**
- * A {@link TypeScriptDecoratorsRenderer} that adds validation decorators from the Causa runtime.
+ * A {@link TypeScriptWithDecoratorsRenderer} that adds validation decorators from the Causa runtime.
  * Those validators bring additional features to `class-validator`.
  *
  * The added decorators are:
  * - `@IsNullable()`, if the property type is a union with the `null` type.
  * - `@AllowMissing()`, if the property is optional.
  */
-export class CausaValidatorRenderer extends TypeScriptDecoratorsRenderer {
+export class CausaValidatorRenderer extends TypeScriptWithDecoratorsRenderer {
   decoratorsForClass(): TypeScriptDecorator[] {
     return [];
   }

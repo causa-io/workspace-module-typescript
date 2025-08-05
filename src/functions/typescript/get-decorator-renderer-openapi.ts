@@ -1,5 +1,5 @@
 import { WorkspaceContext } from '@causa/workspace';
-import { TypeScriptDecoratorsRenderer } from '../../code-generation/index.js';
+import { TypeScriptWithDecoratorsRenderer } from '../../code-generation/index.js';
 import { OpenApiRenderer } from '../../code-generation/renderers/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
 import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from '../model/run-code-generator-model-class.js';
@@ -8,7 +8,7 @@ import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from '../model/run-code-
  * Implements {@link TypeScriptGetDecoratorRenderer} for the {@link OpenApiRenderer}.
  */
 export class TypeScriptGetDecoratorRendererForOpenApi extends TypeScriptGetDecoratorRenderer {
-  _call(): new (...args: any[]) => TypeScriptDecoratorsRenderer {
+  _call(): new (...args: any[]) => TypeScriptWithDecoratorsRenderer {
     return OpenApiRenderer;
   }
 

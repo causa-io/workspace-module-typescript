@@ -6,7 +6,7 @@ import {
   type GeneratedSchemas,
 } from '@causa/workspace-core';
 import { resolve } from 'path';
-import { TypeScriptWithDecoratorsTargetLanguage } from '../../code-generation/index.js';
+import { TypeScriptModelClassTargetLanguage } from '../../code-generation/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
 import { LEADING_COMMENT } from './utils.js';
 
@@ -44,9 +44,9 @@ export class ModelRunCodeGeneratorForTypeScriptModelClass extends ModelRunCodeGe
       .map((f) => f._call(context))
       .sort((r1, r2) => r1.name.localeCompare(r2.name));
 
-    const language = new TypeScriptWithDecoratorsTargetLanguage(
+    const language = new TypeScriptModelClassTargetLanguage(
       outputPath,
-      context.logger,
+      context,
       {
         decoratorRenderers,
         leadingComment: LEADING_COMMENT,

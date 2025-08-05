@@ -1,18 +1,20 @@
 // This file tests the language, but also the underlying renderer, by actually using the language with quicktype.
 
+import type { WorkspaceContext } from '@causa/workspace';
+import { createContext } from '@causa/workspace/testing';
 import { mkdtemp, rm } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { pino } from 'pino';
-import type { TypeScriptDecorator } from './decorator.js';
-import { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
+import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassContext,
   type ClassPropertyContext,
-  TypeScriptDecoratorsRenderer,
-} from './ts-decorators-renderer.js';
-import { expectToMatchRegexParts, generateFromSchema } from './utils.test.js';
+  TypeScriptWithDecoratorsRenderer,
+} from '../renderer.js';
+import { expectToMatchRegexParts, generateFromSchema } from '../utils.test.js';
+import { TypeScriptModelClassTargetLanguage } from './language.js';
+import type { TypeScriptModelClassOptions } from './options.js';
 
 const SCHEMA = {
   title: 'MyClass',
@@ -127,7 +129,7 @@ const SCHEMA = {
   },
 };
 
-class MyDecoratorRenderer extends TypeScriptDecoratorsRenderer {
+class MyDecoratorRenderer extends TypeScriptWithDecoratorsRenderer<TypeScriptModelClassOptions> {
   decoratorsForClass(context: ClassContext): TypeScriptDecorator[] {
     const decorators: TypeScriptDecorator[] = [];
     this.addDecoratorToList(
@@ -135,7 +137,7 @@ class MyDecoratorRenderer extends TypeScriptDecoratorsRenderer {
       context,
       'OtherDecorator',
       'some-module',
-      `@OtherDecorator(${this.generatorOptions.myArg ?? ''})`,
+      `@OtherDecorator(${this.targetLanguage.options.generatorOptions?.myArg ?? ''})`,
     );
     this.addDecoratorToList(
       decorators,
@@ -156,13 +158,15 @@ class MyDecoratorRenderer extends TypeScriptDecoratorsRenderer {
   }
 }
 
-describe('TypeScriptWithDecoratorsTargetLanguage', () => {
+describe('TypeScriptModelClassLanguage', () => {
   let tmpDir: string;
   let outputFile: string;
+  let context: WorkspaceContext;
 
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), 'causa-test-'));
     outputFile = join(tmpDir, 'test-output.ts');
+    ({ context } = createContext());
   });
 
   afterEach(async () => {
@@ -170,33 +174,33 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
   });
 
   it('should generate a class with properties and decorators', async () => {
-    const language = new TypeScriptWithDecoratorsTargetLanguage(
+    const language = new TypeScriptModelClassTargetLanguage(
       outputFile,
-      pino(),
+      context,
       { decoratorRenderers: [MyDecoratorRenderer] },
     );
 
     const actualCode = await generateFromSchema(language, SCHEMA, outputFile);
 
     expectToMatchRegexParts(actualCode, [
-      `import { ClassDecorator, MyDecorator } from ['"]my-module['"];`,
-      'export class MyChildClass\\s+{',
-      '}',
+      `import \\{ ClassDecorator, MyDecorator \\} from "my-module";`,
+      'export class MyChildClass\\s+\\{',
+      '\\}',
       '📚\\n.*💡',
       '@ClassDecorator\\(\\)',
       '@OtherDecorator\\(\\)',
-      'export class MyClass\\s+{',
-      'constructor\\(init: MyClass\\) {',
+      'export class MyClass\\s+\\{',
+      'constructor\\(init: MyClass\\) \\{',
       'Object.assign\\(this, init\\);',
-      '}',
-      '}',
+      '\\}',
+      '\\}',
     ]);
     expectToMatchRegexParts(actualCode, [
-      'export enum MyEnum\\s+{',
+      'export enum MyEnum\\s+\\{',
       'A = "a",',
       'B = "b",',
       'C = "c",',
-      '}',
+      '\\}',
     ]);
     expectToMatchRegexParts(actualCode, [
       '🎉',
@@ -228,9 +232,9 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
       '🗜️',
       'export type MyClassWithNull = MyClass & MyClassWithNullConstraint;',
       '🗜️',
-      'export class MyClassWithNullConstraint\\s+{',
+      'export class MyClassWithNullConstraint\\s+\\{',
       'readonly nullableProperty\\?: null;',
-      '}',
+      '\\}',
     ]);
     expect(actualCode).not.toContain('@ExcludedDecorator()');
     expect(actualCode).not.toContain('enum MyConst');
@@ -269,9 +273,9 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
         },
       },
     };
-    const language = new TypeScriptWithDecoratorsTargetLanguage(
+    const language = new TypeScriptModelClassTargetLanguage(
       outputFile,
-      pino(),
+      context,
       { generatorOptions: { constraintSuffix: 'Rule' } },
     );
 
@@ -295,9 +299,9 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
   });
 
   it('should enforce options', async () => {
-    const language = new TypeScriptWithDecoratorsTargetLanguage(
+    const language = new TypeScriptModelClassTargetLanguage(
       outputFile,
-      pino(),
+      context,
       {
         readonlyProperties: false,
         assignConstructor: false,
