@@ -11,7 +11,7 @@ project:
 
 causa:
   modules:
-    '@causa/workspace-core': '>= 0.22.3'
+    '@causa/workspace-core': '0.22.3'
     '@causa/workspace-typescript': '>= 0.10.2'
 
 javascript:
