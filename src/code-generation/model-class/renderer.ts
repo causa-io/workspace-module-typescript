@@ -160,7 +160,10 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
     [
       ...(context.objectAttributes.tsDecorators ?? []),
       ...this.classDecoratorRenderers.flatMap((renderer) => renderer(context)),
-    ].forEach((d) => this.emitLine(d.source));
+    ].forEach(({ source, imports }) => {
+      this.addImports(imports);
+      this.emitLine(source);
+    });
 
     this.emitBlock(['export class ', className, ' '], '', () => {
       if (this.assignConstructor) {
@@ -224,10 +227,21 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
       classType,
       jsonName,
       isConst,
+      constraintFor,
     } = context;
     if (isConst && type instanceof EnumType) {
       const constValue = type.cases.values().next().value;
+
       if (constValue !== undefined) {
+        const basePropertyType = constraintFor
+          ?.getProperties()
+          .get(jsonName)?.type;
+        if (basePropertyType instanceof EnumType) {
+          const enumName = this.nameForNamedType(basePropertyType);
+          const caseName = this.nameForEnumCase(basePropertyType, constValue);
+          return [enumName, '.', caseName];
+        }
+
         return JSON.stringify(constValue);
       }
     }
@@ -287,7 +301,10 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
         ...this.propertyDecoratorRenderers.flatMap((renderer) =>
           renderer(context),
         ),
-      ].forEach((d) => this.emitLine(d.source));
+      ].forEach(({ source, imports }) => {
+        this.addImports(imports);
+        this.emitLine(source);
+      });
 
       // This makes a lot of assumptions about what `makePropertyRow` returns.
       // Unfortunately, it cannot be fully replaced by a custom implementation because `quotePropertyName` is not
@@ -382,52 +399,6 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
     return super.emitEnum(e, enumName);
   }
 
-  /**
-   * Emits the imports for the decorators used in the generated classes.
-   */
-  protected emitDecoratorImports(): void {
-    const imports: Record<string, Set<string>> = {};
-    const mergeDecoratorImports = (decorator: TypeScriptDecorator) => {
-      this.mergeImports(imports, decorator.imports);
-    };
-
-    this.forEachObject('none', (classType) => {
-      const [classContext, causaAttribute] =
-        this.contextForClassType(classType);
-
-      classContext.objectAttributes.tsDecorators?.forEach(
-        mergeDecoratorImports,
-      );
-      this.classDecoratorRenderers
-        .flatMap((renderer) => renderer(classContext))
-        .forEach(mergeDecoratorImports);
-
-      this.forEachClassProperty(
-        classType,
-        'none',
-        (name, jsonName, property) => {
-          const context = this.contextForClassProperty(
-            name,
-            jsonName,
-            property,
-            classContext,
-            causaAttribute,
-          );
-
-          this.propertyDecoratorRenderers
-            .flatMap((renderer) => renderer(context))
-            .forEach(mergeDecoratorImports);
-
-          context.propertyAttributes.tsDecorators?.forEach(
-            mergeDecoratorImports,
-          );
-        },
-      );
-    });
-
-    this.emitImports(imports);
-  }
-
   // This is overridden to:
   // - Emit the imports required by the decorators.
   // - Avoid emitting the conversion utilities and the CommonJS module exports.
@@ -439,8 +410,10 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
       this.ensureBlankLine();
     }
 
-    this.emitDecoratorImports();
+    this.emitImportsPlaceholder();
 
     this.emitTypes();
+
+    this.fillImportsPlaceholder();
   }
 }

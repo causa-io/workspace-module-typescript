@@ -1,5 +1,6 @@
 import type { ModuleRegistrationContext } from '@causa/workspace';
 import { ModelRunCodeGeneratorForTypeScriptModelClass } from './model/run-code-generator-model-class.js';
+import { ModelRunCodeGeneratorForTypeScriptTestExpectation } from './model/run-code-generator-test-expectation.js';
 import { ModelRunCodeGeneratorForTypeScriptTestObject } from './model/run-code-generator-test-object.js';
 import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './openapi-generate-specification-js-service-container.js';
 import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';
@@ -23,6 +24,7 @@ import {
 export function registerFunctions(context: ModuleRegistrationContext) {
   context.registerFunctionImplementations(
     ModelRunCodeGeneratorForTypeScriptModelClass,
+    ModelRunCodeGeneratorForTypeScriptTestExpectation,
     ModelRunCodeGeneratorForTypeScriptTestObject,
     OpenApiGenerateSpecificationForJavaScriptServiceContainer,
     ProjectBuildArtefactForTypeScriptPackage,

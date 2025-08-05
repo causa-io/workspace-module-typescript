@@ -56,9 +56,8 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
    * @param context The context containing the class type and other information.
    */
   protected emitProperties(context: ClassContext): void {
-    this.emitPropertiesWithHandler(
-      context,
-      (_, { type }, isConst) => this.defaultValueForType(type, { isConst })[0],
+    this.emitPropertiesWithHandler(context, (jsonName, { type }, isConst) =>
+      this.defaultValueForType(type, context, jsonName, isConst),
     );
   }
 
@@ -66,21 +65,20 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
    * Generates a default value for a given type.
    *
    * @param type The type to generate a default value for.
-   * @param options Options when generating the default value.
-   * @returns A tuple containing the source code for the default value and required imports.
+   * @param context The context for the parent class.
+   * @param jsonName The JSON name of the property.
+   * @param isConst Whether the property is a constant.
+   * @returns The source code for the default value.
    */
   protected defaultValueForType(
     type: Type,
-    options: {
-      /**
-       * If true, the default value will be the raw enum case value instead of a reference to the enum.
-       */
-      isConst?: boolean;
-    } = {},
-  ): [Sourcelike, Record<string, Set<string>>] {
+    context: ClassContext,
+    jsonName: string,
+    isConst: boolean,
+  ): Sourcelike {
     const [hasNull, nonNullType] = removeNullFromType(type);
     if (hasNull) {
-      return ['null', {}];
+      return 'null';
     }
     if (nonNullType.size === 0) {
       panic(
@@ -90,52 +88,57 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
 
     const singleType = [...nonNullType][0];
 
-    if (nonNullType.size > 1) {
-      return this.defaultValueForType(singleType);
-    }
-
     switch (singleType.kind) {
       case 'string':
-        return ["'string'", {}];
+        return "'string'";
       case 'integer':
-        return ['0', {}];
+        return '0';
       case 'double':
-        return ['0.0', {}];
+        return '0.0';
       case 'bool':
-        return ['false', {}];
+        return 'false';
       case 'date':
       case 'date-time':
-        return ['new Date()', {}];
+        return 'new Date()';
       case 'uuid':
-        return ['randomUUID()', { crypto: new Set(['randomUUID']) }];
+        this.addImports({ crypto: ['randomUUID'] });
+        return 'randomUUID()';
       case 'array':
-        return ['[]', {}];
+        return '[]';
       case 'map':
-        return ['{}', {}];
+        return '{}';
       case 'class':
         return [
-          [this.getFunctionNameForClassType(singleType as ClassType), '()'],
-          {},
+          this.getFunctionNameForClassType(singleType as ClassType),
+          '()',
         ];
       case 'enum':
-        const enumType = singleType as EnumType;
+        let enumType = singleType as EnumType;
         const firstCase = enumType.cases.values().next().value;
         if (!firstCase) {
           panic(`Enum type '${enumType.getCombinedName()}' has no cases.`);
         }
 
-        if (options.isConst) {
-          return [JSON.stringify(firstCase), {}];
+        if (isConst) {
+          const basePropertyType = context.constraintFor
+            ?.getProperties()
+            .get(jsonName)?.type;
+          if (!(basePropertyType instanceof EnumType)) {
+            return JSON.stringify(firstCase);
+          }
+
+          enumType = basePropertyType;
         }
 
         const firstCaseName = this.nameForEnumCase(enumType, firstCase);
-        const { name: enumName } = this.findModelClassSchema(enumType);
-        return [[enumName, '.', firstCaseName], {}];
+        const { name: enumName, file } = this.findModelClassSchema(enumType);
+        this.addImports({ [file]: [enumName] });
+        return [enumName, '.', firstCaseName];
       default:
         this.logger.warn(
           `Unsupported type '${singleType.kind}' for default value generation.`,
         );
-        return ["'unknown'", {}];
+        return "'unknown'";
     }
   }
 
@@ -148,13 +151,24 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
   protected emitMakeFunction(classType: ClassType): string {
     const functionName = this.getFunctionNameForClassType(classType);
 
-    const { name: modelClassName } = this.findModelClassSchema(classType);
+    const { name: modelClassName, file: modelClassFile } =
+      this.findModelClassSchema(classType);
 
     const [context] = this.contextForClassType(classType);
     const { constraintFor } = context;
-    const instantiationClassName = constraintFor
-      ? this.findModelClassSchema(constraintFor).name
-      : modelClassName;
+
+    let instantiationClassName: string;
+    if (constraintFor) {
+      const { name, file } = this.findModelClassSchema(constraintFor);
+      instantiationClassName = name;
+      this.addImports({
+        [file]: [name],
+        [modelClassFile]: [`type ${modelClassName}`],
+      });
+    } else {
+      instantiationClassName = modelClassName;
+      this.addImports({ [modelClassFile]: [modelClassName] });
+    }
 
     this.emitBlock(
       [
@@ -192,42 +206,6 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
   // Don't emit enums.
   protected emitEnum(): void {}
 
-  /**
-   * Collects utility imports required by analyzing all types and their properties.
-   *
-   * @returns A record mapping package names to sets of symbols to import.
-   */
-  protected collectUtilityImports(): Record<string, Set<string>> {
-    const imports: Record<string, Set<string>> = {};
-
-    this.forEachObject('none', (classType) => {
-      const [{ constraintFor }, causaAttribute] =
-        this.contextForClassType(classType);
-      const properties = [
-        ...classType.getProperties(),
-        ...(constraintFor?.getProperties() ?? []),
-      ];
-
-      for (const [jsonName, { type }] of properties) {
-        const [, propertyImports] = this.defaultValueForType(type, {
-          isConst: causaAttribute?.constProperties.includes(jsonName),
-        });
-        this.mergeImports(imports, propertyImports);
-      }
-    });
-
-    return imports;
-  }
-
-  /**
-   * Collects imports for model classes.
-   *
-   * @returns A record mapping import paths to sets of names to import.
-   */
-  protected collectModelClassImports(): Record<string, Set<string>> {
-    return this.collectModelClassImportsWithFilter();
-  }
-
   // Override to emit imports and make functions
   protected emitSourceStructure(): void {
     if (this.targetLanguage.options.leadingComment) {
@@ -237,9 +215,10 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
       this.ensureBlankLine();
     }
 
-    this.emitImports(this.collectUtilityImports());
-    this.emitImports(this.collectModelClassImports());
+    this.emitImportsPlaceholder();
 
     this.emitTypes();
+
+    this.fillImportsPlaceholder();
   }
 }
