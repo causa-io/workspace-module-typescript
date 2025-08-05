@@ -103,7 +103,7 @@ describe('OpenApiGenerateSpecificationForJavaScriptServiceContainer', () => {
     expect(dockerService.run).toHaveBeenCalledWith('🐳🔖', {
       rm: true,
       network: 'host',
-      mounts: expect.toContainAllValues([
+      mounts: expect.toIncludeSameMembers([
         {
           source: fileURLToPath(
             new URL('../assets/generate-openapi.js', import.meta.url),
