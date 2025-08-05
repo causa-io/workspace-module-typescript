@@ -94,6 +94,11 @@ const SCHEMA = {
     myOtherEnum: {
       oneOf: [{ $ref: '#/$defs/MyOtherEnum' }],
     },
+    // This makes no sense, and is only used to ensure `MyClassWithNullConstraint` is generated.
+    // If not referenced, it would not be generated because it is not at the top level.
+    dummyRefToConstraint: {
+      oneOf: [{ $ref: '#/$defs/MyClassWithNullConstraint' }],
+    },
   },
   required: ['myProperty', 'myDefaultRequiredProperty'],
   $defs: {
@@ -105,6 +110,19 @@ const SCHEMA = {
       title: 'MyOtherEnum',
       type: 'string',
       enum: ['b'],
+    },
+    MyClassWithNullConstraint: {
+      title: 'MyClassWithNullConstraint',
+      type: 'object',
+      description: '🗜️',
+      additionalProperties: false,
+      causa: {
+        tsExcludedDecorators: ['ExcludedDecorator'],
+        constraintFor: '#',
+      },
+      properties: {
+        nullableProperty: { type: 'null' },
+      },
     },
   },
 };
@@ -206,6 +224,14 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
     expectToMatchRegexParts(actualCode, [
       'readonly myOtherEnum\\?: MyOtherEnum;',
     ]);
+    expectToMatchRegexParts(actualCode, [
+      '🗜️',
+      'export type MyClassWithNull = MyClass & MyClassWithNullConstraint;',
+      '🗜️',
+      'export class MyClassWithNullConstraint\\s+{',
+      'readonly nullableProperty\\?: null;',
+      '}',
+    ]);
     expect(actualCode).not.toContain('@ExcludedDecorator()');
     expect(actualCode).not.toContain('enum MyConst');
 
@@ -215,6 +241,54 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
       'test.json#/$defs/MyOtherEnum': { name: 'MyOtherEnum', file: outputFile },
       'test.json#/properties/myChildClass/oneOf/0': {
         name: 'MyChildClass',
+        file: outputFile,
+      },
+      'test.json#/$defs/MyClassWithNullConstraint': {
+        name: 'MyClassWithNull',
+        file: outputFile,
+      },
+    });
+  });
+
+  it('should support custom constraint suffix', async () => {
+    const customSchema = {
+      title: 'MyClass',
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        dummyRefToRule: { oneOf: [{ $ref: '#/$defs/MyClassWithNullRule' }] },
+      },
+      $defs: {
+        MyClassWithNullRule: {
+          title: 'MyClassWithNullRule',
+          type: 'object',
+          description: '🗜️',
+          additionalProperties: false,
+          causa: { constraintFor: '#' },
+          properties: { nullableProperty: { type: 'null' } },
+        },
+      },
+    };
+    const language = new TypeScriptWithDecoratorsTargetLanguage(
+      outputFile,
+      pino(),
+      { generatorOptions: { constraintSuffix: 'Rule' } },
+    );
+
+    const actualCode = await generateFromSchema(
+      language,
+      customSchema,
+      outputFile,
+    );
+
+    expectToMatchRegexParts(actualCode, [
+      'export type MyClassWithNull = MyClass & MyClassWithNullRule;',
+      'export class MyClassWithNullRule',
+    ]);
+    expect(language.generatedSchemas).toEqual({
+      'test.json': { name: 'MyClass', file: outputFile },
+      'test.json#/$defs/MyClassWithNullRule': {
+        name: 'MyClassWithNull',
         file: outputFile,
       },
     });
