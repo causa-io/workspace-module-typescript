@@ -1,6 +1,6 @@
 {
   "name": "@causa/workspace-typescript",
-  "version": "0.10.2",
+  "version": "0.11.0",
   "description": "The Causa workspace module providing functionalities for projects coded in TypeScript.",
   "repository": {
     "type": "git",
