@@ -1,14 +1,9 @@
-import {
-  ClassType,
-  EnumType,
-  panic,
-  Type,
-  type Sourcelike,
-} from 'quicktype-core';
+import { ClassType, EnumType, panic, type Sourcelike } from 'quicktype-core';
 import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 import {
   TypeScriptWithDecoratorsRenderer,
   type ClassContext,
+  type ClassPropertyContext,
 } from '../renderer.js';
 import type { TypeScriptTestObjectOptions } from './options.js';
 
@@ -56,28 +51,32 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
    * @param context The context containing the class type and other information.
    */
   protected emitProperties(context: ClassContext): void {
-    this.emitPropertiesWithHandler(context, (jsonName, { type }, isConst) =>
-      this.defaultValueForType(type, context, jsonName, isConst),
+    this.emitPropertiesWithHandler(context, (context) =>
+      this.defaultValueForProperty(context),
     );
   }
 
   /**
-   * Generates a default value for a given type.
+   * Generates a default value for a given property.
    *
-   * @param type The type to generate a default value for.
-   * @param context The context for the parent class.
-   * @param jsonName The JSON name of the property.
-   * @param isConst Whether the property is a constant.
+   * @param context The context for the property.
    * @returns The source code for the default value.
    */
-  protected defaultValueForType(
-    type: Type,
-    context: ClassContext,
-    jsonName: string,
-    isConst: boolean,
-  ): Sourcelike {
+  protected defaultValueForProperty(context: ClassPropertyContext): Sourcelike {
+    const {
+      isConst,
+      jsonName,
+      property: { type },
+      propertyAttributes: { testObjectDefaultValue },
+    } = context;
+
+    const serializedTestObjectDefaultValue =
+      testObjectDefaultValue !== undefined
+        ? JSON.stringify(testObjectDefaultValue)
+        : undefined;
+
     const [hasNull, nonNullType] = removeNullFromType(type);
-    if (hasNull) {
+    if (hasNull && !serializedTestObjectDefaultValue) {
       return 'null';
     }
     if (nonNullType.size === 0) {
@@ -90,31 +89,37 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
 
     switch (singleType.kind) {
       case 'string':
-        return "'string'";
+        return serializedTestObjectDefaultValue ?? "'string'";
       case 'integer':
-        return '0';
+        return serializedTestObjectDefaultValue ?? '0';
       case 'double':
-        return '0.0';
+        return serializedTestObjectDefaultValue ?? '0.0';
       case 'bool':
-        return 'false';
+        return serializedTestObjectDefaultValue ?? 'false';
       case 'date':
       case 'date-time':
-        return 'new Date()';
+        return `new Date(${serializedTestObjectDefaultValue ?? ''})`;
       case 'uuid':
+        if (serializedTestObjectDefaultValue) {
+          return serializedTestObjectDefaultValue;
+        }
+
         this.addImports({ crypto: ['randomUUID'] });
         return 'randomUUID()';
       case 'array':
-        return '[]';
+        return serializedTestObjectDefaultValue ?? '[]';
       case 'map':
-        return '{}';
+        return serializedTestObjectDefaultValue ?? '{}';
       case 'class':
         return [
           this.getFunctionNameForClassType(singleType as ClassType),
-          '()',
+          `(${serializedTestObjectDefaultValue ?? ''})`,
         ];
       case 'enum':
         let enumType = singleType as EnumType;
-        const firstCase = enumType.cases.values().next().value;
+        const firstCase =
+          serializedTestObjectDefaultValue ??
+          enumType.cases.values().next().value;
         if (!firstCase) {
           panic(`Enum type '${enumType.getCombinedName()}' has no cases.`);
         }

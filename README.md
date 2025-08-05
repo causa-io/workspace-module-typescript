@@ -55,14 +55,54 @@ javascript:
       name: AppModule
 ```
 
-### Code generation for events
+### Code generation
 
-Code generation using `cs events generateCode` is supported for JSONSchema definitions. By default, the generated code will be written in the project to `src/model.ts`. This can be configured, along with other options, using the [TypeScript configuration](./src/configurations/typescript.ts).
+Code generation using `cs model generateCode` is supported. Several generators are provided by this package. In JSONSchema definitions, a custom `causa` attribute can be added to object types and their properties. This attribute can customize the generated code. See below for customization of each generator.
 
-In JSONSchema definitions, a custom `causa` attribute can be added to object types and their properties. This attribute can customize the generated code for the object or property:
+#### Common generator configuration
 
-- `tsExcludedDecorators`: Provides a list of decorators that should not be added to the class or property by decorator renderers (see below). The exclusion list at the object level in inherited by all properties.
-- `tsDecorators`: A list of decorators that should be added to the class or property.
+All generators' inputs and outputs are configured in the same way, as presented in this section. Then, each generator may have its own customization configuration.
+
+```yaml
+model:
+  codeGenerators:
+    - generator: <Generator name>
+
+      # Whether event schemas should automatically be added to the list of schemas to generate.
+      # This uses triggers (inputs) and event topic outputs from the project definition to find relevant topics.
+      # This is optional and defaults to `false`.
+      includeEvents: true
+
+      # Globs that will match schema files to generate, provided in addition to or in replacement of `includeEvents`. Those are relative to the project directory.
+      # This is optional and defaults to an empty array.
+      globs:
+        - ../entities/*.yaml
+        - ../firestore/*.yaml
+
+      # The generated file, relative to the project directory.
+      # This must be provided.
+      output: src/generated.ts
+
+      # The suffix that must be present on all schema names that are constraints on other schemas
+      # (using the `constraintFor` Causa attribute).
+      # This is optional and defaults to `Constraint`.
+      constraintSuffix: Constraint
+```
+
+#### `typescriptModelClass` generator
+
+This is the main code generator, which produces a `class` for each object schema, and an `enum` for each enum schema.
+
+Many decorators are added to the classes and properties, and other Causa workspace packages may plug themselves to this generator to add other decorators. The following decorators are generated automatically:
+
+- `class-validator` and `class-transformer` decorators based on the property type.
+- The `@IsNullable` and `@AllowMissing` decorators from the `@causa/runtime` package.
+- `@ApiProperty` decorators from the `@nestjs/swagger` package. This is only enabled for objects with the `causa.tsOpenApi` attribute set to `true` in their JSONSchema definition.
+
+The behavior of this generator can be customized for each object and properties by using the `causa` attribute (e.g. in JSONSchema definitions):
+
+- `tsExcludedDecorators`: Provides a list of decorators that should not be added to the class or property by decorator renderers (see below). The exclusion list at the object level is inherited by all properties.
+- `tsDecorators`: A list of custom decorators that should be added to the class or property.
 - `tsType`: Properties only. Forces the type of the property to the provided TypeScript code.
 - `tsDefault`: Properties only. Uses the provided TypeScript code as the default value for the property.
 
@@ -73,7 +113,7 @@ title: MyClass
 type: object
 causa:
   tsDecorators:
-    - source: @ClassDecorator()
+    - source: '@ClassDecorator()'
       imports:
         my-module: [ClassDecorator]
 properties:
@@ -90,8 +130,126 @@ required:
   - myBigInt
 ```
 
-By default, several decorator renderers are enabled. Those renderers automatically add decorators to classes and properties:
+#### `typescriptTestObject` generator
 
-- `causaValidator`: Adds the `@IsNullable` and `@AllowMissing` decorators from the `@causa/runtime` package.
-- `classValidator`: Adds `class-validator` and `class-transformer` decorators based on the property type.
-- `openapi`: Adds `@ApiProperty` decorators from the `@nestjs/swagger` package. This is only enabled for objects with the `causa.tsOpenApi` attribute set to `true` in their JSONSchema definition.
+This generator produces a function for each object schema that creates an instance of the corresponding class from a partial object (or from nothing at all). Default values are inferred from the properties' types, and can be overridden using the `testObjectDefaultValue` Causa attribute on the property.
+
+For constraints (using the `constraintFor` Causa attribute), the constraint suffix is removed from the function name, and a base object that satisfies the constraint is created.
+
+Example generated code:
+
+```typescript
+export function makeMyEntity(data: Partial<MyEntity> = {}): MyEntity {
+  return new MyEntity({
+    createdAt: new Date(),
+    deletedAt: null,
+    id: randomUUID(),
+    result: null,
+    updatedAt: new Date(),
+    ...data,
+  });
+}
+```
+
+#### `typescriptTestExpectation` generator
+
+This generator produces several "expectation functions" that can be used in tests, to assert the state of entities, or that events have been published. Here is an example of each type of function:
+
+```typescript
+// Only generated if the schema matches the `entitiesGlobs`.
+export async function expectEntity(
+  runner: TransactionRunner<Transaction, ReadOnlyStateTransaction>,
+  expected: Partial<Entity>,
+): Promise<Entity> {
+  const actual = await runner.run((t) => t.get(Entity, expected));
+  expect(actual).toEqual({
+    property: expect.any(String),
+    ...expected,
+  });
+  return actual as Entity;
+}
+
+// Only generated if the schema matches the `entitiesGlobs`.
+export async function expectEntityNotToExist(
+  runner: TransactionRunner<Transaction, ReadOnlyStateTransaction>,
+  key: Partial<Entity>,
+): Promise<void> {
+  const actual = await runner.run((t) => t.get(Entity, key));
+  expect(actual).toEqual(null);
+}
+
+// Only generated if the schema is an event topic (based on the event configuration).
+export async function expectEvent(
+  eventFixture: EventFixture,
+  expected: Partial<Event> = {},
+): Promise<void> {
+  await eventFixture.expectEvent('topic-id', {
+    data: expect.any(Entity),
+    id: expect.any(String),
+    name: expect.any(String),
+    producedAt: expect.any(Date),
+    ...expected,
+  });
+}
+
+// Only generated if the schema is an event topic (based on the event configuration).
+export async function expectNoEvent(eventFixture: EventFixture): Promise<void> {
+  await eventFixture.expectNoEvent('topic-id');
+}
+
+// Only generated if the schema is an event topic and it has the `entityEvent: true` Causa attribute.
+export async function expectEntityNotMutated(
+  fixture: AppFixture,
+  entity: Entity,
+  tests: { expectNoEvent?: boolean } = {},
+): Promise<void> {
+  await fixture.get(VersionedEntityFixture).expectNoMutation(entity, {
+    expectNoEventInTopic: tests.expectNoEvent ? 'topic-id' : undefined,
+  });
+}
+
+// Only generated if the schema has the `entityMutationFrom` Causa attribute.
+// It should be a constraint for a base event schema.
+export async function expectMutationEvent(
+  fixture: AppFixture,
+  before: Partial<Entity>,
+  updates: Partial<EntityWithConstraint> = {},
+  tests: {
+    matchesHttpResponse?: object;
+    eventAttributes?: EventAttributes;
+  } = {},
+): Promise<Entity> {
+  return await fixture.get(VersionedEntityFixture).expectMutated(
+    { type: Entity, entity: before },
+    {
+      expectedEntity: {
+        someUnchangedProperty: expect.any(String),
+        ...before,
+        somePropertyExpectedToChange: expect.any(String),
+        ...updates,
+      },
+      expectedEvent: {
+        topic: 'topic-id',
+        name: expect.toBeOneOf(['eventName']),
+        attributes: tests.eventAttributes,
+      },
+      matchesHttpResponse: tests.matchesHttpResponse,
+    },
+  );
+}
+```
+
+As mentioned in the example code, the generator can take an additional configuration parameter:
+
+```yaml
+model:
+  codeGenerators:
+    - generator: typescriptTestExpectation
+
+      # ...Common configuration...
+
+      # Globs that should match schema files for which entity expectations should be produced.
+      entitiesGlobs:
+        - ../entities/*.yaml
+        - ../firestore/*.yaml
+```

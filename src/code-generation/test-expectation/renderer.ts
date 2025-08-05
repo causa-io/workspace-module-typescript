@@ -195,7 +195,7 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
   ): void {
     this.emitPropertiesWithHandler(
       context,
-      (jsonName, { type, isOptional }, isConst) =>
+      ({ jsonName, property: { type, isOptional }, isConst }) =>
         filter(jsonName)
           ? this.getMatcherForType(type, { isOptional, isConst })
           : null,

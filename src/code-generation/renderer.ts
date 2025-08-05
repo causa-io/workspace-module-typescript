@@ -471,41 +471,56 @@ export abstract class TypeScriptWithDecoratorsRenderer<
    */
   protected emitPropertiesWithHandler(
     context: ClassContext,
-    propertyHandler: (
-      jsonName: string,
-      property: ClassProperty,
-      isConst: boolean,
-    ) => Sourcelike | null,
+    propertyHandler: (context: ClassPropertyContext) => Sourcelike | null,
   ): void {
     const { classType: type, constraintFor: baseType } = context;
     const [, causaAttribute] = this.contextForClassType(type);
-    const constProperties = causaAttribute?.constProperties ?? [];
 
-    const allProperties = new Map<string, [Name, ClassProperty]>();
+    const allProperties = new Map<string, ClassPropertyContext>();
     this.forEachClassProperty(type, 'none', (name, jsonName, property) =>
-      allProperties.set(jsonName, [name, property]),
+      allProperties.set(
+        jsonName,
+        this.contextForClassProperty(
+          name,
+          jsonName,
+          property,
+          context,
+          causaAttribute,
+        ),
+      ),
     );
 
     if (baseType) {
+      const [baseContext, baseCausaAttribute] =
+        this.contextForClassType(baseType);
+
       this.forEachClassProperty(
         baseType,
         'none',
         (name, jsonName, property) => {
           if (!allProperties.has(jsonName)) {
-            allProperties.set(jsonName, [name, property]);
+            allProperties.set(
+              jsonName,
+              this.contextForClassProperty(
+                name,
+                jsonName,
+                property,
+                baseContext,
+                baseCausaAttribute,
+              ),
+            );
           }
         },
       );
     }
 
-    for (const [jsonName, [name, property]] of allProperties) {
-      const isConst = constProperties.includes(jsonName);
-      const sourceCode = propertyHandler(jsonName, property, isConst);
+    for (const context of allProperties.values()) {
+      const sourceCode = propertyHandler(context);
       if (!sourceCode) {
         continue;
       }
 
-      this.emitLine([name, ': ', sourceCode, ',']);
+      this.emitLine([context.name, ': ', sourceCode, ',']);
     }
   }
 

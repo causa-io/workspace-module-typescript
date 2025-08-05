@@ -31,6 +31,10 @@ const SCHEMA = {
     },
     optionalString: { type: 'string' },
     optionalInteger: { type: 'integer' },
+    defaultStringProp: {
+      type: 'string',
+      causa: { testObjectDefaultValue: 'something' },
+    },
   },
   required: ['stringProp', 'integerProp', 'boolProp', 'arrayProp', 'classProp'],
   $defs: {
@@ -98,6 +102,7 @@ describe('TypeScriptTestObjectRenderer', () => {
       'constProp: "🪨",',
       'dateProp: new Date\\(\\),',
       'dateTimeProp: new Date\\(\\),',
+      'defaultStringProp: "something",',
       'doubleProp: 0\\.0,',
       'enumProp: MySpecialEnum.First,',
       'integerProp: 0,',
@@ -137,7 +142,7 @@ describe('TypeScriptTestObjectRenderer', () => {
       type: 'object',
       additionalProperties: false,
       properties: {
-        name: { type: 'string' },
+        name: { type: 'string', causa: { testObjectDefaultValue: 'name' } },
         age: { oneOf: [{ type: 'integer' }, { type: 'null' }] },
         dummyRefToConstraint: {
           oneOf: [{ $ref: '#/$defs/PersonWithAgeConstraint' }],
@@ -185,13 +190,13 @@ describe('TypeScriptTestObjectRenderer', () => {
       '\\): PersonWithAge \\{',
       'return new Person\\(\\{',
       'age: 0,',
-      'name: "string",',
+      'name: "name",',
       '...data,',
       '\\}\\) as PersonWithAge;',
       'export function makePerson\\(data: Partial<Person> = \\{\\}\\): Person \\{',
       'return new Person\\(\\{',
       'age: null,',
-      'name: "string",',
+      'name: "name",',
       '...data,',
       '\\}\\);',
     ]);
