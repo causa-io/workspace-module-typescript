@@ -2,6 +2,7 @@ import type {
   CausaObjectAttributes,
   CausaPropertyAttributes,
 } from '@causa/workspace-core';
+import type { Logger } from 'pino';
 import {
   ClassProperty,
   ClassType,
@@ -97,6 +98,12 @@ export type ClassPropertyContext = ClassContext & {
    */
   propertyAttributes: CausaPropertyAttributes &
     TypeScriptCausaPropertyAttributes;
+
+  /**
+   * Whether the property is defined as a constant.
+   * The `quicktype` type should be an enum with a single value.
+   */
+  isConst: boolean;
 };
 
 /**
@@ -110,23 +117,24 @@ export type ClassPropertyContext = ClassContext & {
  * {@link TypeScriptDecoratorsRenderer.decoratorsForProperty} against a base {@link TypeScriptRenderer}. This means
  * subclasses should not hold a state nor define any other methods. However, they can call {@link TypeScriptRenderer}
  * (and {@link TypeScriptDecoratorsRenderer}) methods, which will let them access the TypeScript code generation
- * utilities. They can also retrieve options from {@link TypeScriptDecoratorsRenderer.decoratorOptions}.
+ * utilities. They can also retrieve options from {@link TypeScriptDecoratorsRenderer.generatorOptions}.
  */
 export abstract class TypeScriptDecoratorsRenderer extends TypeScriptRenderer {
-  /**
-   * Options for decorator renderers, retrieved from the Causa configuration.
-   */
-  readonly decoratorOptions: Record<string, any>;
-
   constructor(
     targetLanguage: TargetLanguage,
     renderContext: RenderContext,
     _tsFlowOptions: OptionValues<typeof tsFlowOptions>,
-    decoratorOptions: Record<string, any>,
+    /**
+     * The logger to use for non-error messages.
+     * Use `panic` from `quicktype-core` for errors.
+     */
+    protected readonly logger: Logger,
+    /**
+     * Options available for the base rending logic and decorator renderers, retrieved from the Causa configuration.
+     */
+    readonly generatorOptions: Record<string, any>,
   ) {
     super(targetLanguage, renderContext, _tsFlowOptions);
-
-    this.decoratorOptions = decoratorOptions;
   }
 
   /**

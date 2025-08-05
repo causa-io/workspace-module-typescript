@@ -4,6 +4,7 @@ import { mkdtemp, rm } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { pino } from 'pino';
 import type { TypeScriptDecorator } from './decorator.js';
 import { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
 import {
@@ -79,8 +80,33 @@ const SCHEMA = {
         { type: 'null' },
       ],
     },
+    myEnum: {
+      oneOf: [{ $ref: '#/$defs/MyEnum' }],
+    },
+    myEnumHint: {
+      type: 'string',
+      causa: { enumHint: '#/$defs/MyEnum' },
+    },
+    myConst: {
+      type: 'string',
+      const: 'a',
+    },
+    myOtherEnum: {
+      oneOf: [{ $ref: '#/$defs/MyOtherEnum' }],
+    },
   },
   required: ['myProperty', 'myDefaultRequiredProperty'],
+  $defs: {
+    MyEnum: {
+      type: 'string',
+      enum: ['a', 'b', 'c'],
+    },
+    MyOtherEnum: {
+      title: 'MyOtherEnum',
+      type: 'string',
+      enum: ['b'],
+    },
+  },
 };
 
 class MyDecoratorRenderer extends TypeScriptDecoratorsRenderer {
@@ -91,7 +117,7 @@ class MyDecoratorRenderer extends TypeScriptDecoratorsRenderer {
       context,
       'OtherDecorator',
       'some-module',
-      `@OtherDecorator(${this.decoratorOptions.myArg ?? ''})`,
+      `@OtherDecorator(${this.generatorOptions.myArg ?? ''})`,
     );
     this.addDecoratorToList(
       decorators,
@@ -126,9 +152,11 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
   });
 
   it('should generate a class with properties and decorators', async () => {
-    const language = new TypeScriptWithDecoratorsTargetLanguage(outputFile, {
-      decoratorRenderers: [MyDecoratorRenderer],
-    });
+    const language = new TypeScriptWithDecoratorsTargetLanguage(
+      outputFile,
+      pino(),
+      { decoratorRenderers: [MyDecoratorRenderer] },
+    );
 
     const actualCode = await generateFromSchema(language, SCHEMA, outputFile);
 
@@ -143,6 +171,13 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
       'constructor\\(init: MyClass\\) {',
       'Object.assign\\(this, init\\);',
       '}',
+      '}',
+    ]);
+    expectToMatchRegexParts(actualCode, [
+      'export enum MyEnum\\s+{',
+      'A = "a",',
+      'B = "b",',
+      'C = "c",',
       '}',
     ]);
     expectToMatchRegexParts(actualCode, [
@@ -163,18 +198,41 @@ describe('TypeScriptWithDecoratorsTargetLanguage', () => {
     expectToMatchRegexParts(actualCode, [
       'readonly myChildClass\\?: (MyChildClass \\| null|null \\| MyChildClass);',
     ]);
+    expectToMatchRegexParts(actualCode, ['readonly myEnum\\?: MyEnum;']);
+    expectToMatchRegexParts(actualCode, [
+      'readonly myEnumHint\\?: string \\| MyEnum;',
+    ]);
+    expectToMatchRegexParts(actualCode, ['readonly myConst\\?: "a";']);
+    expectToMatchRegexParts(actualCode, [
+      'readonly myOtherEnum\\?: MyOtherEnum;',
+    ]);
     expect(actualCode).not.toContain('@ExcludedDecorator()');
+    expect(actualCode).not.toContain('enum MyConst');
+
+    expect(language.generatedSchemas).toEqual({
+      'test.json': { name: 'MyClass', file: outputFile },
+      'test.json#/$defs/MyEnum': { name: 'MyEnum', file: outputFile },
+      'test.json#/$defs/MyOtherEnum': { name: 'MyOtherEnum', file: outputFile },
+      'test.json#/properties/myChildClass/oneOf/0': {
+        name: 'MyChildClass',
+        file: outputFile,
+      },
+    });
   });
 
   it('should enforce options', async () => {
-    const language = new TypeScriptWithDecoratorsTargetLanguage(outputFile, {
-      readonlyProperties: false,
-      assignConstructor: false,
-      nonNullAssertionOnProperties: false,
-      leadingComment: '🚨 Very important',
-      decoratorRenderers: [MyDecoratorRenderer],
-      decoratorOptions: { myArg: 'true' },
-    });
+    const language = new TypeScriptWithDecoratorsTargetLanguage(
+      outputFile,
+      pino(),
+      {
+        readonlyProperties: false,
+        assignConstructor: false,
+        nonNullAssertionOnProperties: false,
+        leadingComment: '🚨 Very important',
+        decoratorRenderers: [MyDecoratorRenderer],
+        generatorOptions: { myArg: 'true' },
+      },
+    );
 
     const actualCode = await generateFromSchema(language, SCHEMA, outputFile);
 

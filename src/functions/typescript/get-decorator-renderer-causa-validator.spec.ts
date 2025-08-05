@@ -2,6 +2,7 @@ import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
 import { CausaValidatorRenderer } from '../../code-generation/renderers/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
+import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from '../model/run-code-generator-model-class.js';
 import { TypeScriptGetDecoratorRendererForCausaValidator } from './get-decorator-renderer-causa-validator.js';
 
 describe('TypeScriptGetDecoratorRendererForCausaValidator', () => {
@@ -17,50 +18,15 @@ describe('TypeScriptGetDecoratorRendererForCausaValidator', () => {
       functions: [TypeScriptGetDecoratorRendererForCausaValidator],
     });
 
-    expect(() => context.call(TypeScriptGetDecoratorRenderer, {})).toThrow(
-      NoImplementationFoundError,
-    );
+    expect(() =>
+      context.call(TypeScriptGetDecoratorRenderer, {
+        generator: TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR,
+        configuration: {},
+      }),
+    ).toThrow(NoImplementationFoundError);
   });
 
-  it('should not support a configuration without the renderer', () => {
-    const { context } = createContext({
-      configuration: {
-        project: {
-          name: 'my-project',
-          type: 'serviceContainer',
-          language: 'typescript',
-        },
-        typescript: { codeGeneration: { decoratorRenderers: ['other'] } },
-      },
-      functions: [TypeScriptGetDecoratorRendererForCausaValidator],
-    });
-
-    expect(() => context.call(TypeScriptGetDecoratorRenderer, {})).toThrow(
-      NoImplementationFoundError,
-    );
-  });
-
-  it('should return the renderer', () => {
-    const { context } = createContext({
-      configuration: {
-        project: {
-          name: 'my-project',
-          type: 'serviceContainer',
-          language: 'typescript',
-        },
-        typescript: {
-          codeGeneration: { decoratorRenderers: ['causaValidator'] },
-        },
-      },
-      functions: [TypeScriptGetDecoratorRendererForCausaValidator],
-    });
-
-    const actualRenderer = context.call(TypeScriptGetDecoratorRenderer, {});
-
-    expect(actualRenderer).toBe(CausaValidatorRenderer);
-  });
-
-  it('should return the renderer when none is specified', () => {
+  it('should not support other generators', () => {
     const { context } = createContext({
       configuration: {
         project: {
@@ -72,7 +38,30 @@ describe('TypeScriptGetDecoratorRendererForCausaValidator', () => {
       functions: [TypeScriptGetDecoratorRendererForCausaValidator],
     });
 
-    const actualRenderer = context.call(TypeScriptGetDecoratorRenderer, {});
+    expect(() =>
+      context.call(TypeScriptGetDecoratorRenderer, {
+        generator: 'otherGenerator',
+        configuration: {},
+      }),
+    ).toThrow(NoImplementationFoundError);
+  });
+
+  it('should return the renderer for the correct generator', () => {
+    const { context } = createContext({
+      configuration: {
+        project: {
+          name: 'my-project',
+          type: 'serviceContainer',
+          language: 'typescript',
+        },
+      },
+      functions: [TypeScriptGetDecoratorRendererForCausaValidator],
+    });
+
+    const actualRenderer = context.call(TypeScriptGetDecoratorRenderer, {
+      generator: TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR,
+      configuration: {},
+    });
 
     expect(actualRenderer).toBe(CausaValidatorRenderer);
   });

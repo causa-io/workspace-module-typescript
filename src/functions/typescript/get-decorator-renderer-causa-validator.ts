@@ -1,12 +1,11 @@
 import { WorkspaceContext } from '@causa/workspace';
 import { TypeScriptDecoratorsRenderer } from '../../code-generation/index.js';
 import { CausaValidatorRenderer } from '../../code-generation/renderers/index.js';
-import type { TypeScriptConfiguration } from '../../configurations/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
+import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from '../model/run-code-generator-model-class.js';
 
 /**
  * Implements {@link TypeScriptGetDecoratorRenderer} for the {@link CausaValidatorRenderer}.
- * The configuration name for the renderer is `causaValidator`.
  */
 export class TypeScriptGetDecoratorRendererForCausaValidator extends TypeScriptGetDecoratorRenderer {
   _call(): new (...args: any[]) => TypeScriptDecoratorsRenderer {
@@ -14,17 +13,9 @@ export class TypeScriptGetDecoratorRendererForCausaValidator extends TypeScriptG
   }
 
   _supports(context: WorkspaceContext): boolean {
-    if (context.get('project.language') !== 'typescript') {
-      return false;
-    }
-
-    const decoratorRenderers =
-      context
-        .asConfiguration<TypeScriptConfiguration>()
-        .get('typescript.codeGeneration.decoratorRenderers') ?? [];
     return (
-      decoratorRenderers.length === 0 ||
-      decoratorRenderers.includes('causaValidator')
+      context.get('project.language') === 'typescript' &&
+      this.generator === TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR
     );
   }
 }

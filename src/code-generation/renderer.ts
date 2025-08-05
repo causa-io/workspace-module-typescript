@@ -1,18 +1,21 @@
 import {
-  type CausaPropertyAttributes,
+  type CausaAttribute,
   causaTypeAttributeKind,
+  findTypeForUri,
 } from '@causa/workspace-core';
+import type { Logger } from 'pino';
 import {
   ClassProperty,
   ClassType,
+  EnumType,
   Name,
   ObjectType,
   type OptionValues,
+  panic,
   type RenderContext,
   type Sourcelike,
-  TargetLanguage,
-  Type,
   tsFlowOptions,
+  Type,
 } from 'quicktype-core';
 import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
 import {
@@ -22,6 +25,7 @@ import {
 import { AcronymStyleOptions } from 'quicktype-core/dist/support/Acronyms.js';
 import { ConvertersOptions } from 'quicktype-core/dist/support/Converters.js';
 import type { TypeScriptDecorator } from './decorator.js';
+import type { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
 import {
   type ClassContext,
   type ClassPropertyContext,
@@ -63,9 +67,9 @@ export type TypeScriptWithDecoratorsRendererOptions = {
   readonly leadingComment?: string;
 
   /**
-   * Options for decorator renderers.
+   * Causa-level options for the generator and the decorators.
    */
-  readonly decoratorOptions?: Record<string, any>;
+  readonly generatorOptions?: Record<string, any>;
 };
 
 /**
@@ -114,7 +118,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
   readonly readonlyProperties: boolean;
 
   /**
-   * Whether to add an “assign” constructor to model classes.
+   * Whether to add an "assign" constructor to model classes.
    */
   readonly assignConstructor: boolean;
 
@@ -128,18 +132,21 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
    *
    * @param targetLanguage The target language.
    * @param context The render context.
+   * @param logger The logger to use for non-error messages.
    * @param options Options for the renderer.
    */
   constructor(
-    targetLanguage: TargetLanguage,
+    readonly targetLanguage: TypeScriptWithDecoratorsTargetLanguage,
     context: RenderContext,
+    logger: Logger,
     options: TypeScriptWithDecoratorsRendererOptions = {},
   ) {
     super(
       targetLanguage,
       context,
       TSFLOW_OPTIONS,
-      options.decoratorOptions ?? {},
+      logger,
+      options.generatorOptions ?? {},
     );
 
     const renderers = (options.decoratorRenderers ?? []).map(
@@ -187,34 +194,92 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
 
   /**
    * Constructs the {@link ClassContext} for the given class type.
-   * Also returns the dictionary of property attributes for the class, which can be used to construct the
+   * Also returns the {@link CausaAttribute} for the class, which can be used to construct the
    * {@link ClassPropertyContext}.
    *
    * @param classType The type of the class.
-   * @returns The {@link ClassContext}, along with the dictionary of property attributes.
+   * @returns The {@link ClassContext}, along with the {@link CausaAttribute} for the class (if available).
    */
   protected contextForClassType(
     classType: ClassType,
-  ): [ClassContext, Record<string, CausaPropertyAttributes>] {
+  ): [ClassContext, CausaAttribute | undefined] {
     const causaAttributes = causaTypeAttributeKind.tryGetInAttributes(
       classType.getAttributes(),
     );
 
-    return [
-      {
-        classType,
-        objectAttributes: causaAttributes?.objectAttributes ?? {},
-      },
-      causaAttributes?.propertiesAttributes ?? {},
-    ];
+    const objectAttributes = causaAttributes?.objectAttributes ?? {};
+    return [{ classType, objectAttributes }, causaAttributes];
+  }
+
+  /**
+   * Constructs the {@link ClassPropertyContext} for the given property.
+   *
+   * @param name The name of the property.
+   * @param jsonName The original name of the property in the schema.
+   * @param property The property definition.
+   * @param classContext The {@link ClassContext} of the parent class.
+   * @param causaAttribute The {@link CausaAttribute} for the class, or `undefined` if not available.
+   * @returns The {@link ClassPropertyContext} for the property.
+   */
+  protected contextForClassProperty(
+    name: Name,
+    jsonName: string,
+    property: ClassProperty,
+    classContext: ClassContext,
+    causaAttribute: CausaAttribute | undefined,
+  ): ClassPropertyContext {
+    const propertyAttributes =
+      causaAttribute?.propertiesAttributes[jsonName] ?? {};
+    const isConst = causaAttribute?.constProperties.includes(jsonName) ?? false;
+    return {
+      ...classContext,
+      name,
+      jsonName,
+      property,
+      propertyAttributes,
+      isConst,
+    };
+  }
+
+  /**
+   * Adds a type being emitted to the list of generated schemas.
+   *
+   * @param causaAttribute The {@link CausaAttribute} for the generated type (either a class or an enum).
+   * @param generatedName The {@link Name} of the generated type.
+   */
+  protected addGeneratedSchema(
+    causaAttribute: CausaAttribute | undefined,
+    generatedName: Name,
+  ): void {
+    const uri = causaAttribute?.uri;
+    if (!uri) {
+      this.logger.warn(
+        'Failed to find URI for generated schema in Causa attribute.',
+      );
+      return;
+    }
+
+    // Ensures there's no trailing empty fragment.
+    const normalizedUri = uri.replace(/#$/, '');
+
+    const file = this.targetLanguage.outputPath;
+    const name = this.names.get(generatedName);
+    if (!name) {
+      panic(`Could not find name for generated schema '${normalizedUri}'.`);
+    }
+
+    this.targetLanguage.generatedSchemas[normalizedUri] = { name, file };
   }
 
   // This is overridden to:
   // - Create a `class` rather than a `type` or `interface`.
   // - Add decorators to the class, using the decorator renderers.
   // - Emit a class constructor before the rest of the body.
+  // - Track the generated class in `generatedSchemas`.
   protected emitClassBlock(classType: ClassType, className: Name): void {
-    const [context] = this.contextForClassType(classType);
+    const [context, causaAttribute] = this.contextForClassType(classType);
+
+    this.addGeneratedSchema(causaAttribute, className);
 
     [
       ...(context.objectAttributes.tsDecorators ?? []),
@@ -268,6 +333,50 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
       .map((l) => l.trim());
   }
 
+  /**
+   * Renders the source for the property type.
+   * This is heavily based on {@link TypeScriptDecoratorsRenderer.sourceFor}, however it includes Causa-specific logic,
+   * like enum hints and constant values.
+   *
+   * @param context The {@link ClassPropertyContext} for the property.
+   * @returns The source for the property type.
+   */
+  protected sourceForPropertyType(context: ClassPropertyContext): Sourcelike {
+    const {
+      property: { type },
+      propertyAttributes,
+      classType,
+      jsonName,
+      isConst,
+    } = context;
+    if (isConst && type instanceof EnumType) {
+      const constValue = type.cases.values().next().value;
+      if (constValue !== undefined) {
+        return JSON.stringify(constValue);
+      }
+    }
+
+    const baseType = this.sourceFor(type).source;
+    const { enumHint } = propertyAttributes;
+    if (!enumHint) {
+      return baseType;
+    }
+
+    if (typeof enumHint !== 'string') {
+      panic(`Invalid enum hint for property '${context.jsonName}'.`);
+    }
+
+    const enumType = findTypeForUri(this.typeGraph, classType, enumHint);
+    if (!enumType) {
+      this.logger.warn(
+        `Could not find type for enum hint '${enumHint}' in property '${jsonName}'.`,
+      );
+      return baseType;
+    }
+
+    return [baseType, ' | ', this.sourceFor(enumType).source];
+  }
+
   // This is overridden to emit the decorators for each property.
   // Unfortunately, the base class makes it difficult to override the behavior, so we have to rely on internal
   // implementations that may break at some point.
@@ -279,19 +388,18 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
       p: ClassProperty,
     ) => Sourcelike[],
   ): void {
-    const [classContext, propertiesAttributes] =
-      this.contextForClassType(classType);
+    const [classContext, causaAttribute] = this.contextForClassType(classType);
 
     this.forEachClassProperty(classType, 'none', (name, jsonName, property) => {
       this.ensureBlankLine();
 
-      const context: ClassPropertyContext = {
-        ...classContext,
+      const context = this.contextForClassProperty(
         name,
         jsonName,
         property,
-        propertyAttributes: propertiesAttributes[jsonName] ?? {},
-      };
+        classContext,
+        causaAttribute,
+      );
 
       const description = this.descriptionForClassProperty(classType, jsonName);
       if (description) {
@@ -330,7 +438,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
           propertySource.unshift('readonly ');
         }
 
-        const typeSource = tsType ?? this.sourceFor(property.type).source;
+        const typeSource = tsType ?? this.sourceForPropertyType(context);
         const defaultAssignment = tsDefault ? [' = ', tsDefault] : [];
         row[1] = [typeSource, ...defaultAssignment, ';'];
       }
@@ -339,6 +447,63 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
       // Here, `emitTable` is simply called for each property.
       this.emitTable([row]);
     });
+  }
+
+  /**
+   * Checks whether the given enum should be emitted.
+   * An enum should not be emitted if it is actually a constant property of a class.
+   *
+   * If at least one of the parents of the enum is not a class, or the property using the enum is not a constant, then
+   * the enum should be emitted. Otherwise, it should not.
+   *
+   * @param e The enum type to check.
+   * @returns Whether the enum should be emitted.
+   */
+  protected shouldEmitEnum(e: EnumType): boolean {
+    const parents = this.typeGraph.getParentsOfType(e);
+    if (parents.size === 0) {
+      return true;
+    }
+
+    for (const parent of parents) {
+      if (!(parent instanceof ClassType)) {
+        return true;
+      }
+
+      const constProperties = causaTypeAttributeKind.tryGetInAttributes(
+        parent.getAttributes(),
+      )?.constProperties;
+      if (!constProperties) {
+        return true;
+      }
+
+      for (const [jsonName, property] of parent.getProperties()) {
+        if (property.type !== e) {
+          continue;
+        }
+
+        if (!constProperties.includes(jsonName)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // This is overridden to avoid emitting the enum if it is a constant property of a class.
+  // Also tracks the generated enum in `generatedSchemas`.
+  protected emitEnum(e: EnumType, enumName: Name): void {
+    if (!this.shouldEmitEnum(e)) {
+      return;
+    }
+
+    const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
+      e.getAttributes(),
+    );
+    this.addGeneratedSchema(causaAttribute, enumName);
+
+    return super.emitEnum(e, enumName);
   }
 
   /**
@@ -358,7 +523,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     }
 
     this.forEachObject('none', (classType) => {
-      const [classContext, propertiesAttributes] =
+      const [classContext, causaAttribute] =
         this.contextForClassType(classType);
 
       classContext.objectAttributes.tsDecorators?.forEach((d) =>
@@ -372,13 +537,13 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
         classType,
         'none',
         (name, jsonName, property) => {
-          const context: ClassPropertyContext = {
-            ...classContext,
+          const context = this.contextForClassProperty(
             name,
             jsonName,
             property,
-            propertyAttributes: propertiesAttributes[jsonName] ?? {},
-          };
+            classContext,
+            causaAttribute,
+          );
 
           this.propertyDecoratorRenderers
             .flatMap((renderer) => renderer(context))
@@ -392,7 +557,7 @@ export class TypeScriptWithDecoratorsRenderer extends TypeScriptDecoratorsRender
     });
 
     Object.entries(imports).forEach(([modulePath, symbols]) => {
-      const symbolsList = [...symbols].join(', ');
+      const symbolsList = [...symbols].toSorted().join(', ');
       this.emitLine(`import { ${symbolsList} } from '${modulePath}';`);
     });
   }

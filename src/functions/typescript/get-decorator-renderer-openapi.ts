@@ -2,10 +2,10 @@ import { WorkspaceContext } from '@causa/workspace';
 import { TypeScriptDecoratorsRenderer } from '../../code-generation/index.js';
 import { OpenApiRenderer } from '../../code-generation/renderers/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
+import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from '../model/run-code-generator-model-class.js';
 
 /**
  * Implements {@link TypeScriptGetDecoratorRenderer} for the {@link OpenApiRenderer}.
- * The configuration name for the renderer is `openapi`.
  */
 export class TypeScriptGetDecoratorRendererForOpenApi extends TypeScriptGetDecoratorRenderer {
   _call(): new (...args: any[]) => TypeScriptDecoratorsRenderer {
@@ -13,16 +13,9 @@ export class TypeScriptGetDecoratorRendererForOpenApi extends TypeScriptGetDecor
   }
 
   _supports(context: WorkspaceContext): boolean {
-    if (context.get('project.language') !== 'typescript') {
-      return false;
-    }
-
-    const decoratorRenderers =
-      context
-        .asConfiguration<any>()
-        .get('typescript.codeGeneration.decoratorRenderers') ?? [];
     return (
-      decoratorRenderers.length === 0 || decoratorRenderers.includes('openapi')
+      context.get('project.language') === 'typescript' &&
+      this.generator === TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR
     );
   }
 }
