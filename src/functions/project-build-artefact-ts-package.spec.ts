@@ -7,6 +7,7 @@ import {
 import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
 import 'jest-extended';
+import { join } from 'path';
 import { NpmService } from '../services/index.js';
 import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';
 
@@ -71,14 +72,56 @@ describe('ProjectBuildArtefactForTypeScriptPackage', () => {
     await expect(actualPromise).rejects.toThrow(InvalidFunctionArgumentError);
   });
 
-  it('should run the build script', async () => {
+  it('should run the build script and pack', async () => {
+    const expectedArchiveName = 'my-project-1.0.0.tgz';
     jest.spyOn(npmService, 'build').mockResolvedValueOnce();
+    jest.spyOn(npmService, 'pack').mockResolvedValueOnce(expectedArchiveName);
 
     const actualArtefact = await context.call(ProjectBuildArtefact, {});
 
-    expect(actualArtefact).toEqual(context.projectPath);
+    expect(actualArtefact).toEqual(
+      join(context.projectPath!, expectedArchiveName),
+    );
     expect(npmService.build).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: context.projectPath,
+    });
+    expect(npmService.pack).toHaveBeenCalledExactlyOnceWith({
+      workingDirectory: context.projectPath,
+      packDestination: context.projectPath,
+    });
+  });
+
+  it('should run the build script and pack with a custom destination', async () => {
+    const expectedArchiveName = 'my-project-1.0.0.tgz';
+    const packDestination = 'dist';
+    const expectedPackDestination = join(context.projectPath!, packDestination);
+    ({ context } = createContext({
+      configuration: {
+        workspace: { name: '🏷️' },
+        project: {
+          name: 'my-project',
+          type: 'package',
+          language: 'typescript',
+        },
+        javascript: { npm: { packDestination } },
+      },
+      functions: [ProjectBuildArtefactForTypeScriptPackage],
+    }));
+    npmService = context.service(NpmService);
+    jest.spyOn(npmService, 'build').mockResolvedValueOnce();
+    jest.spyOn(npmService, 'pack').mockResolvedValueOnce(expectedArchiveName);
+
+    const actualArtefact = await context.call(ProjectBuildArtefact, {});
+
+    expect(actualArtefact).toEqual(
+      join(expectedPackDestination, expectedArchiveName),
+    );
+    expect(npmService.build).toHaveBeenCalledExactlyOnceWith({
+      workingDirectory: context.projectPath,
+    });
+    expect(npmService.pack).toHaveBeenCalledExactlyOnceWith({
+      workingDirectory: context.projectPath,
+      packDestination: expectedPackDestination,
     });
   });
 });
