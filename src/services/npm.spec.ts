@@ -93,6 +93,57 @@ describe('NpmService', () => {
     });
   });
 
+  describe('pack', () => {
+    it('should run the pack command and return the archive name', async () => {
+      const expectedArchiveName = 'my-package-1.0.0.tgz';
+      jest.spyOn(service, 'npm').mockResolvedValueOnce({
+        code: 0,
+        stdout: expectedArchiveName,
+      });
+
+      const actualArchiveName = await service.pack();
+
+      expect(actualArchiveName).toEqual(expectedArchiveName);
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith('pack', [], {
+        capture: { stdout: true },
+      });
+    });
+
+    it('should run the pack command with a destination directory', async () => {
+      const expectedArchiveName = 'my-package-1.0.0.tgz';
+      const packDestination = './dist';
+      jest.spyOn(service, 'npm').mockResolvedValueOnce({
+        code: 0,
+        stdout: expectedArchiveName,
+      });
+
+      const actualArchiveName = await service.pack({
+        packDestination,
+        workingDirectory: '/test',
+      });
+
+      expect(actualArchiveName).toEqual(expectedArchiveName);
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith(
+        'pack',
+        ['--pack-destination', packDestination],
+        { workingDirectory: '/test', capture: { stdout: true } },
+      );
+    });
+
+    it('should throw an error if the archive name cannot be extracted', async () => {
+      jest.spyOn(service, 'npm').mockResolvedValueOnce({
+        code: 0,
+        stdout: '',
+      });
+
+      const actualPromise = service.pack({});
+
+      await expect(actualPromise).rejects.toThrow(
+        'Failed to get archive name from npm pack output.',
+      );
+    });
+  });
+
   describe('publish', () => {
     it('should run the publish command', async () => {
       jest.spyOn(service, 'npm').mockResolvedValueOnce({ code: 0 });

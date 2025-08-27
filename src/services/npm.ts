@@ -46,6 +46,37 @@ export class NpmService {
   }
 
   /**
+   * Runs `npm pack` and returns the name of the generated archive.
+   * Specify the {@link SpawnOptions.workingDirectory} to set the package on which the command is run.
+   *
+   * @param options Options for the pack command, including optional pack destination and {@link SpawnOptions}.
+   * @returns The name of the generated archive file.
+   */
+  async pack(
+    options: {
+      /**
+       * The destination directory for the packed archive.
+       */
+      packDestination?: string;
+    } & SpawnOptions = {},
+  ): Promise<string> {
+    const { packDestination, ...spawnOptions } = options;
+    const args = packDestination ? ['--pack-destination', packDestination] : [];
+
+    const result = await this.npm('pack', args, {
+      ...spawnOptions,
+      capture: { ...spawnOptions.capture, stdout: true },
+    });
+
+    const archiveName = result.stdout?.trim();
+    if (!archiveName) {
+      throw new Error('Failed to get archive name from npm pack output.');
+    }
+
+    return archiveName;
+  }
+
+  /**
    * Runs `npm publish`.
    * Specify the {@link SpawnOptions.workingDirectory} to set the package on which the command is run.
    *
