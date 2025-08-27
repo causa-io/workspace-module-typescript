@@ -20,8 +20,7 @@ For all the configuration in your Causa files related to TypeScript (but also Ja
 
 Projects supported by this module must have `typescript` (or in some cases `javascript` is enough) as their `project.language`. The following Causa `project.type`s are supported:
 
-- `package`: Builds TypeScript packages using `npm run build`, and publishes both JavaScript and TypeScript packages using `npm publish`.
-- `serverlessFunctions`: The TypeScript package is built using `npm run build` and archived as a ZIP file. Publishing is not implemented and depends on the `serverlessFunctions.platform`.
+- `package`: Builds TypeScript packages using `npm run build`, then creates an archive using `npm pack`. JavaScript packages skip the build step. Both are published using `npm publish` on the packed archive.
 - `serviceContainer`: Builds a Docker image for the service using [distroless](https://github.com/GoogleContainerTools/distroless). Publishing is implemented in the [core module](https://github.com/causa-io/workspace-module-core).
 
 Apart from `build` and `publish`, other project-level commands are supported:
@@ -32,8 +31,7 @@ Apart from `build` and `publish`, other project-level commands are supported:
 - `cs dependencies check`: Uses `npm audit` to check dependencies for vulnerabilities. See the `javascript.dependencies.check` configuration for more options.
 - `cs dependencies update`: Uses [npm-check-updates](https://github.com/raineorshine/npm-check-updates) to update the `package.json` file, then run `npm update`.
 - `cs security check`: Uses [njsscan](https://github.com/ajinabraham/njsscan) to scan for common insecure code patterns.
-
-TypeScript event interfaces generation through `cs events generateCode` is supported for JSON events (defined using JSONSchema).
+- `cs model generateCode`: See [code generation](#code-generation) for more information about model classes, but also testing utilities.
 
 ### OpenAPI specification generation
 
