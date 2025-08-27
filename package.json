@@ -46,6 +46,7 @@
     "prettier": "^3.6.2",
     "quicktype-core": "^23.2.6",
     "semver": "^7.7.2",
+    "tar": "^7.4.3",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -59,6 +60,7 @@
     "@types/micromatch": "^4.0.9",
     "@types/node": "^22.18.0",
     "@types/semver": "^7.7.0",
+    "@types/tar": "^6.1.13",
     "@types/uuid": "^10.0.0",
     "copyfiles": "^2.4.1",
     "eslint": "^9.34.0",
