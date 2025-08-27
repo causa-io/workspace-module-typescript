@@ -7,15 +7,17 @@ import type { TypeScriptConfiguration } from '../configurations/index.js';
 import { NpmService } from '../services/index.js';
 
 /**
- * Implements the {@link ProjectBuildArtefact} function for a TypeScript package by running `npm run build`
- * followed by `npm pack`.
+ * Implements the {@link ProjectBuildArtefact} function for JavaScript and TypeScript packages.
+ * For TypeScript packages, it runs `npm run build` followed by `npm pack`.
+ * For JavaScript packages, it only runs `npm pack`.
  * This implementation does not support the optional {@link ProjectBuildArtefact.artefact} argument.
  * The returned output artefact is the path to the packed archive file.
  */
-export class ProjectBuildArtefactForTypeScriptPackage extends ProjectBuildArtefact {
+export class ProjectBuildArtefactForJavaScriptPackage extends ProjectBuildArtefact {
   async _call(context: WorkspaceContext): Promise<string> {
     const projectPath = context.getProjectPathOrThrow();
     const projectName = context.get('project.name');
+    const projectLanguage = context.get('project.language');
     const packDestination = resolve(
       projectPath,
       context
@@ -30,9 +32,11 @@ export class ProjectBuildArtefactForTypeScriptPackage extends ProjectBuildArtefa
       );
     }
 
-    context.logger.info(`🍱 Compiling TypeScript project '${projectName}'.`);
-    await npmService.build({ workingDirectory: projectPath });
-    context.logger.info(`🍱 Successfully compiled TypeScript project.`);
+    if (projectLanguage === 'typescript') {
+      context.logger.info(`🍱 Compiling TypeScript project '${projectName}'.`);
+      await npmService.build({ workingDirectory: projectPath });
+      context.logger.info(`🍱 Successfully compiled TypeScript project.`);
+    }
 
     await mkdir(packDestination, { recursive: true });
 
@@ -48,8 +52,9 @@ export class ProjectBuildArtefactForTypeScriptPackage extends ProjectBuildArtefa
 
   _supports(context: WorkspaceContext): boolean {
     return (
-      context.get('project.language') === 'typescript' &&
-      context.get('project.type') === 'package'
+      ['javascript', 'typescript'].includes(
+        context.get('project.language') ?? '',
+      ) && context.get('project.type') === 'package'
     );
   }
 }

@@ -3,7 +3,7 @@ import { ModelRunCodeGeneratorForTypeScriptModelClass } from './model/run-code-g
 import { ModelRunCodeGeneratorForTypeScriptTestExpectation } from './model/run-code-generator-test-expectation.js';
 import { ModelRunCodeGeneratorForTypeScriptTestObject } from './model/run-code-generator-test-object.js';
 import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './openapi-generate-specification-js-service-container.js';
-import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';
+import { ProjectBuildArtefactForJavaScriptPackage } from './project-build-artefact-js-package.js';
 import { ProjectBuildArtefactForTypeScriptServerlessFunctions } from './project-build-artefact-ts-serverless-functions.js';
 import { ProjectBuildArtefactForTypeScriptServiceContainer } from './project-build-artefact-ts-service-container.js';
 import { ProjectDependenciesCheckForJavaScript } from './project-dependencies-check-javascript.js';
@@ -27,7 +27,7 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ModelRunCodeGeneratorForTypeScriptTestExpectation,
     ModelRunCodeGeneratorForTypeScriptTestObject,
     OpenApiGenerateSpecificationForJavaScriptServiceContainer,
-    ProjectBuildArtefactForTypeScriptPackage,
+    ProjectBuildArtefactForJavaScriptPackage,
     ProjectBuildArtefactForTypeScriptServerlessFunctions,
     ProjectBuildArtefactForTypeScriptServiceContainer,
     ProjectDependenciesCheckForJavaScript,

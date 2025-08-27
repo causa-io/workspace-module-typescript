@@ -9,9 +9,9 @@ import { jest } from '@jest/globals';
 import 'jest-extended';
 import { join } from 'path';
 import { NpmService } from '../services/index.js';
-import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';
+import { ProjectBuildArtefactForJavaScriptPackage } from './project-build-artefact-js-package.js';
 
-describe('ProjectBuildArtefactForTypeScriptPackage', () => {
+describe('ProjectBuildArtefactForJavaScriptPackage', () => {
   let context: WorkspaceContext;
   let npmService: NpmService;
 
@@ -25,18 +25,18 @@ describe('ProjectBuildArtefactForTypeScriptPackage', () => {
           language: 'typescript',
         },
       },
-      functions: [ProjectBuildArtefactForTypeScriptPackage],
+      functions: [ProjectBuildArtefactForJavaScriptPackage],
     }));
     npmService = context.service(NpmService);
   });
 
-  it('should not support projects that are not written in TypeScript', () => {
+  it('should not support projects that are not written in TypeScript or JavaScript', () => {
     ({ context } = createContext({
       configuration: {
         workspace: { name: '🏷️' },
         project: { name: 'my-project', type: 'package', language: 'ruby' },
       },
-      functions: [ProjectBuildArtefactForTypeScriptPackage],
+      functions: [ProjectBuildArtefactForJavaScriptPackage],
     }));
     npmService = context.service(NpmService);
 
@@ -55,7 +55,7 @@ describe('ProjectBuildArtefactForTypeScriptPackage', () => {
           language: 'typescript',
         },
       },
-      functions: [ProjectBuildArtefactForTypeScriptPackage],
+      functions: [ProjectBuildArtefactForJavaScriptPackage],
     }));
     npmService = context.service(NpmService);
 
@@ -91,6 +91,35 @@ describe('ProjectBuildArtefactForTypeScriptPackage', () => {
     });
   });
 
+  it('should only run pack for JavaScript projects without build', async () => {
+    const expectedArchiveName = 'my-project-1.0.0.tgz';
+    ({ context } = createContext({
+      configuration: {
+        workspace: { name: '🏷️' },
+        project: {
+          name: 'my-project',
+          type: 'package',
+          language: 'javascript',
+        },
+      },
+      functions: [ProjectBuildArtefactForJavaScriptPackage],
+    }));
+    npmService = context.service(NpmService);
+    jest.spyOn(npmService, 'build').mockResolvedValueOnce();
+    jest.spyOn(npmService, 'pack').mockResolvedValueOnce(expectedArchiveName);
+
+    const actualArtefact = await context.call(ProjectBuildArtefact, {});
+
+    expect(actualArtefact).toEqual(
+      join(context.projectPath!, expectedArchiveName),
+    );
+    expect(npmService.build).not.toHaveBeenCalled();
+    expect(npmService.pack).toHaveBeenCalledExactlyOnceWith({
+      workingDirectory: context.projectPath,
+      packDestination: context.projectPath,
+    });
+  });
+
   it('should run the build script and pack with a custom destination', async () => {
     const expectedArchiveName = 'my-project-1.0.0.tgz';
     const packDestination = 'dist';
@@ -105,7 +134,7 @@ describe('ProjectBuildArtefactForTypeScriptPackage', () => {
         },
         javascript: { npm: { packDestination } },
       },
-      functions: [ProjectBuildArtefactForTypeScriptPackage],
+      functions: [ProjectBuildArtefactForJavaScriptPackage],
     }));
     npmService = context.service(NpmService);
     jest.spyOn(npmService, 'build').mockResolvedValueOnce();
