@@ -152,6 +152,18 @@ describe('NpmService', () => {
 
       expect(service.npm).toHaveBeenCalledExactlyOnceWith('publish', [], {});
     });
+
+    it('should run the publish command with a package spec', async () => {
+      jest.spyOn(service, 'npm').mockResolvedValueOnce({ code: 0 });
+
+      await service.publish({ packageSpec: '/path/to/package.tgz' });
+
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith(
+        'publish',
+        ['/path/to/package.tgz'],
+        {},
+      );
+    });
   });
 
   describe('run', () => {

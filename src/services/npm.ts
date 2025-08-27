@@ -80,10 +80,19 @@ export class NpmService {
    * Runs `npm publish`.
    * Specify the {@link SpawnOptions.workingDirectory} to set the package on which the command is run.
    *
-   * @param options {@link SpawnOptions} for the process.
+   * @param options Options for the publish command, including optional package spec and {@link SpawnOptions}.
    */
-  async publish(options: SpawnOptions = {}): Promise<void> {
-    await this.npm('publish', [], options);
+  async publish(
+    options: {
+      /**
+       * The path to an archive file to publish instead of the current directory.
+       */
+      packageSpec?: string;
+    } & SpawnOptions = {},
+  ): Promise<void> {
+    const { packageSpec, ...spawnOptions } = options;
+    const args = packageSpec ? [packageSpec] : [];
+    await this.npm('publish', args, spawnOptions);
   }
 
   /**
