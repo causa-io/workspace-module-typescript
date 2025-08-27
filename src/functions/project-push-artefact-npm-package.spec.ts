@@ -6,9 +6,10 @@ import {
 } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
-import { mkdtemp, rm, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
 import 'jest-extended';
 import { join } from 'path';
+import * as tar from 'tar';
 import { NpmService } from '../services/index.js';
 import { ProjectPushArtefactForNpmPackage } from './project-push-artefact-npm-package.js';
 
@@ -16,6 +17,9 @@ describe('ProjectPushArtefactForNpmPackage', () => {
   let tmpDir: string;
   let context: WorkspaceContext;
   let npmService: NpmService;
+  let artefact: string;
+
+  const packageInfo = { name: 'my-project', version: '1.0.0' };
 
   beforeEach(async () => {
     tmpDir = await mkdtemp('causa-test-');
@@ -32,10 +36,16 @@ describe('ProjectPushArtefactForNpmPackage', () => {
       functions: [ProjectPushArtefactForNpmPackage],
     }));
     npmService = context.service(NpmService);
+
+    artefact = join(tmpDir, 'my-project-1.0.0.tgz');
+    const packageDir = join(tmpDir, 'package');
+    await mkdir(packageDir, { recursive: true });
     await writeFile(
-      join(tmpDir, 'package.json'),
-      JSON.stringify({ name: 'my-project', version: '1.0.0' }),
+      join(packageDir, 'package.json'),
+      JSON.stringify(packageInfo),
     );
+    await writeFile(join(packageDir, 'index.js'), 'console.log("Hello");');
+    await tar.c({ file: artefact, gzip: true, cwd: tmpDir }, ['package']);
   });
 
   afterEach(async () => {
@@ -74,18 +84,9 @@ describe('ProjectPushArtefactForNpmPackage', () => {
     ).toThrow(NoImplementationFoundError);
   });
 
-  it('should not allow the artefact option', async () => {
-    const actualPromise = context.call(ProjectPushArtefact, {
-      artefact: 'package.zip',
-      destination: '📦',
-    });
-
-    await expect(actualPromise).rejects.toThrow(InvalidFunctionArgumentError);
-  });
-
   it('should not allow the overwrite option', async () => {
     const actualPromise = context.call(ProjectPushArtefact, {
-      artefact: tmpDir,
+      artefact,
       destination: 'my-project@1.0.0',
       overwrite: true,
     });
@@ -95,24 +96,25 @@ describe('ProjectPushArtefactForNpmPackage', () => {
 
   it('should throw for an invalid destination', async () => {
     const actualPromise = context.call(ProjectPushArtefact, {
-      artefact: tmpDir,
-      destination: 'my-project@abcd123',
+      artefact,
+      destination: 'my-project@2.0.0',
     });
 
     await expect(actualPromise).rejects.toThrow(InvalidFunctionArgumentError);
   });
 
-  it('should publish the package to the npm registry', async () => {
+  it('should publish from an archive', async () => {
     const expectedDestination = 'my-project@1.0.0';
     jest.spyOn(npmService, 'publish').mockResolvedValueOnce();
 
     const actualDestination = await context.call(ProjectPushArtefact, {
-      artefact: tmpDir,
+      artefact,
       destination: expectedDestination,
     });
 
-    expect(actualDestination).toEqual(tmpDir);
+    expect(actualDestination).toEqual(expectedDestination);
     expect(npmService.publish).toHaveBeenCalledExactlyOnceWith({
+      packageSpec: artefact,
       workingDirectory: tmpDir,
     });
   });
