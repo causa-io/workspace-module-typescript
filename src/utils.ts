@@ -12,6 +12,11 @@ export const PACKAGE_FILE = 'package.json';
 export const PACKAGE_LOCK_FILE = 'package-lock.json';
 
 /**
+ * The path to the package file within a npm-packed archive.
+ */
+export const ARCHIVED_PACKAGE_FILE = `package/${PACKAGE_FILE}`;
+
+/**
  * The schema for information expected to be contained in an npm package package file.
  */
 export type NpmPackageInfo = {

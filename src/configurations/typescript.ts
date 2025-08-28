@@ -21,6 +21,12 @@ export type TypeScriptConfiguration = {
        * Can be a semver version, or `latest`.
        */
       readonly version?: string;
+
+      /**
+       * The destination directory for built packages, relative to the project's root.
+       * This is used when building JavaScript / TypeScript package artefacts.
+       */
+      readonly packDestination?: string;
     };
 
     /**

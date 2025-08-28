@@ -46,13 +46,53 @@ export class NpmService {
   }
 
   /**
+   * Runs `npm pack` and returns the name of the generated archive.
+   * Specify the {@link SpawnOptions.workingDirectory} to set the package on which the command is run.
+   *
+   * @param options Options for the pack command, including optional pack destination and {@link SpawnOptions}.
+   * @returns The name of the generated archive file.
+   */
+  async pack(
+    options: {
+      /**
+       * The destination directory for the packed archive.
+       */
+      packDestination?: string;
+    } & SpawnOptions = {},
+  ): Promise<string> {
+    const { packDestination, ...spawnOptions } = options;
+    const args = packDestination ? ['--pack-destination', packDestination] : [];
+
+    const result = await this.npm('pack', args, {
+      ...spawnOptions,
+      capture: { ...spawnOptions.capture, stdout: true },
+    });
+
+    const archiveName = result.stdout?.trim();
+    if (!archiveName) {
+      throw new Error('Failed to get archive name from npm pack output.');
+    }
+
+    return archiveName;
+  }
+
+  /**
    * Runs `npm publish`.
    * Specify the {@link SpawnOptions.workingDirectory} to set the package on which the command is run.
    *
-   * @param options {@link SpawnOptions} for the process.
+   * @param options Options for the publish command, including optional package spec and {@link SpawnOptions}.
    */
-  async publish(options: SpawnOptions = {}): Promise<void> {
-    await this.npm('publish', [], options);
+  async publish(
+    options: {
+      /**
+       * The path to an archive file to publish instead of the current directory.
+       */
+      packageSpec?: string;
+    } & SpawnOptions = {},
+  ): Promise<void> {
+    const { packageSpec, ...spawnOptions } = options;
+    const args = packageSpec ? [packageSpec] : [];
+    await this.npm('publish', args, spawnOptions);
   }
 
   /**

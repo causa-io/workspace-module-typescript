@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Remove support for building serverless functions.
+- Rename `ProjectBuildArtefactForTypeScriptPackage` to `ProjectBuildArtefactForJavaScriptPackage`, which now supports building JavaScript packages, and uses `npm pack` to produce an archive as artefact.
+- Update `ProjectPushArtefactForNpmPackage` to publish from packed archives instead of directories.
+
+Features:
+
+- Add `javascript.npm.packDestination` configuration to specify npm pack output location.
+
 ## v0.11.0 (2025-08-05)
 
 Breaking changes:

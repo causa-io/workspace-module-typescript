@@ -1,10 +1,11 @@
 import type { ModuleRegistrationContext } from '@causa/workspace';
-import { ModelRunCodeGeneratorForTypeScriptModelClass } from './model/run-code-generator-model-class.js';
-import { ModelRunCodeGeneratorForTypeScriptTestExpectation } from './model/run-code-generator-test-expectation.js';
-import { ModelRunCodeGeneratorForTypeScriptTestObject } from './model/run-code-generator-test-object.js';
+import {
+  ModelRunCodeGeneratorForTypeScriptModelClass,
+  ModelRunCodeGeneratorForTypeScriptTestExpectation,
+  ModelRunCodeGeneratorForTypeScriptTestObject,
+} from './model/index.js';
 import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './openapi-generate-specification-js-service-container.js';
-import { ProjectBuildArtefactForTypeScriptPackage } from './project-build-artefact-ts-package.js';
-import { ProjectBuildArtefactForTypeScriptServerlessFunctions } from './project-build-artefact-ts-serverless-functions.js';
+import { ProjectBuildArtefactForJavaScriptPackage } from './project-build-artefact-js-package.js';
 import { ProjectBuildArtefactForTypeScriptServiceContainer } from './project-build-artefact-ts-service-container.js';
 import { ProjectDependenciesCheckForJavaScript } from './project-dependencies-check-javascript.js';
 import { ProjectDependenciesUpdateForJavaScript } from './project-dependencies-update-javascript.js';
@@ -27,8 +28,7 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ModelRunCodeGeneratorForTypeScriptTestExpectation,
     ModelRunCodeGeneratorForTypeScriptTestObject,
     OpenApiGenerateSpecificationForJavaScriptServiceContainer,
-    ProjectBuildArtefactForTypeScriptPackage,
-    ProjectBuildArtefactForTypeScriptServerlessFunctions,
+    ProjectBuildArtefactForJavaScriptPackage,
     ProjectBuildArtefactForTypeScriptServiceContainer,
     ProjectDependenciesCheckForJavaScript,
     ProjectDependenciesUpdateForJavaScript,
