@@ -7,10 +7,10 @@ import {
 } from '@causa/workspace-core';
 import { open, readFile, rm, stat, writeFile } from 'fs/promises';
 import { dump } from 'js-yaml';
+import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'os';
 import { basename, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import * as uuid from 'uuid';
 
 /**
  * The JavaScript file that will be used to generate the OpenAPI specification.
@@ -46,7 +46,7 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
     // The generation script is placed in the Docker container, in the same directory as the application module.
     // This ensures the script can import the application module, but also NestJS and the Causa runtime.
     const dockerModuleDirectory = dirname(sourceFile);
-    const dockerScriptPath = join(dockerModuleDirectory, `${uuid.v4()}.js`);
+    const dockerScriptPath = join(dockerModuleDirectory, `${randomUUID()}.js`);
     const configuration = {
       module: {
         sourceFile: `./${basename(sourceFile)}`,
@@ -55,7 +55,7 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
       outputFile: CONTAINER_OUTPUT_FILE,
     };
 
-    const localOutputFile = join(tmpdir(), `${uuid.v4()}.json`);
+    const localOutputFile = join(tmpdir(), `${randomUUID()}.json`);
     const localFd = await open(localOutputFile, 'w');
     await localFd.close();
 

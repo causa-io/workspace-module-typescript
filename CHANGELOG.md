@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Add back support for building serverless functions.
+
 ## v0.12.0 (2025-08-28)
 
 Breaking changes:
