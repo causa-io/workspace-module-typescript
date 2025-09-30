@@ -6,6 +6,7 @@ Features:
 
 - Add back support for building serverless functions.
 - Use the first enum case of the enum hint as the default value in generated test objects.
+- Improve error messages related to code generation.
 
 ## v0.12.0 (2025-08-28)
 

@@ -103,16 +103,28 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
     ).toThrow(NoImplementationFoundError);
   });
 
+  it('should throw an error if the input data cannot be created', async () => {
+    const { context } = createContext({
+      projectPath: tmpDir,
+      configuration: baseConfiguration,
+      // ModelMakeGeneratorQuicktypeInputData will not be present.
+      functions: [ModelRunCodeGeneratorForTypeScriptTestExpectation],
+    });
+
+    const actualPromise = context.call(ModelRunCodeGenerator, baseArguments);
+
+    await expect(actualPromise).rejects.toThrow(
+      'Could not generate input data for code generation. Ensure the model schema format is supported.',
+    );
+  });
+
   it('should generate TypeScript test expectation functions from JSON schemas and return GeneratedSchemas', async () => {
     const schemaFile = join(tmpDir, 'user.schema.json');
     const modelFile = join(tmpDir, 'model.ts');
     await writeFile(schemaFile, JSON.stringify(SCHEMA));
     const { context, functionRegistry } = createContext({
       projectPath: tmpDir,
-      configuration: {
-        ...baseConfiguration,
-        project: { ...baseConfiguration.project!, language: 'typescript' },
-      },
+      configuration: baseConfiguration,
       functions: [ModelRunCodeGeneratorForTypeScriptTestExpectation],
     });
     const input = await makeJsonSchemaInputData([schemaFile]);

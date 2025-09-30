@@ -1,14 +1,13 @@
 import type { WorkspaceContext } from '@causa/workspace';
 import {
   generateCodeForSchemas,
-  ModelMakeGeneratorQuicktypeInputData,
   ModelRunCodeGenerator,
   type GeneratedSchemas,
 } from '@causa/workspace-core';
 import { resolve } from 'path';
 import { TypeScriptModelClassTargetLanguage } from '../../code-generation/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
-import { LEADING_COMMENT } from './utils.js';
+import { LEADING_COMMENT, tryMakeGeneratorInputData } from './utils.js';
 
 /**
  * The name of the generator for {@link ModelRunCodeGeneratorForTypeScriptModelClass}.
@@ -23,9 +22,7 @@ export class ModelRunCodeGeneratorForTypeScriptModelClass extends ModelRunCodeGe
   async _call(context: WorkspaceContext): Promise<GeneratedSchemas> {
     const { generator, configuration } = this;
 
-    const input = await context.call(ModelMakeGeneratorQuicktypeInputData, {
-      configuration,
-    });
+    const input = await tryMakeGeneratorInputData(context, configuration);
 
     const { output } = configuration;
     if (!output || typeof output !== 'string') {
