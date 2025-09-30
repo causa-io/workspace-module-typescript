@@ -107,22 +107,31 @@ describe('ModelRunCodeGeneratorForTypeScriptModelClass', () => {
     ).toThrow(NoImplementationFoundError);
   });
 
+  it('should throw an error if the input data cannot be created', async () => {
+    const { context } = createContext({
+      projectPath: tmpDir,
+      configuration: baseConfiguration,
+      // ModelMakeGeneratorQuicktypeInputData will not be present.
+      functions: [ModelRunCodeGeneratorForTypeScriptModelClass],
+    });
+
+    const actualPromise = context.call(ModelRunCodeGenerator, baseArguments);
+
+    await expect(actualPromise).rejects.toThrow(
+      'Could not generate input data for code generation. Ensure the model schema format is supported.',
+    );
+  });
+
   it('should generate TypeScript classes from JSON schemas and return GeneratedSchemas', async () => {
     const schemaFile = join(tmpDir, 'person.schema.json');
     await writeFile(schemaFile, JSON.stringify(SCHEMA));
     const { context, functionRegistry } = createContext({
       projectPath: tmpDir,
-      configuration: {
-        ...baseConfiguration,
-        project: {
-          ...baseConfiguration.project!,
-          language: 'typescript',
-        },
-      },
+      configuration: baseConfiguration,
       functions: [ModelRunCodeGeneratorForTypeScriptModelClass],
     });
     const input = await makeJsonSchemaInputData([schemaFile]);
-    const parseMock = registerMockFunction(
+    const makeMock = registerMockFunction(
       functionRegistry,
       ModelMakeGeneratorQuicktypeInputData,
       async () => input,
@@ -138,7 +147,7 @@ describe('ModelRunCodeGeneratorForTypeScriptModelClass', () => {
     });
 
     const file = join(tmpDir, 'generated.ts');
-    expect(parseMock).toHaveBeenCalledWith(context, { configuration });
+    expect(makeMock).toHaveBeenCalledWith(context, { configuration });
     expect(result).toEqual({
       [schemaFile]: { name: 'Person', file },
       [`${schemaFile}#/properties/address`]: { name: 'Address', file },
