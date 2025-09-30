@@ -21,6 +21,7 @@ For all the configuration in your Causa files related to TypeScript (but also Ja
 Projects supported by this module must have `typescript` (or in some cases `javascript` is enough) as their `project.language`. The following Causa `project.type`s are supported:
 
 - `package`: Builds TypeScript packages using `npm run build`, then creates an archive using `npm pack`. JavaScript packages skip the build step. Both are published using `npm publish` on the packed archive.
+- `serverlessFunctions`: Builds TypeScript packages using `npm run build`, then creates an archive as a ZIP file. Publishing is not implemented and depends on the `serverlessFunctions.platform`.
 - `serviceContainer`: Builds a Docker image for the service using [distroless](https://github.com/GoogleContainerTools/distroless). Publishing is implemented in the [core module](https://github.com/causa-io/workspace-module-core).
 
 Apart from `build` and `publish`, other project-level commands are supported:
