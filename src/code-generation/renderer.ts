@@ -453,7 +453,7 @@ export abstract class TypeScriptWithDecoratorsRenderer<
     const schema = modelClassSchemas[uri];
     if (!schema) {
       panic(
-        `No model class schema found for URI '${uri}' in class type '${type.getCombinedName()}'.`,
+        `No model class schema found for URI '${uri}' in class type '${type.getCombinedName()}'. Ensure it is included in the model class generator input.`,
       );
     }
 
