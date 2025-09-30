@@ -1,3 +1,4 @@
+import { findTypeForUri } from '@causa/workspace-core';
 import { ClassType, EnumType, panic, type Sourcelike } from 'quicktype-core';
 import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 import {
@@ -64,10 +65,11 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
    */
   protected defaultValueForProperty(context: ClassPropertyContext): Sourcelike {
     const {
+      classType,
       isConst,
       jsonName,
       property: { type },
-      propertyAttributes: { testObjectDefaultValue },
+      propertyAttributes: { testObjectDefaultValue, enumHint },
     } = context;
 
     const serializedTestObjectDefaultValue =
@@ -89,7 +91,35 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
 
     switch (singleType.kind) {
       case 'string':
-        return serializedTestObjectDefaultValue ?? "'string'";
+        if (serializedTestObjectDefaultValue) {
+          return serializedTestObjectDefaultValue;
+        }
+
+        if (enumHint) {
+          if (typeof enumHint !== 'string') {
+            panic(`Invalid enum hint for property '${jsonName}'.`);
+          }
+
+          const enumType = findTypeForUri(this.typeGraph, classType, enumHint);
+          if (!enumType) {
+            this.logger.warn(
+              `Could not find type for enum hint '${enumHint}' in property '${jsonName}'.`,
+            );
+          } else if (!(enumType instanceof EnumType)) {
+            this.logger.warn(
+              `Type for enum hint '${enumHint}' in property '${jsonName}' is not an enum.`,
+            );
+          } else {
+            const firstCase = enumType.cases.values().next().value;
+            if (!firstCase) {
+              panic(`Enum type '${enumType.getCombinedName()}' has no cases.`);
+            }
+
+            return JSON.stringify(firstCase);
+          }
+        }
+
+        return "'string'";
       case 'integer':
         return serializedTestObjectDefaultValue ?? '0';
       case 'double':
@@ -118,8 +148,7 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
       case 'enum':
         let enumType = singleType as EnumType;
         const firstCase =
-          serializedTestObjectDefaultValue ??
-          enumType.cases.values().next().value;
+          testObjectDefaultValue ?? enumType.cases.values().next().value;
         if (!firstCase) {
           panic(`Enum type '${enumType.getCombinedName()}' has no cases.`);
         }
