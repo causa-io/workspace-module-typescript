@@ -5,8 +5,8 @@ import {
 } from '@causa/workspace-core';
 import archiver from 'archiver';
 import { createWriteStream } from 'fs';
+import { randomUUID } from 'node:crypto';
 import { resolve } from 'path';
-import * as uuid from 'uuid';
 import { NpmService } from '../services/index.js';
 
 /**
@@ -40,7 +40,7 @@ export class ProjectBuildArtefactForTypeScriptServerlessFunctions extends Projec
 
     const archivePath = resolve(
       process.cwd(),
-      this.artefact ?? `${uuid.v4()}.zip`,
+      this.artefact ?? `${randomUUID()}.zip`,
     );
     const globPatterns = [
       ...DEFAULT_ARCHIVE_GLOB_PATTERNS,

@@ -3,9 +3,9 @@ import {
   ProjectBuildArtefact,
   ServiceContainerBuilderService,
 } from '@causa/workspace-core';
+import { randomUUID } from 'node:crypto';
 import { major } from 'semver';
 import { fileURLToPath } from 'url';
-import * as uuid from 'uuid';
 import type { TypeScriptConfiguration } from '../index.js';
 
 /**
@@ -39,7 +39,7 @@ export class ProjectBuildArtefactForTypeScriptServiceContainer extends ProjectBu
       `🍱 Building Docker image for TypeScript project '${projectName}'.`,
     );
 
-    const imageName = this.artefact ?? uuid.v4();
+    const imageName = this.artefact ?? randomUUID();
     const nodeVersion =
       typeScriptConf.get('javascript.node.version') ?? 'latest';
     const nodeMajorVersion =
