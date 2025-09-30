@@ -84,7 +84,7 @@ export class ProjectBuildArtefactForTypeScriptServerlessFunctions extends Projec
       archive.pipe(output);
 
       globPatterns.forEach((pattern) =>
-        archive.glob(pattern, { cwd: rootPath }),
+        archive.glob(pattern, { cwd: rootPath, follow: true }),
       );
       archive.finalize();
     });
