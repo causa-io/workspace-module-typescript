@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.14.0 (2025-10-20)
+
 Features:
 
 - Support generating enum hints on array types.
