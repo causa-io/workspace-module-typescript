@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Support generating enum hints on array types.
+
 ## v0.13.0 (2025-10-01)
 
 Features:

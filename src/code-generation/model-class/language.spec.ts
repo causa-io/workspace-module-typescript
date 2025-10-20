@@ -89,6 +89,13 @@ const SCHEMA = {
       type: 'string',
       causa: { enumHint: '#/$defs/MyEnum' },
     },
+    myArrayWithEnumHint: {
+      type: 'array',
+      items: {
+        type: 'string',
+      },
+      causa: { enumHint: '#/$defs/MyEnum' },
+    },
     myConst: {
       type: 'string',
       const: 'a',
@@ -223,6 +230,9 @@ describe('TypeScriptModelClassLanguage', () => {
     expectToMatchRegexParts(actualCode, ['readonly myEnum\\?: MyEnum;']);
     expectToMatchRegexParts(actualCode, [
       'readonly myEnumHint\\?: string \\| MyEnum;',
+    ]);
+    expectToMatchRegexParts(actualCode, [
+      'readonly myArrayWithEnumHint\\?: \\(string | MyEnum\\)[];',
     ]);
     expectToMatchRegexParts(actualCode, ['readonly myConst\\?: "a";']);
     expectToMatchRegexParts(actualCode, [

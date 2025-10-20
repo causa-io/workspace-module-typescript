@@ -1,5 +1,6 @@
 import { causaTypeAttributeKind, findTypeForUri } from '@causa/workspace-core';
 import {
+  ArrayType,
   ClassProperty,
   ClassType,
   EnumType,
@@ -264,7 +265,15 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
       return baseType;
     }
 
-    return [baseType, ' | ', this.sourceFor(enumType).source];
+    const enumSource = this.sourceFor(enumType).source;
+
+    if (type.kind === 'array') {
+      const arrayType = type as ArrayType;
+      const itemSource = this.sourceFor(arrayType.items).source;
+      return ['(', itemSource, ' | ', enumSource, ')[]'];
+    }
+
+    return [baseType, ' | ', enumSource];
   }
 
   // This is overridden to emit the decorators for each property.
