@@ -223,6 +223,25 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
   ): Sourcelike {
     this.addImports({ 'jest-extended': [] });
 
+    if (options.isConst) {
+      let enumType: EnumType | undefined;
+      if (type instanceof EnumType) {
+        enumType = type;
+      } else if (type instanceof UnionType) {
+        enumType = type.findMember('enum') as EnumType | undefined;
+      }
+
+      if (!enumType) {
+        panic(
+          `Const type must be an EnumType or a UnionType containing an EnumType.`,
+        );
+      }
+
+      return this.getMatcherForType(enumType, {
+        isOptional: options.isOptional,
+      });
+    }
+
     if (type instanceof UnionType) {
       const [hasNull, nonNullTypes] = removeNullFromUnion(type);
       const matchers = [...nonNullTypes].map((t) => this.getMatcherForType(t));

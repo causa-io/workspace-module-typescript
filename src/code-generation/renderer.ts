@@ -13,8 +13,10 @@ import {
   ClassType,
   EnumType,
   Name,
+  Namer,
   ObjectType,
   TypeScriptRenderer,
+  funPrefixNamer,
   panic,
   tsFlowOptions,
   type OptionValues,
@@ -567,5 +569,16 @@ export abstract class TypeScriptWithDecoratorsRenderer<
     }
 
     decorators.push({ source, imports });
+  }
+
+  protected makeEnumCaseNamer(): Namer {
+    // This makes the TypeScript renderer support non-string enum cases and constants, even though they are not
+    // officially supported by quicktype.
+    return funPrefixNamer('enum-cases', (s) =>
+      this.nameStyle(
+        typeof s === 'string' ? s : `const_${(s as any).toString()}`,
+        true,
+      ),
+    );
   }
 }

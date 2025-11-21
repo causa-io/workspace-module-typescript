@@ -108,6 +108,10 @@ const SCHEMA = {
     dummyRefToConstraint: {
       oneOf: [{ $ref: '#/$defs/MyClassWithNullConstraint' }],
     },
+    myNonStringConst: {
+      type: 'boolean',
+      const: true,
+    },
   },
   required: ['myProperty', 'myDefaultRequiredProperty'],
   $defs: {
@@ -237,6 +241,9 @@ describe('TypeScriptModelClassLanguage', () => {
     expectToMatchRegexParts(actualCode, ['readonly myConst\\?: "a";']);
     expectToMatchRegexParts(actualCode, [
       'readonly myOtherEnum\\?: MyOtherEnum;',
+    ]);
+    expectToMatchRegexParts(actualCode, [
+      'readonly myNonStringConst\\?: true;',
     ]);
     expectToMatchRegexParts(actualCode, [
       '🗜️',
