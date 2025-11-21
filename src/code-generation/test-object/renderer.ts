@@ -1,6 +1,9 @@
 import { findTypeForUri } from '@causa/workspace-core';
 import { ClassType, EnumType, panic, type Sourcelike } from 'quicktype-core';
-import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
+import {
+  ArrayType,
+  removeNullFromType,
+} from 'quicktype-core/dist/Type/index.js';
 import {
   TypeScriptWithDecoratorsRenderer,
   type ClassContext,
@@ -137,6 +140,33 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
         this.addImports({ crypto: ['randomUUID'] });
         return 'randomUUID()';
       case 'array':
+        const arrayType = singleType as ArrayType;
+        const itemType = arrayType.items;
+        if (itemType.kind === 'enum' && testObjectDefaultValue) {
+          if (!Array.isArray(testObjectDefaultValue)) {
+            panic(
+              `Invalid testObjectDefaultValue for array property '${jsonName}'.`,
+            );
+          }
+
+          if (testObjectDefaultValue.length > 0) {
+            const enumType = itemType as EnumType;
+            const { name: enumName, file } =
+              this.findModelClassSchema(enumType);
+            this.addImports({ [file]: [enumName] });
+            return [
+              '[',
+              ...testObjectDefaultValue.flatMap((value) => [
+                enumName,
+                '.',
+                this.nameForEnumCase(enumType, value),
+                ',',
+              ]),
+              ']',
+            ];
+          }
+        }
+
         return serializedTestObjectDefaultValue ?? '[]';
       case 'map':
         return serializedTestObjectDefaultValue ?? '{}';
