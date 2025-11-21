@@ -374,7 +374,20 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
       return true;
     }
 
+    // If the enum itself has Causa attributes, it is an `enum` in the raw schema definition, so it should be emitted.
+    const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
+      e.getAttributes(),
+    );
+    if (causaAttribute) {
+      return true;
+    }
+
     for (const parent of parents) {
+      if (parent instanceof UnionType) {
+        // This can occur for const enums that are also a primitive type, e.g. a boolean.
+        continue;
+      }
+
       if (!(parent instanceof ClassType)) {
         return true;
       }
