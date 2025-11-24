@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Features:
+
+- Handle non-string enum cases and constants in code generation.
+- Support `testObjectDefaultValue` for arrays of enums.
+
+Fixes:
+
+- Handle enums not being emitted when merged with a constant type.
+
 ## v0.14.0 (2025-10-20)
 
 Features:

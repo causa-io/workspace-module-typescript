@@ -12,7 +12,7 @@ export async function generateFromSchema(
   lang: TypeScriptWithDecoratorsTargetLanguage,
   schema: any,
   outputFile: string,
-  uri?: string,
+  uri?: string | string[],
 ): Promise<string> {
   const input = new JSONSchemaInput(new FetchingJSONSchemaStore(), [
     causaJsonSchemaAttributeProducer,
@@ -20,7 +20,12 @@ export async function generateFromSchema(
   await input.addSource({
     name: undefined as any,
     schema: JSON.stringify(schema),
-    uris: [uri ?? 'test.json'],
+    uris:
+      typeof uri === 'string'
+        ? [uri]
+        : Array.isArray(uri)
+          ? uri
+          : ['test.json'],
   });
   const inputData = new InputData();
   inputData.addInput(input);

@@ -10,6 +10,7 @@ import {
   type RenderContext,
   type Sourcelike,
   Type,
+  UnionType,
 } from 'quicktype-core';
 import type { SourcelikeArray } from 'quicktype-core/dist/Source.js';
 import {
@@ -230,9 +231,15 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
       isConst,
       constraintFor,
     } = context;
-    if (isConst && type instanceof EnumType) {
-      const constValue = type.cases.values().next().value;
+    if (isConst) {
+      let enumType: EnumType | undefined;
+      if (type instanceof EnumType) {
+        enumType = type;
+      } else if (type instanceof UnionType) {
+        enumType = type.findMember('enum') as EnumType | undefined;
+      }
 
+      const constValue = enumType?.cases.values().next().value;
       if (constValue !== undefined) {
         const basePropertyType = constraintFor
           ?.getProperties()
@@ -367,7 +374,20 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
       return true;
     }
 
+    // If the enum itself has Causa attributes, it is an `enum` in the raw schema definition, so it should be emitted.
+    const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
+      e.getAttributes(),
+    );
+    if (causaAttribute) {
+      return true;
+    }
+
     for (const parent of parents) {
+      if (parent instanceof UnionType) {
+        // This can occur for const enums that are also a primitive type, e.g. a boolean.
+        continue;
+      }
+
       if (!(parent instanceof ClassType)) {
         return true;
       }

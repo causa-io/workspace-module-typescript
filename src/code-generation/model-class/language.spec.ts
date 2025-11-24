@@ -108,6 +108,18 @@ const SCHEMA = {
     dummyRefToConstraint: {
       oneOf: [{ $ref: '#/$defs/MyClassWithNullConstraint' }],
     },
+    myNonStringConst: {
+      type: 'boolean',
+      const: true,
+    },
+    myMergedEnum: {
+      type: 'string',
+      causa: { enumHint: 'test.json-1#/$defs/MyMergedEnum' },
+    },
+    myConstValueMergedWithEnum: {
+      // The const type gets merged with the "identical" `MyMergedEnum`.
+      const: 'SingleValue',
+    },
   },
   required: ['myProperty', 'myDefaultRequiredProperty'],
   $defs: {
@@ -119,6 +131,11 @@ const SCHEMA = {
       title: 'MyOtherEnum',
       type: 'string',
       enum: ['b'],
+    },
+    MyMergedEnum: {
+      title: 'MyMergedEnum',
+      type: 'string',
+      enum: ['SingleValue'],
     },
     MyClassWithNullConstraint: {
       title: 'MyClassWithNullConstraint',
@@ -187,7 +204,11 @@ describe('TypeScriptModelClassLanguage', () => {
       { decoratorRenderers: [MyDecoratorRenderer] },
     );
 
-    const actualCode = await generateFromSchema(language, SCHEMA, outputFile);
+    const actualCode = await generateFromSchema(language, SCHEMA, outputFile, [
+      'test.json',
+      // Forces generation of the enum as a top level schema.
+      'test.json#/$defs/MyMergedEnum',
+    ]);
 
     expectToMatchRegexParts(actualCode, [
       `import \\{ ClassDecorator, MyDecorator \\} from "my-module";`,
@@ -207,6 +228,11 @@ describe('TypeScriptModelClassLanguage', () => {
       'A = "a",',
       'B = "b",',
       'C = "c",',
+      '\\}',
+    ]);
+    expectToMatchRegexParts(actualCode, [
+      'export enum MyMergedEnum\\s+\\{',
+      'SingleValue = "SingleValue",',
       '\\}',
     ]);
     expectToMatchRegexParts(actualCode, [
@@ -239,6 +265,12 @@ describe('TypeScriptModelClassLanguage', () => {
       'readonly myOtherEnum\\?: MyOtherEnum;',
     ]);
     expectToMatchRegexParts(actualCode, [
+      'readonly myNonStringConst\\?: true;',
+    ]);
+    expectToMatchRegexParts(actualCode, [
+      'readonly myMergedEnum\\?: string | MyMergedEnum;',
+    ]);
+    expectToMatchRegexParts(actualCode, [
       '🗜️',
       'export type MyClassWithNull = MyClass & MyClassWithNullConstraint;',
       '🗜️',
@@ -253,6 +285,10 @@ describe('TypeScriptModelClassLanguage', () => {
       'test.json': { name: 'MyClass', file: outputFile },
       'test.json#/$defs/MyEnum': { name: 'MyEnum', file: outputFile },
       'test.json#/$defs/MyOtherEnum': { name: 'MyOtherEnum', file: outputFile },
+      'test.json-1#/$defs/MyMergedEnum': {
+        name: 'MyMergedEnum',
+        file: outputFile,
+      },
       'test.json#/properties/myChildClass/oneOf/0': {
         name: 'MyChildClass',
         file: outputFile,

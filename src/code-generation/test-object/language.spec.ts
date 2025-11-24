@@ -36,6 +36,11 @@ const SCHEMA = {
       type: 'string',
       causa: { testObjectDefaultValue: 'something' },
     },
+    arrayOfEnums: {
+      type: 'array',
+      items: { $ref: '#/$defs/MyEnum' },
+      causa: { testObjectDefaultValue: ['SECOND', 'THIRD'] },
+    },
   },
   required: ['stringProp', 'integerProp', 'boolProp', 'arrayProp', 'classProp'],
   $defs: {
@@ -97,6 +102,7 @@ describe('TypeScriptTestObjectRenderer', () => {
     expectToMatchRegexParts(actualCode, [
       'export function makeTestClass\\(data: Partial<TestClass> = {}\\): TestClass \\{',
       'return new TestClass\\({',
+      'arrayOfEnums: \\[MySpecialEnum.Second, MySpecialEnum.Third\\],',
       'arrayProp: \\[\\],',
       'boolProp: false,',
       'classProp: makeChildClass\\(\\),',
