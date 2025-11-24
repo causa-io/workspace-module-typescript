@@ -83,6 +83,7 @@ describe('ProjectBuildArtefactForTypeScriptServerlessFunctions', () => {
     await writeFile(resolve(tmpDir, 'package.json'), '{}');
     await writeFile(resolve(tmpDir, 'package-lock.json'), '🔒');
     await writeFile(resolve(tmpDir, 'dist', 'index.js'), '🧑‍💻');
+    await writeFile(resolve(tmpDir, '.npmrc'), '🔧');
     await writeFile(resolve(tmpDir, 'nope.js'), '🙈');
 
     const actualArtefact = await context.call(ProjectBuildArtefact, {});
@@ -94,6 +95,7 @@ describe('ProjectBuildArtefactForTypeScriptServerlessFunctions', () => {
       'package.json': '{}',
       'package-lock.json': '🔒',
       'dist/index.js': '🧑‍💻',
+      '.npmrc': '🔧',
     });
     artefactPath = actualArtefact;
   });
