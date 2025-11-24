@@ -16,12 +16,13 @@ const DEFAULT_ARCHIVE_GLOB_PATTERNS = [
   'package.json',
   'package-lock.json',
   'dist/**/*',
+  '.npmrc',
 ];
 
 /**
  * Implements the {@link ProjectBuildArtefact} function for TypeScript serverless functions.
  * This first builds the project using the `npm run build` script and then creates a ZIP archive containing the
- * `package.json`, `package-lock.json` and the `dist` folder.
+ * `package.json`, `package-lock.json`, `.npmrc`, and the `dist` folder.
  * The returned artefact is the path to the created ZIP archive.
  */
 export class ProjectBuildArtefactForTypeScriptServerlessFunctions extends ProjectBuildArtefact {
