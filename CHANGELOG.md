@@ -6,6 +6,7 @@ Features:
 
 - Handle non-string enum cases and constants in code generation.
 - Support `testObjectDefaultValue` for arrays of enums.
+- Include `.npmrc` by default in serverless functions artefacts.
 
 Fixes:
 
