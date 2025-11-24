@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.15.0 (2025-11-24)
+
 Features:
 
 - Handle non-string enum cases and constants in code generation.
