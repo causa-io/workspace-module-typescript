@@ -1,9 +1,9 @@
-import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassPropertyContext,
   TypeScriptWithDecoratorsRenderer,
 } from '../renderer.js';
+import { getSingleType } from '../utilities.js';
 
 /**
  * The name of the Causa module for the TypeScript runtime.
@@ -26,8 +26,8 @@ export class CausaValidatorRenderer extends TypeScriptWithDecoratorsRenderer {
   decoratorsForProperty(context: ClassPropertyContext): TypeScriptDecorator[] {
     const decorators: TypeScriptDecorator[] = [];
 
-    const [nullType] = removeNullFromType(context.property.type);
-    if (nullType) {
+    const { isNullable } = getSingleType(context.property.type);
+    if (isNullable) {
       this.addDecoratorToList(
         decorators,
         context,
