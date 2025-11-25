@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Handle non-string constants in test constraint object creation and for validation decorators.
+
 ## v0.15.0 (2025-11-24)
 
 Features:
