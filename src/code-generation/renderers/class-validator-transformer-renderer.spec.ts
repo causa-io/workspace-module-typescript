@@ -52,6 +52,9 @@ describe('ClassValidatorTransformerPropertyDecoratorsRenderer', () => {
         myOverride: { type: 'integer', causa: { tsType: 'bigint' } },
         myObject: { type: 'object', additionalProperties: true },
         myNull: { type: 'null' },
+        myStringConst: { const: 'fixedValue' },
+        myBoolConst: { const: true },
+        myNumberConst: { const: 42 },
       },
       required: ['myClass'],
       additionalProperties: false,
@@ -79,5 +82,10 @@ describe('ClassValidatorTransformerPropertyDecoratorsRenderer', () => {
     expect(actualCode).toMatch(/[^@]*\n\s+readonly myOverride/);
     expect(actualCode).toMatch(/@IsObject\(\)\n\s+readonly myObject/);
     expect(actualCode).toMatch(/@Equals\(null\)\n\s+readonly myNull/);
+    expect(actualCode).toMatch(
+      /@IsIn\(\["fixedValue"\]\)\n\s+readonly myStringConst/,
+    );
+    expect(actualCode).toMatch(/@IsIn\(\[true\]\)\n\s+readonly myBoolConst/);
+    expect(actualCode).toMatch(/@IsIn\(\[42\]\)\n\s+readonly myNumberConst/);
   });
 });

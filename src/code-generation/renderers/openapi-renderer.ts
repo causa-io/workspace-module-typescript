@@ -62,12 +62,11 @@ function typeToDecoratorOptions(
   } = {},
 ): SourcelikeArray {
   const { isArrayItem, required } = options;
-  const singleTypeInfo = getSingleType(type);
-  if (!singleTypeInfo) {
+  const { type: singleType, isNullable, isArray } = getSingleType(type);
+  if (!singleType) {
     return [];
   }
 
-  const { type: singleType, isNullable, isArray } = singleTypeInfo;
   let decoratorOptions: SourcelikeArray = [];
   // If `required` is set, add it to the options using the `required` property.
   // This is how it should be done except for the `object` type.
@@ -145,18 +144,16 @@ function typeToDecoratorOptions(
  * @returns The list of classes used by the type.
  */
 function listReferencedClasses(type: Type): string[] {
-  const singleTypeInfo = getSingleType(type);
-  if (!singleTypeInfo) {
+  const { type: singleType, isArray } = getSingleType(type);
+  if (!singleType) {
     return [];
   }
 
-  if (singleTypeInfo.isArray) {
-    return listReferencedClasses(singleTypeInfo.type);
+  if (isArray) {
+    return listReferencedClasses(singleType);
   }
 
-  return singleTypeInfo.type.kind === 'class'
-    ? [singleTypeInfo.type.getCombinedName()]
-    : [];
+  return singleType.kind === 'class' ? [singleType.getCombinedName()] : [];
 }
 
 /**

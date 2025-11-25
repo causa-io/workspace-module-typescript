@@ -1,4 +1,10 @@
-import { ArrayType, type Sourcelike, Type } from 'quicktype-core';
+import {
+  ArrayType,
+  EnumType,
+  PrimitiveType,
+  type Sourcelike,
+  Type,
+} from 'quicktype-core';
 import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 
 /**
@@ -34,15 +40,17 @@ export function typeScriptSourceForObject(
 
 /**
  * Removes the null type from the given type, and extracts the items type for array types.
+ * This also handles the case of non-string constants, which are enum types (but from which a primitive type must be
+ * removed).
  *
  * @param type The type for which the single type should be extracted.
- * @returns Information about the single type, or `null` if the type is not a single type.
+ * @returns Information about the single type.
  */
 export function getSingleType(type: Type): {
   /**
-   * The single type.
+   * The single type, or `null` if there are multiple non-null types.
    */
-  type: Type;
+  type: Type | null;
 
   /**
    * Whether the original type was nullable.
@@ -53,19 +61,36 @@ export function getSingleType(type: Type): {
    * Whether the original type was an array.
    */
   isArray: boolean;
-} | null {
+} {
   const [nullType, propertyType] = removeNullFromType(type);
-  if (propertyType.size !== 1) {
-    return null;
+  const isNullable = nullType !== null;
+
+  if (propertyType.size > 1) {
+    const typesWithoutPrimitives = [...propertyType].filter(
+      (t) => !(t instanceof PrimitiveType),
+    );
+    if (
+      typesWithoutPrimitives.length === 1 &&
+      typesWithoutPrimitives[0] instanceof EnumType
+    ) {
+      return {
+        type: typesWithoutPrimitives[0],
+        isNullable,
+        isArray: false,
+      };
+    }
   }
 
-  const isNullable = nullType !== null;
+  if (propertyType.size !== 1) {
+    return { type: null, isNullable, isArray: false };
+  }
+
   const nonNullType = [...propertyType][0];
   const isArray = nonNullType.kind === 'array';
 
-  if (isArray) {
-    return { type: (nonNullType as ArrayType).items, isNullable, isArray };
-  }
-
-  return { type: nonNullType, isNullable, isArray };
+  return {
+    type: isArray ? (nonNullType as ArrayType).items : nonNullType,
+    isNullable,
+    isArray,
+  };
 }

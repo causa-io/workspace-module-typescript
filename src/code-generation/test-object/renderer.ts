@@ -1,14 +1,11 @@
 import { findTypeForUri } from '@causa/workspace-core';
 import { ClassType, EnumType, panic, type Sourcelike } from 'quicktype-core';
 import {
-  ArrayType,
-  removeNullFromType,
-} from 'quicktype-core/dist/Type/index.js';
-import {
   TypeScriptWithDecoratorsRenderer,
   type ClassContext,
   type ClassPropertyContext,
 } from '../renderer.js';
+import { getSingleType } from '../utilities.js';
 import type { TypeScriptTestObjectOptions } from './options.js';
 
 /**
@@ -80,17 +77,43 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
         ? JSON.stringify(testObjectDefaultValue)
         : undefined;
 
-    const [hasNull, nonNullType] = removeNullFromType(type);
-    if (hasNull && !serializedTestObjectDefaultValue) {
+    const { isNullable, isArray, type: singleType } = getSingleType(type);
+    if (isNullable && !serializedTestObjectDefaultValue) {
       return 'null';
     }
-    if (nonNullType.size === 0) {
+    if (!singleType) {
       panic(
         `Cannot generate default value for type '${type.kind}' with no non-null types.`,
       );
     }
 
-    const singleType = [...nonNullType][0];
+    if (isArray) {
+      if (singleType.kind === 'enum' && testObjectDefaultValue) {
+        if (!Array.isArray(testObjectDefaultValue)) {
+          panic(
+            `Invalid testObjectDefaultValue for array property '${jsonName}'.`,
+          );
+        }
+
+        if (testObjectDefaultValue.length > 0) {
+          const enumType = singleType as EnumType;
+          const { name: enumName, file } = this.findModelClassSchema(enumType);
+          this.addImports({ [file]: [enumName] });
+          return [
+            '[',
+            ...testObjectDefaultValue.flatMap((value) => [
+              enumName,
+              '.',
+              this.nameForEnumCase(enumType, value),
+              ',',
+            ]),
+            ']',
+          ];
+        }
+      }
+
+      return serializedTestObjectDefaultValue ?? '[]';
+    }
 
     switch (singleType.kind) {
       case 'string':
@@ -114,7 +137,7 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
             );
           } else {
             const firstCase = enumType.cases.values().next().value;
-            if (!firstCase) {
+            if (firstCase === undefined) {
               panic(`Enum type '${enumType.getCombinedName()}' has no cases.`);
             }
 
@@ -139,35 +162,6 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
 
         this.addImports({ crypto: ['randomUUID'] });
         return 'randomUUID()';
-      case 'array':
-        const arrayType = singleType as ArrayType;
-        const itemType = arrayType.items;
-        if (itemType.kind === 'enum' && testObjectDefaultValue) {
-          if (!Array.isArray(testObjectDefaultValue)) {
-            panic(
-              `Invalid testObjectDefaultValue for array property '${jsonName}'.`,
-            );
-          }
-
-          if (testObjectDefaultValue.length > 0) {
-            const enumType = itemType as EnumType;
-            const { name: enumName, file } =
-              this.findModelClassSchema(enumType);
-            this.addImports({ [file]: [enumName] });
-            return [
-              '[',
-              ...testObjectDefaultValue.flatMap((value) => [
-                enumName,
-                '.',
-                this.nameForEnumCase(enumType, value),
-                ',',
-              ]),
-              ']',
-            ];
-          }
-        }
-
-        return serializedTestObjectDefaultValue ?? '[]';
       case 'map':
         return serializedTestObjectDefaultValue ?? '{}';
       case 'class':
@@ -179,7 +173,7 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
         let enumType = singleType as EnumType;
         const firstCase =
           testObjectDefaultValue ?? enumType.cases.values().next().value;
-        if (!firstCase) {
+        if (firstCase === undefined) {
           panic(`Enum type '${enumType.getCombinedName()}' has no cases.`);
         }
 

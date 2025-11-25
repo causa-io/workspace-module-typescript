@@ -152,19 +152,25 @@ describe('TypeScriptTestObjectRenderer', () => {
       properties: {
         name: { type: 'string', causa: { testObjectDefaultValue: 'name' } },
         age: { oneOf: [{ type: 'integer' }, { type: 'null' }] },
+        weight: { type: 'integer' },
+        valid: { type: 'boolean' },
         dummyRefToConstraint: {
           oneOf: [{ $ref: '#/$defs/PersonWithAgeConstraint' }],
         },
       },
-      required: ['name', 'age'],
+      required: ['name', 'age', 'weight'],
       $defs: {
         PersonWithAgeConstraint: {
           title: 'PersonWithAgeConstraint',
           type: 'object',
           additionalProperties: false,
           causa: { constraintFor: '#' },
-          properties: { age: { type: 'integer' } },
-          required: ['age'],
+          properties: {
+            age: { type: 'integer' },
+            weight: { const: 3 },
+            valid: { const: true },
+          },
+          required: ['age', 'weight'],
         },
       },
     };
@@ -198,6 +204,8 @@ describe('TypeScriptTestObjectRenderer', () => {
       '\\): PersonWithAge \\{',
       'return new Person\\(\\{',
       'age: 0,',
+      'valid: true,',
+      'weight: 3,',
       'name: "name",',
       '...data,',
       '\\}\\) as PersonWithAge;',
@@ -205,6 +213,8 @@ describe('TypeScriptTestObjectRenderer', () => {
       'return new Person\\(\\{',
       'age: null,',
       'name: "name",',
+      'valid: false,',
+      'weight: 0',
       '...data,',
       '\\}\\);',
     ]);
