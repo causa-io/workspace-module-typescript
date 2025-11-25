@@ -1,18 +1,16 @@
 import {
-  ArrayType,
   EnumType,
   Name,
   type Sourcelike,
   Type,
   type TypeKind,
 } from 'quicktype-core';
-import { removeNullFromType } from 'quicktype-core/dist/Type/index.js';
 import type { TypeScriptDecorator } from '../decorator.js';
 import {
   type ClassPropertyContext,
   TypeScriptWithDecoratorsRenderer,
 } from '../renderer.js';
-import { typeScriptSourceForObject } from '../utilities.js';
+import { getSingleType, typeScriptSourceForObject } from '../utilities.js';
 
 /**
  * The name of the class validator module, used to import the validation decorators.
@@ -90,30 +88,31 @@ export class ClassValidatorTransformerPropertyDecoratorsRenderer extends TypeScr
       return [];
     }
 
-    const propertyType = removeNullFromType(context.property.type)[1];
-    if (propertyType.size < 1) {
+    const {
+      type: singleType,
+      isNullable,
+      isArray,
+    } = getSingleType(context.property.type);
+
+    if (!singleType) {
       const decorators: TypeScriptDecorator[] = [];
-      this.addDecoratorToList(
-        decorators,
-        context,
-        'Equals',
-        CLASS_VALIDATOR_MODULE,
-        '@Equals(null)',
-      );
+      if (isNullable) {
+        this.addDecoratorToList(
+          decorators,
+          context,
+          'Equals',
+          CLASS_VALIDATOR_MODULE,
+          '@Equals(null)',
+        );
+      }
       return decorators;
-    }
-    if (propertyType.size > 1) {
-      return [];
     }
 
     const decorators: TypeScriptDecorator[] = [];
     let typeName: Name | string | null = null;
-    let singleType = [...propertyType][0];
 
     let arrayOptions: Sourcelike = '';
-    if (singleType.kind === 'array') {
-      singleType = (singleType as ArrayType).items;
-
+    if (isArray) {
       arrayOptions = typeScriptSourceForObject({ each: true });
       this.addDecoratorToList(
         decorators,
@@ -127,16 +126,16 @@ export class ClassValidatorTransformerPropertyDecoratorsRenderer extends TypeScr
     // From here, `singleType` is the type of the property without the array wrapper nor nullability information.
     // All decorators below this point only care about this "single type".
 
-    TYPE_KIND_TO_DECORATORS[singleType.kind]?.forEach((definition) => {
+    TYPE_KIND_TO_DECORATORS[singleType.kind]?.forEach(({ name, source }) => {
       this.addDecoratorToList(
         decorators,
         context,
-        definition.name,
+        name,
         CLASS_VALIDATOR_MODULE,
-        (
-          definition.source ??
-          ((_, opts) => [`@${definition.name}(`, opts, ')'])
-        )(singleType, arrayOptions),
+        (source ?? ((_, opts) => [`@${name}(`, opts, ')']))(
+          singleType,
+          arrayOptions,
+        ),
       );
     });
 
