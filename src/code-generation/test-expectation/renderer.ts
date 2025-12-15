@@ -582,7 +582,7 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
   }
 
   protected emitClassBlock(classType: ClassType): void {
-    const [context, causaAttribute] = this.contextForClassType(classType);
+    const [context] = this.contextForClassType(classType);
     const [expectation, eventTopic] = this.getExpectationForClass(context);
     if (!expectation) {
       return;
@@ -608,7 +608,7 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
     }
 
     if (functionNames.length > 0) {
-      this.addGeneratedSchema(causaAttribute, functionNames.join(','));
+      this.addGeneratedSchema(classType, functionNames.join(','));
     }
   }
 

@@ -144,7 +144,7 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
   // - Track the generated class in `generatedSchemas`.
   // - Emit an additional type when the class is marked as being a constraint for another type.
   protected emitClassBlock(classType: ClassType, className: Name): void {
-    const [context, causaAttribute] = this.contextForClassType(classType);
+    const [context] = this.contextForClassType(classType);
 
     if (context.constraintFor) {
       const constrainedClassName = this.emitConstrainedClassType(
@@ -154,9 +154,9 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
       this.ensureBlankLine();
       this.emitDescription(this.descriptionForType(classType));
 
-      this.addGeneratedSchema(causaAttribute, constrainedClassName);
+      this.addGeneratedSchema(classType, constrainedClassName);
     } else {
-      this.addGeneratedSchema(causaAttribute, className);
+      this.addGeneratedSchema(classType, className);
     }
 
     [
@@ -420,10 +420,7 @@ export class TypeScriptModelClassRenderer extends TypeScriptWithDecoratorsRender
       return;
     }
 
-    const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
-      e.getAttributes(),
-    );
-    this.addGeneratedSchema(causaAttribute, enumName);
+    this.addGeneratedSchema(e, enumName);
 
     return super.emitEnum(e, enumName);
   }

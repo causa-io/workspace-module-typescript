@@ -15,6 +15,7 @@ import {
   Name,
   Namer,
   ObjectType,
+  Type,
   TypeScriptRenderer,
   funPrefixNamer,
   panic,
@@ -28,6 +29,8 @@ import { AcronymStyleOptions } from 'quicktype-core/dist/support/Acronyms.js';
 import { ConvertersOptions } from 'quicktype-core/dist/support/Converters.js';
 import type { TypeScriptDecorator } from './decorator.js';
 import type { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
+
+const HASH_CODE_PREFIX = '$';
 
 /**
  * The default suffix for constraint types.
@@ -390,23 +393,29 @@ export abstract class TypeScriptWithDecoratorsRenderer<
    * @param causaAttribute The {@link CausaAttribute} for the generated type (either a class or an enum).
    * @param generatedName The {@link Name} of the generated type, or a string (if it has already been looked up).
    */
-  protected addGeneratedSchema(
-    causaAttribute: CausaAttribute | undefined,
-    generatedName: Name | string,
-  ): void {
-    const uri = causaAttribute?.uri;
-    if (!uri) {
-      this.logger.warn(
-        'Failed to find URI for generated schema in Causa attribute.',
-      );
-      return;
-    }
-
-    const file = this.targetLanguage.outputPath;
+  protected addGeneratedSchema(type: Type, generatedName: Name | string): void {
     const name =
       typeof generatedName === 'string'
         ? generatedName
         : this.names.get(generatedName);
+    const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
+      type.getAttributes(),
+    );
+
+    let uri = causaAttribute?.uri;
+    if (!uri) {
+      const identity = type.identity;
+      if (!identity) {
+        this.logger.warn(
+          `Failed to find URI for generated schema '${name}' in Causa attribute.`,
+        );
+        return;
+      }
+
+      uri = `${HASH_CODE_PREFIX}${identity.hashCode()}`;
+    }
+
+    const file = this.targetLanguage.outputPath;
     if (!name) {
       panic(`Could not find name for generated schema '${uri}'.`);
     }
@@ -440,13 +449,9 @@ export abstract class TypeScriptWithDecoratorsRenderer<
     const causaAttribute = causaTypeAttributeKind.tryGetInAttributes(
       type.getAttributes(),
     );
-    if (!causaAttribute) {
-      panic(
-        `Class type '${type.getCombinedName()}' has no Causa attribute URI.`,
-      );
-    }
+    const uri =
+      causaAttribute?.uri ?? `${HASH_CODE_PREFIX}${type.identity?.hashCode()}`;
 
-    const { uri } = causaAttribute;
     const modelClassSchemas = this.targetLanguage.options.modelClassSchemas;
     if (!modelClassSchemas) {
       panic('No model class schemas found in target language options.');

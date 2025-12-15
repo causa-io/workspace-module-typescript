@@ -254,8 +254,7 @@ export class TypeScriptTestObjectRenderer extends TypeScriptWithDecoratorsRender
     this.ensureBlankLine();
     const functionName = this.emitMakeFunction(classType);
 
-    const [, causaAttribute] = this.contextForClassType(classType);
-    this.addGeneratedSchema(causaAttribute, functionName);
+    this.addGeneratedSchema(classType, functionName);
   }
 
   // Don't emit descriptions.
