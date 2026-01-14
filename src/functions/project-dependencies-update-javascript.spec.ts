@@ -28,9 +28,8 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
   let ProjectDependenciesUpdateForJavaScript: typeof ProjectDependenciesUpdateForJavaScriptType;
 
   beforeEach(async () => {
-    ({ ProjectDependenciesUpdateForJavaScript } = await import(
-      './project-dependencies-update-javascript.js'
-    ));
+    ({ ProjectDependenciesUpdateForJavaScript } =
+      await import('./project-dependencies-update-javascript.js'));
     tmpDir = resolve(await mkdtemp('causa-test-'));
     ({ context } = createContext({
       workingDirectory: tmpDir,
