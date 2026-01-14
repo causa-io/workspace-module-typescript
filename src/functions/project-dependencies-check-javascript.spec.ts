@@ -22,9 +22,8 @@ describe('ProjectDependenciesCheckForJavaScript', () => {
   let ProjectDependenciesCheckForJavaScript: typeof ProjectDependenciesCheckForJavaScriptType;
 
   beforeEach(async () => {
-    ({ ProjectDependenciesCheckForJavaScript } = await import(
-      './project-dependencies-check-javascript.js'
-    ));
+    ({ ProjectDependenciesCheckForJavaScript } =
+      await import('./project-dependencies-check-javascript.js'));
     ({ context } = createContext({
       configuration: {
         workspace: { name: '🏷️' },

@@ -14,8 +14,8 @@ import { Option, type StringTypeMapping, TargetLanguage } from 'quicktype-core';
  * it to disk.
  */
 export abstract class TypeScriptWithDecoratorsTargetLanguage<
-    T extends object = object,
-  >
+  T extends object = object,
+>
   extends TargetLanguage
   implements TargetLanguageWithWriter
 {
