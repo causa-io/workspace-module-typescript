@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Chores:
+
+- Upgrade dependencies.
+
 ## v0.15.1 (2025-11-25)
 
 Fixes:
