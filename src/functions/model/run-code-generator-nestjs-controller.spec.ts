@@ -8,7 +8,7 @@ import {
   type ImplementableFunctionArguments,
 } from '@causa/workspace/function-registry';
 import { createContext, registerMockFunction } from '@causa/workspace/testing';
-import { mkdtemp, readFile, rm, writeFile, mkdir } from 'fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -16,14 +16,15 @@ import {
   TypeScriptGetDecoratorRendererForCausaValidator,
   TypeScriptGetDecoratorRendererForClassValidator,
 } from '../typescript/index.js';
+import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import {
   ModelRunCodeGeneratorForTypeScriptNestjsController,
   TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
 } from './run-code-generator-nestjs-controller.js';
-import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 
 const OPENAPI_SPEC = `
 openapi: 3.1.0
+x-causaResourceName: Post
 info:
   title: Post API
   description: The API to manage posts.
@@ -114,28 +115,30 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
       language: 'typescript',
     },
   };
-  const baseArguments: ImplementableFunctionArguments<ModelRunCodeGenerator> = {
-    generator: TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
-    configuration: {},
-    previousGeneratorsOutput: {
-      [TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR]: {
-        '/project/entities/post.yaml': {
-          name: 'Post',
-          file: '/project/src/model/generated.ts',
-        },
-        '/project/entities/post-list.yaml': {
-          name: 'PostList',
-          file: '/project/src/model/generated.ts',
-        },
-      },
-    },
-  };
+  let baseArguments: ImplementableFunctionArguments<ModelRunCodeGenerator>;
 
   let tmpDir: string;
 
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), 'causa-test-'));
     await mkdir(join(tmpDir, 'api'), { recursive: true });
+
+    baseArguments = {
+      generator: TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
+      configuration: {},
+      previousGeneratorsOutput: {
+        [TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR]: {
+          [join(tmpDir, 'entities/post.yaml')]: {
+            name: 'Post',
+            file: join(tmpDir, 'src/model/generated.ts'),
+          },
+          [join(tmpDir, 'entities/post-list.yaml')]: {
+            name: 'PostList',
+            file: join(tmpDir, 'src/model/generated.ts'),
+          },
+        },
+      },
+    };
   });
 
   afterEach(async () => {
@@ -260,7 +263,7 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
       async () => ({
         includeEvents: false,
         globs: ['api/*.api.yaml'],
-        files: [],
+        files: [specFile],
       }),
     );
 
@@ -269,12 +272,12 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
       configuration: { output: 'src/api/', globs: ['api/*.api.yaml'] },
     });
 
-    // Check that schemas were recorded
-    expect(Object.keys(result)).toContain('synthetic:PostListQueryParams');
-    expect(Object.keys(result)).toContain('synthetic:PostGetPathParams');
-    expect(Object.keys(result)).toContain('synthetic:PostUpdatePathParams');
-    expect(Object.keys(result)).toContain('synthetic:PostUpdateQueryParams');
-    expect(Object.keys(result)).toContain('synthetic:PostDeletePathParams');
+    // Check that schemas were recorded (key is operationId/location)
+    expect(Object.keys(result)).toContain('postList/query');
+    expect(Object.keys(result)).toContain('postGet/path');
+    expect(Object.keys(result)).toContain('postUpdate/path');
+    expect(Object.keys(result)).toContain('postUpdate/query');
+    expect(Object.keys(result)).toContain('postDelete/path');
 
     // Check model.ts was generated
     const modelFile = join(tmpDir, 'src/api/model.ts');
@@ -304,24 +307,25 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
     expect(controllerContent).toContain(
       'export function AsPostApiController()',
     );
-    expect(controllerContent).toContain('Controller("posts")');
-    expect(controllerContent).toContain('Get("")'); // for /posts
-    expect(controllerContent).toContain('Get(":id")');
-    expect(controllerContent).toContain('Patch(":id")');
-    expect(controllerContent).toContain('Delete(":id")');
+    expect(controllerContent).toContain('_Controller("posts")');
+    expect(controllerContent).toContain('_Get("")'); // for /posts
+    expect(controllerContent).toContain('_Get(":id")');
+    expect(controllerContent).toContain('_Patch(":id")');
+    expect(controllerContent).toContain('_Delete(":id")');
 
     // Check HttpCode decorators
-    expect(controllerContent).toContain('HttpCode(HttpStatus.OK)');
-    expect(controllerContent).toContain('HttpCode(HttpStatus.NO_CONTENT)');
+    expect(controllerContent).toContain('_HttpCode(_HttpStatus.OK)');
+    expect(controllerContent).toContain('_HttpCode(_HttpStatus.NO_CONTENT)');
 
     // Check parameter decorators
-    expect(controllerContent).toContain('Param()');
-    expect(controllerContent).toContain('Query()');
+    expect(controllerContent).toContain('_Param()');
+    expect(controllerContent).toContain('_Query()');
   });
 
   it('should handle OpenAPI spec without parameters', async () => {
     const specWithoutParams = `
 openapi: 3.1.0
+x-causaResourceName: Health
 info:
   title: Health API
   version: 0.1.0
@@ -348,7 +352,7 @@ paths:
       async () => ({
         includeEvents: false,
         globs: ['api/*.api.yaml'],
-        files: [],
+        files: [specFile],
       }),
     );
 

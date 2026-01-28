@@ -1,22 +1,19 @@
-import type { GeneratedSchemas } from '@causa/workspace-core';
+import type { GeneratedSchema, GeneratedSchemas } from '@causa/workspace-core';
 import { writeFile } from 'fs/promises';
+import { dirname, relative, resolve, sep } from 'path';
 import prettier from 'prettier';
-import { relative, dirname } from 'path';
+import { getParameterSchemaKey } from './parameters-json-schema.js';
 import type {
+  ApiControllerMethod,
   HttpMethod,
   ParsedApiSpec,
   ParsedOperation,
-  ParsedResponse,
-} from './openapi-parser.js';
-import {
-  computeSubPath,
-  deriveMethodName,
-  resolveRefPath,
-} from './openapi-parser.js';
-import {
-  buildPathParamsClassName,
-  buildQueryParamsClassName,
-} from './schema-synthesizer.js';
+} from './types.js';
+
+/**
+ * An import dictionary mapping file paths to sets of symbols.
+ */
+type ImportDictionary = Record<string, Set<string>>;
 
 /**
  * Maps HTTP methods to NestJS decorator names.
@@ -32,468 +29,401 @@ const HTTP_METHOD_DECORATORS: Record<HttpMethod, string> = {
 /**
  * Maps HTTP status codes to NestJS HttpStatus enum values.
  */
-const HTTP_STATUS_MAP: Record<string, string> = {
-  '200': 'OK',
-  '201': 'CREATED',
-  '202': 'ACCEPTED',
-  '204': 'NO_CONTENT',
+const HTTP_STATUS_MAP: Record<number, string> = {
+  200: 'OK',
+  201: 'CREATED',
+  202: 'ACCEPTED',
+  204: 'NO_CONTENT',
 };
 
 /**
- * Information about a method to be rendered.
- */
-type MethodInfo = {
-  /**
-   * The method name.
-   */
-  name: string;
-
-  /**
-   * The operation ID from OpenAPI.
-   */
-  operationId: string;
-
-  /**
-   * The HTTP method.
-   */
-  httpMethod: HttpMethod;
-
-  /**
-   * The sub-path for the method decorator.
-   */
-  subPath: string;
-
-  /**
-   * The HTTP status code for the success response.
-   */
-  successStatusCode: string;
-
-  /**
-   * Whether the method has path parameters.
-   */
-  hasPathParams: boolean;
-
-  /**
-   * The class name for path parameters.
-   */
-  pathParamsClass?: string;
-
-  /**
-   * Whether the method has query parameters.
-   */
-  hasQueryParams: boolean;
-
-  /**
-   * The class name for query parameters.
-   */
-  queryParamsClass?: string;
-
-  /**
-   * Whether the method has a request body.
-   */
-  hasRequestBody: boolean;
-
-  /**
-   * The type name for the request body.
-   */
-  requestBodyType?: string;
-
-  /**
-   * The return type for the method.
-   */
-  returnType: string;
-
-  /**
-   * JSDoc description for the method.
-   */
-  description?: string;
-};
-
-/**
- * Gets the success response from a list of responses.
- * Prioritizes 200, 201, 202, then 204.
+ * Converts OpenAPI path syntax (`{param}`) to Express/NestJS syntax (`:param`).
  *
- * @param responses The responses from the operation.
- * @returns The success response, or undefined if none found.
+ * @param path The path with OpenAPI syntax.
+ * @returns The path with Express/NestJS syntax.
  */
-function getSuccessResponse(
-  responses: ParsedResponse[],
-): ParsedResponse | undefined {
-  const priorityOrder = ['200', '201', '202', '204'];
-
-  for (const code of priorityOrder) {
-    const response = responses.find((r) => r.statusCode === code);
-    if (response) {
-      return response;
-    }
-  }
-
-  // Fall back to the first 2xx response
-  return responses.find((r) => r.statusCode.startsWith('2'));
+function toExpressPath(path: string): string {
+  return path.replace(/\{([^}]+)\}/g, ':$1');
 }
 
 /**
- * Resolves a type name from a schema reference using the generated schemas.
+ * Computes the sub-path for an operation, relative to the (controller) base path.
  *
- * @param schemaRef The `$ref` value (e.g., `../entities/post.yaml`).
+ * @param fullPath The full path of the operation.
+ * @param basePath The controller base path.
+ * @returns The sub-path.
+ */
+function computeSubPath(fullPath: string, basePath: string): string {
+  let subPath = fullPath;
+
+  if (basePath && fullPath.startsWith(basePath)) {
+    subPath = fullPath.slice(basePath.length);
+  }
+
+  if (subPath.startsWith('/')) {
+    subPath = subPath.slice(1);
+  }
+
+  return subPath;
+}
+
+/**
+ * Derives the method name from the operation ID by removing the resource prefix.
+ * E.g., "myResourceNameRetry" with resource "MyResourceName" -> "retry".
+ *
+ * @param operationId The operation ID.
+ * @param resourceName The resource name.
+ * @returns The derived method name.
+ */
+export function computeMethodName(
+  operationId: string,
+  resourceName: string,
+): string {
+  let name = operationId;
+  if (name.toLowerCase().startsWith(resourceName.toLowerCase())) {
+    name = name.slice(resourceName.length);
+  }
+
+  name = name.replaceAll(/[^a-zA-Z]/g, '');
+  return name.charAt(0).toLowerCase() + name.slice(1);
+}
+
+/**
+ * Resolves a schema from a reference using the generated schemas.
+ *
+ * @param schemaRef The `$ref` value (e.g., `../schema.yaml`).
  * @param openApiFilePath The path to the OpenAPI file.
  * @param modelClassSchemas The generated schemas from the model class generator.
- * @returns The resolved type name, or `unknown` if not found.
+ * @returns The resolved schema.
  */
-function resolveTypeName(
+function resolveSchema(
   schemaRef: string,
   openApiFilePath: string,
   modelClassSchemas: GeneratedSchemas,
-): string {
-  const resolvedPath = resolveRefPath(schemaRef, openApiFilePath);
+): GeneratedSchema {
+  const resolvedPath = resolve(dirname(openApiFilePath), schemaRef);
 
-  // Try exact match first
   const exactMatch = modelClassSchemas[resolvedPath];
-  if (exactMatch) {
-    return exactMatch.name;
+  if (!exactMatch) {
+    throw new Error(
+      `Generated schema reference '${schemaRef}' could not be resolved from OpenAPI file '${openApiFilePath}'.`,
+    );
   }
 
-  // Try with fragment (e.g., for $defs references)
-  const fragment = schemaRef.includes('#') ? schemaRef.split('#')[1] : '';
-  if (fragment) {
-    const withFragment = `${resolvedPath}#${fragment}`;
-    const fragmentMatch = modelClassSchemas[withFragment];
-    if (fragmentMatch) {
-      return fragmentMatch.name;
-    }
-  }
-
-  // Try to find by just the filename
-  for (const [uri, schema] of Object.entries(modelClassSchemas)) {
-    if (
-      uri.endsWith(resolvedPath) ||
-      resolvedPath.endsWith(uri.replace(/^file:\/\//, ''))
-    ) {
-      return schema.name;
-    }
-  }
-
-  return 'unknown';
-}
-
-/**
- * Computes the relative import path from the controller file to the model file.
- *
- * @param controllerPath The path to the controller file.
- * @param modelPath The path to the model file.
- * @returns The relative import path with `.js` extension.
- */
-function computeRelativeImportPath(
-  controllerPath: string,
-  modelPath: string,
-): string {
-  let relativePath = relative(dirname(controllerPath), modelPath);
-
-  // Ensure it starts with ./ or ../
-  if (!relativePath.startsWith('.')) {
-    relativePath = `./${relativePath}`;
-  }
-
-  // Replace .ts extension with .js
-  return relativePath.replace(/\.ts$/, '.js');
+  return exactMatch;
 }
 
 /**
  * Builds method information from a parsed operation.
  *
  * @param operation The parsed operation.
- * @param resourceName The resource name.
- * @param basePath The base path of the API.
- * @param openApiFilePath The path to the OpenAPI file.
+ * @param apiSpec The parsed API specification.
  * @param modelClassSchemas The generated schemas from the model class generator.
+ * @param paramsSchemas The generated schemas for parameter classes.
  * @returns The method information.
  */
 function buildMethodInfo(
   operation: ParsedOperation,
-  resourceName: string,
-  basePath: string,
-  openApiFilePath: string,
+  apiSpec: ParsedApiSpec,
   modelClassSchemas: GeneratedSchemas,
-): MethodInfo {
-  const methodName = deriveMethodName(operation.operationId, resourceName);
+  paramsSchemas: GeneratedSchemas,
+): ApiControllerMethod {
+  const {
+    operationId,
+    requestBodyRef,
+    method: httpMethod,
+    successResponse,
+  } = operation;
+  const { resourceName, basePath, filePath } = apiSpec;
+
+  const name = computeMethodName(operationId, resourceName);
   const subPath = computeSubPath(operation.path, basePath);
-
-  const pathParams = operation.parameters.filter((p) => p.in === 'path');
-  const queryParams = operation.parameters.filter((p) => p.in === 'query');
-
-  const successResponse = getSuccessResponse(operation.responses);
-  const successStatusCode = successResponse?.statusCode ?? '200';
-
-  // Determine return type
-  let returnType = 'void';
-  if (successResponse?.schemaRef) {
-    returnType = resolveTypeName(
-      successResponse.schemaRef,
-      openApiFilePath,
-      modelClassSchemas,
-    );
-  } else if (successResponse?.schema) {
-    // Inline schema - use 'unknown' as we don't generate a type for it
-    returnType = 'unknown';
-  }
-
-  // Determine request body type
-  let requestBodyType: string | undefined;
-  if (operation.requestBody?.schemaRef) {
-    requestBodyType = resolveTypeName(
-      operation.requestBody.schemaRef,
-      openApiFilePath,
-      modelClassSchemas,
-    );
-  } else if (operation.requestBody?.schema) {
-    requestBodyType = 'unknown';
-  }
+  const successStatusCode = successResponse?.statusCode;
+  const returnTypeDescription = successResponse?.description;
+  const returnTypeSchema = successResponse?.schemaRef
+    ? resolveSchema(successResponse.schemaRef, filePath, modelClassSchemas)
+    : undefined;
+  const requestBodySchema = requestBodyRef
+    ? resolveSchema(requestBodyRef, filePath, modelClassSchemas)
+    : undefined;
+  const pathParamsSchema = operation.parameters.some((p) => p.in === 'path')
+    ? paramsSchemas[getParameterSchemaKey(operationId, 'path')]
+    : undefined;
+  const queryParamsSchema = operation.parameters.some((p) => p.in === 'query')
+    ? paramsSchemas[getParameterSchemaKey(operationId, 'query')]
+    : undefined;
+  const description = operation.description ?? operation.summary;
 
   return {
-    name: methodName,
-    operationId: operation.operationId,
-    httpMethod: operation.method,
+    name,
+    operationId,
+    httpMethod,
     subPath,
     successStatusCode,
-    hasPathParams: pathParams.length > 0,
-    pathParamsClass:
-      pathParams.length > 0
-        ? buildPathParamsClassName(operation.operationId)
-        : undefined,
-    hasQueryParams: queryParams.length > 0,
-    queryParamsClass:
-      queryParams.length > 0
-        ? buildQueryParamsClassName(operation.operationId)
-        : undefined,
-    hasRequestBody: !!operation.requestBody,
-    requestBodyType,
-    returnType,
-    description: operation.description ?? operation.summary,
+    pathParamsSchema,
+    queryParamsSchema,
+    requestBodySchema,
+    returnTypeSchema,
+    returnTypeDescription,
+    description,
   };
+}
+
+/**
+ * Adds a symbol to the import dictionary.
+ *
+ * @param imports The import dictionary.
+ * @param filePath The file path to import from.
+ * @param symbol The symbol to import.
+ */
+function addImport(
+  imports: ImportDictionary,
+  filePath: string,
+  symbol: string,
+): void {
+  const existing = imports[filePath];
+  if (existing) {
+    existing.add(symbol);
+  } else {
+    imports[filePath] = new Set([symbol]);
+  }
+}
+
+/**
+ * Adds a NestJS common import with underscore prefix to avoid clashes.
+ *
+ * @param imports The import dictionary.
+ * @param symbol The symbol to import.
+ * @param isType Whether to import as a type.
+ * @returns The prefixed symbol name to use in code.
+ */
+function addNestJsImport(
+  imports: ImportDictionary,
+  symbol: string,
+  isType = false,
+): string {
+  const prefixed = `_${symbol}`;
+  const importSpec = `${isType ? 'type ' : ''}${symbol} as ${prefixed}`;
+  addImport(imports, '@nestjs/common', importSpec);
+  return prefixed;
 }
 
 /**
  * Renders the imports section of the controller file.
  *
- * @param methods The methods to render.
- * @param modelImportPath The relative import path to the model.ts file.
- * @param externalTypes The external types to import from the model class output.
- * @param externalTypesImportPath The import path for external types.
- * @returns The rendered imports section.
+ * @param imports The import dictionary.
+ * @param lines The lines array to append to.
+ * @param controllerFilePath The path to the controller file being generated.
  */
 function renderImports(
-  methods: MethodInfo[],
-  modelImportPath: string,
-  externalTypes: Set<string>,
-  externalTypesImportPath: string,
-): string {
-  const lines: string[] = [];
+  imports: ImportDictionary,
+  lines: string[],
+  controllerFilePath: string,
+): void {
+  const outputDir = dirname(controllerFilePath);
 
-  // Collect NestJS imports
-  const nestjsImports = new Set<string>([
-    'Controller',
-    'HttpCode',
-    'HttpStatus',
-    'Type',
-  ]);
-  const nestjsMethodDecorators = new Set<string>();
-  let needsParam = false;
-  let needsQuery = false;
-  let needsBody = false;
+  // Sort entries: module imports first, then relative imports alphabetically.
+  const sortedEntries = Object.entries(imports).toSorted(
+    ([path1], [path2]) =>
+      Number(path1.startsWith('/')) - Number(path2.startsWith('/')) ||
+      path1.localeCompare(path2),
+  );
 
-  for (const method of methods) {
-    nestjsMethodDecorators.add(HTTP_METHOD_DECORATORS[method.httpMethod]);
-    if (method.hasPathParams) needsParam = true;
-    if (method.hasQueryParams) needsQuery = true;
-    if (method.hasRequestBody) needsBody = true;
-  }
-
-  nestjsMethodDecorators.forEach((d) => nestjsImports.add(d));
-  if (needsParam) nestjsImports.add('Param');
-  if (needsQuery) nestjsImports.add('Query');
-  if (needsBody) nestjsImports.add('Body');
-
-  lines.push(`import {`);
-  lines.push(`  ${Array.from(nestjsImports).sort().join(',\n  ')},`);
-  lines.push(`} from '@nestjs/common';`);
-
-  // Import param classes from model.ts
-  const paramClasses = new Set<string>();
-  for (const method of methods) {
-    if (method.pathParamsClass) paramClasses.add(method.pathParamsClass);
-    if (method.queryParamsClass) paramClasses.add(method.queryParamsClass);
-  }
-
-  if (paramClasses.size > 0) {
-    lines.push(`import type {`);
-    lines.push(`  ${Array.from(paramClasses).sort().join(',\n  ')},`);
-    lines.push(`} from '${modelImportPath}';`);
-  }
-
-  // Import external types (entities, DTOs) from the model class output
-  if (externalTypes.size > 0) {
-    const sortedTypes = Array.from(externalTypes)
-      .filter((t) => t !== 'void' && t !== 'unknown')
-      .sort();
-
-    if (sortedTypes.length > 0) {
-      lines.push(`import type {`);
-      lines.push(`  ${sortedTypes.join(',\n  ')},`);
-      lines.push(`} from '${externalTypesImportPath}';`);
+  const importLines: string[] = [];
+  for (const [filePath, symbols] of sortedEntries) {
+    let importPath = filePath;
+    if (filePath.startsWith('/')) {
+      let relativePath = relative(outputDir, filePath);
+      if (!relativePath.startsWith('.')) {
+        relativePath = `.${sep}${relativePath}`;
+      }
+      importPath = relativePath.replace(/\.ts$/, '.js');
     }
+
+    const symbolsList = [...symbols]
+      .filter((s) => !s.startsWith('type ') || !symbols.has(s.slice(5)))
+      .toSorted()
+      .join(', ');
+    importLines.push(`import { ${symbolsList} } from '${importPath}';`);
   }
 
-  return lines.join('\n');
+  lines.unshift(...importLines, '');
 }
 
 /**
  * Renders the interface definition.
  *
- * @param interfaceName The name of the interface.
+ * @param resourceName The resource name.
  * @param methods The methods to include.
- * @returns The rendered interface.
+ * @param imports The import dictionary to add imports to.
+ * @param lines The lines array to append to.
+ * @returns The interface name.
  */
-function renderInterface(interfaceName: string, methods: MethodInfo[]): string {
-  const lines: string[] = [];
+function renderInterface(
+  resourceName: string,
+  methods: ApiControllerMethod[],
+  imports: ImportDictionary,
+  lines: string[],
+): string {
+  const interfaceName = `${resourceName}ApiContract`;
 
-  lines.push(`/**`);
   lines.push(
-    ` * The contract for the ${interfaceName.replace('ApiContract', '')} API controller.`,
+    `/**`,
+    ` * The contract for the ${resourceName} API controller.`,
+    ` */`,
+    `export interface ${interfaceName} {`,
   );
-  lines.push(` */`);
-  lines.push(`export interface ${interfaceName} {`);
 
   for (const method of methods) {
-    // JSDoc
-    if (method.description) {
-      lines.push(`  /**`);
-      const descLines = method.description.split('\n');
-      for (const line of descLines) {
-        lines.push(`   * ${line}`);
-      }
-      lines.push(`   *`);
-      if (method.hasPathParams) {
-        lines.push(`   * @param params The path parameters.`);
-      }
-      if (method.hasQueryParams) {
-        lines.push(`   * @param query The query parameters.`);
-      }
-      if (method.hasRequestBody) {
-        lines.push(`   * @param body The request body.`);
-      }
-      if (method.returnType !== 'void') {
-        lines.push(`   * @returns The response.`);
-      }
-      lines.push(`   */`);
-    }
+    const {
+      pathParamsSchema,
+      queryParamsSchema,
+      requestBodySchema,
+      returnTypeSchema,
+    } = method;
+    const returnTypeName = returnTypeSchema?.name;
 
-    // Method signature
+    lines.push(`  /**`);
+    const descLines = method.description?.split('\n') ?? [];
+    lines.push(...descLines.map((l) => `   * ${l}`));
+
+    const prototypeDoc: string[] = [];
     const params: string[] = [];
-    if (method.hasPathParams) {
-      params.push(`params: ${method.pathParamsClass}`);
-    }
-    if (method.hasQueryParams) {
-      params.push(`query: ${method.queryParamsClass}`);
-    }
-    if (method.hasRequestBody && method.requestBodyType) {
-      params.push(`body: ${method.requestBodyType}`);
-    }
-    params.push('...rest: any[]');
 
-    const returnType =
-      method.returnType === 'void' ? 'void' : method.returnType;
-    lines.push(`  ${method.name}(`);
-    lines.push(`    ${params.join(',\n    ')}`);
-    lines.push(`  ): Promise<${returnType}>;`);
-    lines.push('');
+    if (pathParamsSchema) {
+      addImport(imports, pathParamsSchema.file, pathParamsSchema.name);
+      prototypeDoc.push(`   * @param params The path parameters.`);
+      params.push(`params: ${pathParamsSchema.name}`);
+    }
+
+    if (queryParamsSchema) {
+      addImport(imports, queryParamsSchema.file, queryParamsSchema.name);
+      prototypeDoc.push(`   * @param query The query parameters.`);
+      params.push(`query: ${queryParamsSchema.name}`);
+    }
+
+    if (requestBodySchema) {
+      addImport(imports, requestBodySchema.file, requestBodySchema.name);
+      prototypeDoc.push(`   * @param body The request body.`);
+      params.push(`body: ${requestBodySchema.name}`);
+    }
+
+    if (returnTypeSchema) {
+      addImport(imports, returnTypeSchema.file, `type ${returnTypeName}`);
+      prototypeDoc.push(
+        `   * @returns ${method.returnTypeDescription ?? 'The response.'}`,
+      );
+    }
+
+    if (prototypeDoc.length > 0) {
+      lines.push(`   *`, ...prototypeDoc);
+    }
+
+    params.push('...rest: any[]');
+    lines.push(
+      `   */`,
+      `  ${method.name}(${params.join(',')}): Promise<${returnTypeName ?? 'void'}>;`,
+      '',
+    );
   }
 
   lines.push(`}`);
 
-  return lines.join('\n');
+  return interfaceName;
 }
 
 /**
  * Renders the decorator factory function.
  *
- * @param factoryName The name of the factory function.
+ * @param resourceName The resource name.
  * @param interfaceName The name of the interface.
  * @param basePath The base path for the controller.
  * @param methods The methods to decorate.
- * @returns The rendered decorator factory.
+ * @param imports The import dictionary to add imports to.
+ * @param lines The lines array to append to.
  */
 function renderDecoratorFactory(
-  factoryName: string,
+  resourceName: string,
   interfaceName: string,
   basePath: string,
-  methods: MethodInfo[],
-): string {
-  const lines: string[] = [];
+  methods: ApiControllerMethod[],
+  imports: ImportDictionary,
+  lines: string[],
+): void {
+  const factoryName = `As${resourceName}ApiController`;
 
-  // Remove leading slash from base path
-  const controllerPath = basePath.startsWith('/')
-    ? basePath.slice(1)
-    : basePath;
+  const controllerPath = toExpressPath(basePath.replace(/^\//, ''));
+  const typeSymbol = addNestJsImport(imports, 'Type', true);
+  const controllerSymbol = addNestJsImport(imports, 'Controller');
 
-  lines.push(`/**`);
   lines.push(
-    ` * Decorates a class as a ${interfaceName.replace('ApiContract', '')} API controller.`,
+    `/**`,
+    ` * Decorates a class as a ${resourceName} API controller.`,
+    ` */`,
+    `export function ${factoryName}() {`,
+    `  return function (constructor: ${typeSymbol}<${interfaceName}>) {`,
+    `    ${controllerSymbol}('${controllerPath}')(constructor);`,
   );
-  lines.push(` */`);
-  lines.push(`export function ${factoryName}() {`);
-  lines.push(`  return function (constructor: Type<${interfaceName}>) {`);
-  lines.push(`    Controller('${controllerPath}')(constructor);`);
 
   for (const method of methods) {
-    lines.push('');
+    const { pathParamsSchema, queryParamsSchema, requestBodySchema } = method;
 
-    // HTTP method decorator
     const methodDecorator = HTTP_METHOD_DECORATORS[method.httpMethod];
-    lines.push(`    ${methodDecorator}('${method.subPath}')(`);
-    lines.push(`      constructor.prototype,`);
-    lines.push(`      '${method.name}',`);
+    const methodSymbol = addNestJsImport(imports, methodDecorator);
     lines.push(
+      '',
+      `    ${methodSymbol}('${toExpressPath(method.subPath)}')(`,
+      `      constructor.prototype,`,
+      `      '${method.name}',`,
       `      Object.getOwnPropertyDescriptor(constructor.prototype, '${method.name}')!,`,
+      `    );`,
     );
-    lines.push(`    );`);
 
-    // HttpCode decorator
-    const httpStatus = HTTP_STATUS_MAP[method.successStatusCode];
-    if (httpStatus) {
-      lines.push(`    HttpCode(HttpStatus.${httpStatus})(`);
-      lines.push(`      constructor.prototype,`);
-      lines.push(`      '${method.name}',`);
+    if (method.successStatusCode !== undefined) {
+      const httpCodeSymbol = addNestJsImport(imports, 'HttpCode');
+      const httpStatus = HTTP_STATUS_MAP[method.successStatusCode];
+
+      let httpCodeArg = `${method.successStatusCode}`;
+      if (httpStatus) {
+        const httpStatusSymbol = addNestJsImport(imports, 'HttpStatus');
+        httpCodeArg = `${httpStatusSymbol}.${httpStatus}`;
+      }
+
       lines.push(
+        `    ${httpCodeSymbol}(${httpCodeArg})(`,
+        `      constructor.prototype,`,
+        `      '${method.name}',`,
         `      Object.getOwnPropertyDescriptor(constructor.prototype, '${method.name}')!,`,
+        `    );`,
       );
-      lines.push(`    );`);
     }
 
-    // Parameter decorators
     let paramIndex = 0;
-    if (method.hasPathParams) {
+    if (pathParamsSchema) {
+      const paramSymbol = addNestJsImport(imports, 'Param');
       lines.push(
-        `    Param()(constructor.prototype, '${method.name}', ${paramIndex});`,
+        `    ${paramSymbol}()(constructor.prototype, '${method.name}', ${paramIndex});`,
       );
       paramIndex++;
     }
-    if (method.hasQueryParams) {
+
+    if (queryParamsSchema) {
+      const querySymbol = addNestJsImport(imports, 'Query');
       lines.push(
-        `    Query()(constructor.prototype, '${method.name}', ${paramIndex});`,
+        `    ${querySymbol}()(constructor.prototype, '${method.name}', ${paramIndex});`,
       );
       paramIndex++;
     }
-    if (method.hasRequestBody) {
+
+    if (requestBodySchema) {
+      const bodySymbol = addNestJsImport(imports, 'Body');
       lines.push(
-        `    Body()(constructor.prototype, '${method.name}', ${paramIndex});`,
+        `    ${bodySymbol}()(constructor.prototype, '${method.name}', ${paramIndex});`,
       );
     }
   }
 
-  lines.push(`  };`);
-  lines.push(`}`);
-
-  return lines.join('\n');
+  lines.push('  };', '}');
 }
 
 /**
@@ -501,121 +431,79 @@ function renderDecoratorFactory(
  *
  * @param apiSpec The parsed API specification.
  * @param modelClassSchemas The generated schemas from the model class generator.
+ * @param paramsSchemas The generated schemas for parameter classes.
  * @param controllerFilePath The path where the controller file will be written.
- * @param modelFilePath The path to the generated model.ts file.
- * @param externalTypesFilePath The path to the external types file (e.g., ../model/generated.ts).
  * @returns The rendered controller file content.
  */
 export function renderControllerFile(
   apiSpec: ParsedApiSpec,
   modelClassSchemas: GeneratedSchemas,
+  paramsSchemas: GeneratedSchemas,
   controllerFilePath: string,
-  modelFilePath: string,
-  externalTypesFilePath: string,
 ): string {
-  const interfaceName = `${apiSpec.resourceName}ApiContract`;
-  const factoryName = `As${apiSpec.resourceName}ApiController`;
-
-  // Build method information
   const methods = apiSpec.operations.map((op) =>
-    buildMethodInfo(
-      op,
-      apiSpec.resourceName,
-      apiSpec.basePath,
-      apiSpec.filePath,
-      modelClassSchemas,
-    ),
+    buildMethodInfo(op, apiSpec, modelClassSchemas, paramsSchemas),
   );
 
-  // Collect external types needed
-  const externalTypes = new Set<string>();
-  for (const method of methods) {
-    if (
-      method.returnType &&
-      method.returnType !== 'void' &&
-      method.returnType !== 'unknown'
-    ) {
-      externalTypes.add(method.returnType);
-    }
-    if (method.requestBodyType && method.requestBodyType !== 'unknown') {
-      externalTypes.add(method.requestBodyType);
-    }
-  }
+  const imports: ImportDictionary = {};
+  const lines: string[] = [];
 
-  // Compute import paths
-  const modelImportPath = computeRelativeImportPath(
-    controllerFilePath,
-    modelFilePath,
-  );
-  const externalTypesImportPath = computeRelativeImportPath(
-    controllerFilePath,
-    externalTypesFilePath,
-  );
-
-  // Render sections
-  const imports = renderImports(
+  const interfaceName = renderInterface(
+    apiSpec.resourceName,
     methods,
-    modelImportPath,
-    externalTypes,
-    externalTypesImportPath,
+    imports,
+    lines,
   );
-  const interfaceCode = renderInterface(interfaceName, methods);
-  const factoryCode = renderDecoratorFactory(
-    factoryName,
+
+  lines.push('');
+
+  renderDecoratorFactory(
+    apiSpec.resourceName,
     interfaceName,
     apiSpec.basePath,
     methods,
+    imports,
+    lines,
   );
 
-  return `${imports}\n\n${interfaceCode}\n\n${factoryCode}\n`;
+  renderImports(imports, lines, controllerFilePath);
+
+  return lines.join('\n');
 }
 
 /**
  * Writes a controller file with prettier formatting.
  *
- * @param content The content to write.
- * @param filePath The path to write to.
+ * @param apiSpec The parsed API specification.
+ * @param modelClassSchemas The generated schemas from the model class generator.
+ * @param paramsSchemas The generated schemas for parameter classes.
+ * @param controllerFilePath The path where the controller file will be written.
  * @param leadingComment An optional leading comment.
  */
 export async function writeControllerFile(
-  content: string,
-  filePath: string,
+  apiSpec: ParsedApiSpec,
+  modelClassSchemas: GeneratedSchemas,
+  paramsSchemas: GeneratedSchemas,
+  controllerFilePath: string,
   leadingComment?: string,
 ): Promise<void> {
-  let source = content;
+  let source = renderControllerFile(
+    apiSpec,
+    modelClassSchemas,
+    paramsSchemas,
+    controllerFilePath,
+  );
+
   if (leadingComment) {
-    source = `// ${leadingComment}\n\n${content}`;
+    source = `// ${leadingComment}\n${source}`;
   }
 
-  const prettierConfig = await prettier.resolveConfig(filePath);
+  const prettierConfig = await prettier.resolveConfig(controllerFilePath);
 
   const formattedOutput = await prettier.format(source, {
     parser: 'typescript',
     ...prettierConfig,
   });
 
-  await writeFile(filePath, formattedOutput);
-}
-
-/**
- * Converts a resource name to kebab-case for file naming.
- *
- * @param resourceName The resource name in PascalCase.
- * @returns The kebab-case version.
- */
-export function toKebabCase(resourceName: string): string {
-  return resourceName
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase();
-}
-
-/**
- * Builds the controller file name from the resource name.
- *
- * @param resourceName The resource name.
- * @returns The file name (e.g., "post-import-job.api.controller.ts").
- */
-export function buildControllerFileName(resourceName: string): string {
-  return `${toKebabCase(resourceName)}.api.controller.ts`;
+  await writeFile(controllerFilePath, formattedOutput);
 }
