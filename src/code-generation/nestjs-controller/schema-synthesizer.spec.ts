@@ -1,29 +1,10 @@
-import type { ParsedOperation } from './openapi-parser.js';
 import {
-  buildPathParamsClassName,
-  buildQueryParamsClassName,
   synthesizeSchemasForOperation,
   synthesizeSchemasForOperations,
 } from './schema-synthesizer.js';
+import type { ParsedOperation } from './types.js';
 
 describe('schema-synthesizer', () => {
-  describe('buildPathParamsClassName', () => {
-    it('should build PascalCase class name with PathParams suffix', () => {
-      expect(buildPathParamsClassName('postGet')).toEqual('PostGetPathParams');
-      expect(buildPathParamsClassName('postImportJobRetry')).toEqual(
-        'PostImportJobRetryPathParams',
-      );
-    });
-  });
-
-  describe('buildQueryParamsClassName', () => {
-    it('should build PascalCase class name with QueryParams suffix', () => {
-      expect(buildQueryParamsClassName('postList')).toEqual(
-        'PostListQueryParams',
-      );
-    });
-  });
-
   describe('synthesizeSchemasForOperation', () => {
     it('should return empty array when no path or query params', () => {
       const operation: ParsedOperation = {
@@ -59,10 +40,10 @@ describe('schema-synthesizer', () => {
       const result = synthesizeSchemasForOperation(operation);
 
       expect(result).toHaveLength(1);
-      expect(result[0].name).toEqual('PostGetPathParams');
+      expect(result[0].name).toEqual('postGet/path');
 
-      const schema = JSON.parse(result[0].schema);
-      expect(schema.title).toEqual('PostGetPathParams');
+      const schema = JSON.parse(result[0].schema!);
+      expect(schema.title).toEqual('postGet-path-params');
       expect(schema.type).toEqual('object');
       expect(schema.additionalProperties).toEqual(false);
       expect(schema.properties.id).toEqual({
@@ -98,7 +79,7 @@ describe('schema-synthesizer', () => {
       const result = synthesizeSchemasForOperation(operation);
 
       expect(result).toHaveLength(1);
-      expect(result[0].name).toEqual('PostListQueryParams');
+      expect(result[0].name).toEqual('postList/query');
 
       const schema = JSON.parse(result[0].schema);
       expect(schema.properties.limit).toEqual({
@@ -135,8 +116,8 @@ describe('schema-synthesizer', () => {
       const result = synthesizeSchemasForOperation(operation);
 
       expect(result).toHaveLength(2);
-      expect(result[0].name).toEqual('PostUpdatePathParams');
-      expect(result[1].name).toEqual('PostUpdateQueryParams');
+      expect(result[0].name).toEqual('postUpdate/path');
+      expect(result[1].name).toEqual('postUpdate/query');
 
       const pathSchema = JSON.parse(result[0].schema);
       expect(pathSchema.properties.id.format).toEqual('uuid');
@@ -146,7 +127,7 @@ describe('schema-synthesizer', () => {
       expect(querySchema.required).toEqual(['updatedAt']);
     });
 
-    it('should ignore header and cookie parameters', () => {
+    it('should synthesize header params schema', () => {
       const operation: ParsedOperation = {
         operationId: 'postGet',
         method: 'get',
@@ -159,8 +140,38 @@ describe('schema-synthesizer', () => {
             schema: { type: 'string' },
           },
           {
-            name: 'Authorization',
+            name: 'X-Custom-Header',
             in: 'header',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: [],
+      };
+
+      const result = synthesizeSchemasForOperation(operation);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toEqual('postGet/path');
+      expect(result[1].name).toEqual('postGet/header');
+
+      const headerSchema = JSON.parse(result[1].schema!);
+      expect(headerSchema.title).toEqual('postGet-header-params');
+      expect(headerSchema.properties['X-Custom-Header']).toEqual({
+        type: 'string',
+      });
+      expect(headerSchema.required).toEqual(['X-Custom-Header']);
+    });
+
+    it('should ignore cookie parameters', () => {
+      const operation: ParsedOperation = {
+        operationId: 'postGet',
+        method: 'get',
+        path: '/posts/{id}',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
             required: true,
             schema: { type: 'string' },
           },
@@ -177,7 +188,7 @@ describe('schema-synthesizer', () => {
       const result = synthesizeSchemasForOperation(operation);
 
       expect(result).toHaveLength(1);
-      expect(result[0].name).toEqual('PostGetPathParams');
+      expect(result[0].name).toEqual('postGet/path');
 
       const schema = JSON.parse(result[0].schema);
       expect(Object.keys(schema.properties)).toEqual(['id']);
@@ -221,8 +232,8 @@ describe('schema-synthesizer', () => {
 
       expect(result).toHaveLength(2);
       expect(result.map((s) => s.name)).toEqual([
-        'PostListQueryParams',
-        'PostGetPathParams',
+        'postList/query',
+        'postGet/path',
       ]);
     });
   });

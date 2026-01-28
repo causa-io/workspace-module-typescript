@@ -7,8 +7,7 @@ import {
   type GeneratedSchemas,
 } from '@causa/workspace-core';
 import { mkdir } from 'fs/promises';
-import { globby } from 'globby';
-import { join, resolve } from 'path';
+import { basename, join, resolve } from 'path';
 import {
   FetchingJSONSchemaStore,
   InputData,
@@ -17,13 +16,15 @@ import {
 } from 'quicktype-core';
 import { TypeScriptModelClassTargetLanguage } from '../../code-generation/index.js';
 import {
-  buildControllerFileName,
   parseOpenApiSpec,
   renderControllerFile,
   synthesizeSchemasForOperations,
   writeControllerFile,
 } from '../../code-generation/nestjs-controller/index.js';
-import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';
+import {
+  CausaValidatorRenderer,
+  ClassValidatorTransformerPropertyDecoratorsRenderer,
+} from '../../code-generation/renderers/index.js';
 import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import { LEADING_COMMENT } from './utils.js';
 
@@ -45,6 +46,7 @@ export const TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR =
 export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRunCodeGenerator {
   async _call(context: WorkspaceContext): Promise<GeneratedSchemas> {
     const { configuration, previousGeneratorsOutput } = this;
+    const projectPath = context.getProjectPathOrThrow();
 
     const { output } = configuration;
     if (!output || typeof output !== 'string') {
@@ -52,6 +54,8 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
         `The 'output' configuration for generator '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}' must be a string (directory path).`,
       );
     }
+    const outputDir = resolve(projectPath, output);
+    const modelFilePath = join(outputDir, 'model.ts');
 
     const modelClassSchemas =
       previousGeneratorsOutput[TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR];
@@ -61,21 +65,10 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
       );
     }
 
-    // Parse the code generator inputs to get the list of OpenAPI files
-    const { globs } = await context.call(ModelParseCodeGeneratorInputs, {
+    const { files } = await context.call(ModelParseCodeGeneratorInputs, {
       configuration,
     });
-
-    const projectPath = context.getProjectPathOrThrow();
-
-    // Find all OpenAPI spec files matching the globs
-    const openApiFiles = await globby(globs, {
-      followSymbolicLinks: false,
-      cwd: projectPath,
-      absolute: true,
-    });
-
-    if (openApiFiles.length === 0) {
+    if (files.length === 0) {
       context.logger.warn(
         `No OpenAPI specification files found for generator '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}'.`,
       );
@@ -83,51 +76,29 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
     }
 
     context.logger.debug(
-      `Found ${openApiFiles.length} OpenAPI specification file(s) to process.`,
+      `Found ${files.length} OpenAPI specification file(s) to process.`,
     );
 
-    // Parse all OpenAPI specs
-    const parsedSpecs = await Promise.all(
-      openApiFiles.map((file) => parseOpenApiSpec(file)),
+    const parsedSpecs = await Promise.all(files.map(parseOpenApiSpec));
+    const specs = parsedSpecs.filter((spec) => spec.operations.length > 0);
+    const synthesizedSchemas = specs.flatMap(({ operations }) =>
+      synthesizeSchemasForOperations(operations),
     );
 
-    // Synthesize JSON schemas for all parameters across all specs
-    const allSynthesizedSchemas = parsedSpecs.flatMap((spec) =>
-      synthesizeSchemasForOperations(spec.operations),
-    );
-
-    const outputDir = resolve(projectPath, output);
     await mkdir(outputDir, { recursive: true });
 
-    const modelFilePath = join(outputDir, 'model.ts');
-    const generatedSchemas: GeneratedSchemas = {};
-
-    // Phase 1: Generate model.ts with parameter classes (if there are any)
-    if (allSynthesizedSchemas.length > 0) {
-      const sources: JSONSchemaSourceData[] = allSynthesizedSchemas.map(
-        (synth) => ({
-          name: synth.name,
-          schema: synth.schema,
-        }),
-      );
-
-      const inputData = await this.makeInputDataFromSources(sources);
-
-      // Get decorator renderers (class-validator, causa-validator)
-      // Use the model class generator name to get the same decorators as the model class generator.
-      const decoratorRenderers = context
-        .getFunctionImplementations(TypeScriptGetDecoratorRenderer, {
-          generator: TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR,
-          configuration,
-        })
-        .map((f) => f._call(context))
-        .sort((r1, r2) => r1.name.localeCompare(r2.name));
+    let parameterSchemas: GeneratedSchemas = {};
+    if (synthesizedSchemas.length > 0) {
+      const inputData = await this.makeInputDataFromSources(synthesizedSchemas);
 
       const language = new TypeScriptModelClassTargetLanguage(
         modelFilePath,
         context,
         {
-          decoratorRenderers,
+          decoratorRenderers: [
+            CausaValidatorRenderer,
+            ClassValidatorTransformerPropertyDecoratorsRenderer,
+          ],
           leadingComment: LEADING_COMMENT,
           generatorOptions: configuration,
         },
@@ -135,38 +106,20 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
 
       await generateCodeForSchemas(language, inputData);
 
-      // Record generated schemas
-      for (const synth of allSynthesizedSchemas) {
-        generatedSchemas[`synthetic:${synth.name}`] = {
-          name: synth.name,
-          file: modelFilePath,
-        };
-      }
+      parameterSchemas = language.generatedSchemas;
     }
 
-    // Phase 2: Generate controller files
-    // Determine the path to external types (the output of typescriptModelClass)
-    // This is typically something like '../model/generated.ts'
-    const externalTypesFilePath =
-      this.resolveExternalTypesPath(modelClassSchemas);
-
-    for (const spec of parsedSpecs) {
-      if (spec.operations.length === 0) {
-        context.logger.debug(
-          `Skipping ${spec.filePath} - no operations found.`,
-        );
-        continue;
-      }
-
-      const controllerFileName = buildControllerFileName(spec.resourceName);
+    for (const spec of specs) {
+      const controllerFileName = basename(spec.filePath)
+        .replace(/\.\w+$/, '')
+        .concat('.controller.ts');
       const controllerFilePath = join(outputDir, controllerFileName);
 
       const content = renderControllerFile(
         spec,
         modelClassSchemas,
+        parameterSchemas,
         controllerFilePath,
-        modelFilePath,
-        externalTypesFilePath,
       );
 
       await writeControllerFile(content, controllerFilePath, LEADING_COMMENT);
@@ -174,7 +127,7 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
       context.logger.debug(`Generated ${controllerFileName}`);
     }
 
-    return generatedSchemas;
+    return parameterSchemas;
   }
 
   /**
@@ -186,37 +139,15 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
   private async makeInputDataFromSources(
     sources: JSONSchemaSourceData[],
   ): Promise<InputData> {
-    const store = new FetchingJSONSchemaStore();
-    const input = new JSONSchemaInput(store, [
+    const input = new JSONSchemaInput(new FetchingJSONSchemaStore(), [
       causaJsonSchemaAttributeProducer,
     ]);
-
     for (const source of sources) {
       await input.addSource(source);
     }
-
     const inputData = new InputData();
     inputData.addInput(input);
     return inputData;
-  }
-
-  /**
-   * Resolves the path to the external types file from the model class generator output.
-   *
-   * @param modelClassSchemas The generated schemas from the model class generator.
-   * @returns The path to the external types file.
-   */
-  private resolveExternalTypesPath(
-    modelClassSchemas: GeneratedSchemas,
-  ): string {
-    // All schemas from the model class generator should point to the same file
-    const firstSchema = Object.values(modelClassSchemas)[0];
-    if (firstSchema) {
-      return firstSchema.file;
-    }
-
-    // Fallback to a common pattern
-    return '../model/generated.ts';
   }
 
   _supports(context: WorkspaceContext): boolean {

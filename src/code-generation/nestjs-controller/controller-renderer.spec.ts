@@ -1,10 +1,10 @@
 import type { GeneratedSchemas } from '@causa/workspace-core';
-import type { ParsedApiSpec } from './openapi-parser.js';
 import {
   buildControllerFileName,
   renderControllerFile,
   toKebabCase,
 } from './controller-renderer.js';
+import type { ParsedApiSpec } from './types.js';
 
 describe('controller-renderer', () => {
   describe('toKebabCase', () => {
@@ -41,6 +41,33 @@ describe('controller-renderer', () => {
       },
     };
 
+    const paramsSchemas: GeneratedSchemas = {
+      'postGet/path': {
+        name: 'PostGetPathParams',
+        file: '/project/service/src/api/model.ts',
+      },
+      'postList/query': {
+        name: 'PostListQueryParams',
+        file: '/project/service/src/api/model.ts',
+      },
+      'postDelete/path': {
+        name: 'PostDeletePathParams',
+        file: '/project/service/src/api/model.ts',
+      },
+      'postUpdate/path': {
+        name: 'PostUpdatePathParams',
+        file: '/project/service/src/api/model.ts',
+      },
+      'postUpdate/query': {
+        name: 'PostUpdateQueryParams',
+        file: '/project/service/src/api/model.ts',
+      },
+      'postImportJobRetry/path': {
+        name: 'PostImportJobRetryPathParams',
+        file: '/project/service/src/api/model.ts',
+      },
+    };
+
     it('should render a simple controller with one operation', () => {
       const apiSpec: ParsedApiSpec = {
         filePath: '/project/api/post.api.yaml',
@@ -63,7 +90,7 @@ describe('controller-renderer', () => {
             ],
             responses: [
               {
-                statusCode: '200',
+                statusCode: 200,
                 description: 'Success',
                 schemaRef: '../entities/post.yaml',
               },
@@ -75,9 +102,8 @@ describe('controller-renderer', () => {
       const result = renderControllerFile(
         apiSpec,
         modelClassSchemas,
+        paramsSchemas,
         '/project/service/src/api/post.api.controller.ts',
-        '/project/service/src/api/model.ts',
-        '/project/service/src/model/generated.ts',
       );
 
       // Check imports
@@ -89,11 +115,10 @@ describe('controller-renderer', () => {
       expect(result).toContain('Param');
       expect(result).toContain('Type');
 
-      // Check param imports
+      // Check param imports from generated schemas
       expect(result).toContain("from './model.js'");
-      expect(result).toContain('PostGetPathParams');
 
-      // Check external type imports
+      // Check external type imports from generated schemas
       expect(result).toContain("from '../model/generated.js'");
       expect(result).toContain('Post');
 
@@ -131,7 +156,7 @@ describe('controller-renderer', () => {
                 schema: { type: 'integer' },
               },
             ],
-            responses: [{ statusCode: '200', description: 'Success' }],
+            responses: [{ statusCode: 200, description: 'Success' }],
           },
         ],
       };
@@ -139,13 +164,11 @@ describe('controller-renderer', () => {
       const result = renderControllerFile(
         apiSpec,
         modelClassSchemas,
+        paramsSchemas,
         '/project/service/src/api/post.api.controller.ts',
-        '/project/service/src/api/model.ts',
-        '/project/service/src/model/generated.ts',
       );
 
       expect(result).toContain('Query');
-      expect(result).toContain('PostListQueryParams');
       expect(result).toContain('query: PostListQueryParams');
       expect(result).toContain("Query()(constructor.prototype, 'list', 0)");
     });
@@ -168,7 +191,7 @@ describe('controller-renderer', () => {
             },
             responses: [
               {
-                statusCode: '201',
+                statusCode: 201,
                 schemaRef: '../entities/post.yaml',
               },
             ],
@@ -179,9 +202,8 @@ describe('controller-renderer', () => {
       const result = renderControllerFile(
         apiSpec,
         modelClassSchemas,
+        paramsSchemas,
         '/project/service/src/api/post.api.controller.ts',
-        '/project/service/src/api/model.ts',
-        '/project/service/src/model/generated.ts',
       );
 
       expect(result).toContain('Body');
@@ -211,7 +233,7 @@ describe('controller-renderer', () => {
                 schema: { type: 'string' },
               },
             ],
-            responses: [{ statusCode: '204', description: 'Deleted' }],
+            responses: [{ statusCode: 204, description: 'Deleted' }],
           },
         ],
       };
@@ -219,9 +241,8 @@ describe('controller-renderer', () => {
       const result = renderControllerFile(
         apiSpec,
         modelClassSchemas,
+        paramsSchemas,
         '/project/service/src/api/post.api.controller.ts',
-        '/project/service/src/api/model.ts',
-        '/project/service/src/model/generated.ts',
       );
 
       expect(result).toContain('Delete');
@@ -259,7 +280,7 @@ describe('controller-renderer', () => {
               schemaRef: './dtos/post-update.dto.yaml',
             },
             responses: [
-              { statusCode: '200', schemaRef: '../entities/post.yaml' },
+              { statusCode: 200, schemaRef: '../entities/post.yaml' },
             ],
           },
         ],
@@ -268,9 +289,8 @@ describe('controller-renderer', () => {
       const result = renderControllerFile(
         apiSpec,
         modelClassSchemas,
+        paramsSchemas,
         '/project/service/src/api/post.api.controller.ts',
-        '/project/service/src/api/model.ts',
-        '/project/service/src/model/generated.ts',
       );
 
       expect(result).toContain('Patch');
@@ -300,7 +320,7 @@ describe('controller-renderer', () => {
                 schema: { type: 'string' },
               },
             ],
-            responses: [{ statusCode: '200' }],
+            responses: [{ statusCode: 200 }],
           },
         ],
       };
@@ -308,9 +328,8 @@ describe('controller-renderer', () => {
       const result = renderControllerFile(
         apiSpec,
         {},
+        paramsSchemas,
         '/project/service/src/api/post-import-job.api.controller.ts',
-        '/project/service/src/api/model.ts',
-        '/project/service/src/model/generated.ts',
       );
 
       expect(result).toContain('export interface PostImportJobApiContract');
