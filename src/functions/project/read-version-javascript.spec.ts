@@ -5,7 +5,7 @@ import { createContext } from '@causa/workspace/testing';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { ProjectReadVersionForJavaScript } from './project-read-version-javascript.js';
+import { ProjectReadVersionForJavaScript } from './read-version-javascript.js';
 
 describe('ProjectReadVersionForJavaScript', () => {
   let tmpDir: string;

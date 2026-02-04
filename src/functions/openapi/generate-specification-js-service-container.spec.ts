@@ -19,7 +19,7 @@ import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
-import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './openapi-generate-specification-js-service-container.js';
+import { OpenApiGenerateSpecificationForJavaScriptServiceContainer } from './generate-specification-js-service-container.js';
 
 describe('OpenApiGenerateSpecificationForJavaScriptServiceContainer', () => {
   let tmpDir: string;
@@ -106,7 +106,7 @@ describe('OpenApiGenerateSpecificationForJavaScriptServiceContainer', () => {
       mounts: expect.toIncludeSameMembers([
         {
           source: fileURLToPath(
-            new URL('../assets/generate-openapi.js', import.meta.url),
+            new URL('../../assets/generate-openapi.js', import.meta.url),
           ),
           destination: actualScriptDestination,
           type: 'bind',

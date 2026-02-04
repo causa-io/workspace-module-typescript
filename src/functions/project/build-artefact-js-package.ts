@@ -3,8 +3,8 @@ import { ProjectBuildArtefact } from '@causa/workspace-core';
 import { InvalidFunctionArgumentError } from '@causa/workspace/function-registry';
 import { mkdir } from 'fs/promises';
 import { join, resolve } from 'path';
-import type { TypeScriptConfiguration } from '../configurations/index.js';
-import { NpmService } from '../services/index.js';
+import type { TypeScriptConfiguration } from '../../configurations/index.js';
+import { NpmService } from '../../services/index.js';
 
 /**
  * Implements the {@link ProjectBuildArtefact} function for JavaScript and TypeScript packages.

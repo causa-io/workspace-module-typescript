@@ -10,8 +10,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
 import 'jest-extended';
 import { join } from 'path';
 import * as tar from 'tar';
-import { NpmService } from '../services/index.js';
-import { ProjectPushArtefactForNpmPackage } from './project-push-artefact-npm-package.js';
+import { NpmService } from '../../services/index.js';
+import { ProjectPushArtefactForNpmPackage } from './push-artefact-npm-package.js';
 
 describe('ProjectPushArtefactForNpmPackage', () => {
   let tmpDir: string;

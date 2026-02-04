@@ -1,16 +1,16 @@
 import { WorkspaceContext } from '@causa/workspace';
 import {
   ProcessServiceExitCodeError,
-  ProjectLint,
+  ProjectTest,
 } from '@causa/workspace-core';
 import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import { NpmExitCodeError, NpmService } from '../services/index.js';
-import { ProjectLintForJavaScript } from './project-lint-javascript.js';
+import { NpmExitCodeError, NpmService } from '../../services/index.js';
+import { ProjectTestForJavaScript } from './test-javascript.js';
 
-describe('ProjectLinForJavaScript', () => {
+describe('ProjectTestForJavaScript', () => {
   let context: WorkspaceContext;
   let npmService: NpmService;
 
@@ -24,7 +24,7 @@ describe('ProjectLinForJavaScript', () => {
           language: 'javascript',
         },
       },
-      functions: [ProjectLintForJavaScript],
+      functions: [ProjectTestForJavaScript],
     }));
     npmService = context.service(NpmService);
   });
@@ -35,26 +35,37 @@ describe('ProjectLinForJavaScript', () => {
         workspace: { name: '🏷️' },
         project: { name: 'my-project', type: 'package', language: 'ruby' },
       },
-      functions: [ProjectLintForJavaScript],
+      functions: [ProjectTestForJavaScript],
     }));
 
-    expect(() => context.call(ProjectLint, {})).toThrow(
+    expect(() => context.call(ProjectTest, {})).toThrow(
       NoImplementationFoundError,
     );
   });
 
-  it('should run the lint script', async () => {
+  it('should run the test script', async () => {
     jest.spyOn(npmService, 'run').mockResolvedValueOnce({ code: 0 });
 
-    await context.call(ProjectLint, {});
+    await context.call(ProjectTest, {});
 
-    expect(npmService.run).toHaveBeenCalledExactlyOnceWith('lint', {
+    expect(npmService.run).toHaveBeenCalledExactlyOnceWith('test', {
       workingDirectory: context.projectPath,
       logging: 'info',
     });
   });
 
-  it('should throw an error when linting fails', async () => {
+  it('should run the test coverage script', async () => {
+    jest.spyOn(npmService, 'run').mockResolvedValueOnce({ code: 0 });
+
+    await context.call(ProjectTest, { coverage: true });
+
+    expect(npmService.run).toHaveBeenCalledExactlyOnceWith('test:cov', {
+      workingDirectory: context.projectPath,
+      logging: 'info',
+    });
+  });
+
+  it('should throw an error when tests fail', async () => {
     jest
       .spyOn(npmService, 'run')
       .mockRejectedValueOnce(
@@ -63,10 +74,10 @@ describe('ProjectLinForJavaScript', () => {
         ),
       );
 
-    const actualPromise = context.call(ProjectLint, {});
+    const actualPromise = context.call(ProjectTest, {});
 
-    await expect(actualPromise).rejects.toThrow('Code failed linter checks.');
-    expect(npmService.run).toHaveBeenCalledExactlyOnceWith('lint', {
+    await expect(actualPromise).rejects.toThrow('Code failed tests.');
+    expect(npmService.run).toHaveBeenCalledExactlyOnceWith('test', {
       workingDirectory: context.projectPath,
       logging: 'info',
     });

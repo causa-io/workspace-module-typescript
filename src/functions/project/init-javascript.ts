@@ -1,6 +1,6 @@
 import { WorkspaceContext } from '@causa/workspace';
 import { ProjectInit } from '@causa/workspace-core';
-import { NpmService } from '../services/index.js';
+import { NpmService } from '../../services/index.js';
 
 /**
  * Implements the {@link ProjectInit} function for JavaScript and TypeScript projects, by running `npm ci`.

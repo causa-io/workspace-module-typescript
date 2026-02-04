@@ -4,7 +4,7 @@ import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import type { ProjectDependenciesCheckForJavaScript as ProjectDependenciesCheckForJavaScriptType } from './project-dependencies-check-javascript.js';
+import type { ProjectDependenciesCheckForJavaScript as ProjectDependenciesCheckForJavaScriptType } from './dependencies-check-javascript.js';
 
 const allowlistInstanceMock = {};
 const AllowlistMock = {
@@ -23,7 +23,7 @@ describe('ProjectDependenciesCheckForJavaScript', () => {
 
   beforeEach(async () => {
     ({ ProjectDependenciesCheckForJavaScript } =
-      await import('./project-dependencies-check-javascript.js'));
+      await import('./dependencies-check-javascript.js'));
     ({ context } = createContext({
       configuration: {
         workspace: { name: '🏷️' },

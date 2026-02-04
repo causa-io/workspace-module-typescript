@@ -1,6 +1,6 @@
 import { WorkspaceContext } from '@causa/workspace';
 import { ProjectTest } from '@causa/workspace-core';
-import { NpmExitCodeError, NpmService } from '../services/index.js';
+import { NpmExitCodeError, NpmService } from '../../services/index.js';
 
 /**
  * The npm script to run to test the project.
