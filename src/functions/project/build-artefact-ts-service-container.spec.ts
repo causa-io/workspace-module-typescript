@@ -8,7 +8,7 @@ import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
 import 'jest-extended';
 import { fileURLToPath } from 'url';
-import { ProjectBuildArtefactForTypeScriptServiceContainer } from './project-build-artefact-ts-service-container.js';
+import { ProjectBuildArtefactForTypeScriptServiceContainer } from './build-artefact-ts-service-container.js';
 
 describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
   let context: WorkspaceContext;
@@ -16,7 +16,7 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
 
   const expectedDockerFile = fileURLToPath(
     new URL(
-      '../assets/Dockerfile-typescript-service-container',
+      '../../assets/Dockerfile-typescript-service-container',
       import.meta.url,
     ),
   );

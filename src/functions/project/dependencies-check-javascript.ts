@@ -2,7 +2,7 @@ import { WorkspaceContext } from '@causa/workspace';
 import { ProjectDependenciesCheck } from '@causa/workspace-core';
 import type { VulnerabilityLevels } from 'audit-ci';
 import { mapVulnerabilityLevelInput, npmAudit } from 'audit-ci';
-import type { TypeScriptConfiguration } from '../configurations/index.js';
+import type { TypeScriptConfiguration } from '../../configurations/index.js';
 
 /**
  * A valid vulnerability level of `audit-ci`.

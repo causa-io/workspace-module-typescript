@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
  * The JavaScript file that will be used to generate the OpenAPI specification.
  */
 const GENERATION_SCRIPT_FILE = fileURLToPath(
-  new URL('../assets/generate-openapi.js', import.meta.url),
+  new URL('../../assets/generate-openapi.js', import.meta.url),
 );
 
 /**

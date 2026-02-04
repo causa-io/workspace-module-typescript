@@ -4,7 +4,7 @@ import {
   ProcessServiceExitCodeError,
   ProjectSecurityCheck,
 } from '@causa/workspace-core';
-import { NpmService } from '../services/index.js';
+import { NpmService } from '../../services/index.js';
 
 /**
  * The Docker image to run to perform static security checks.

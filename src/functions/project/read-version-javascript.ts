@@ -1,6 +1,6 @@
 import { WorkspaceContext } from '@causa/workspace';
 import { ProjectReadVersion } from '@causa/workspace-core';
-import { readNpmPackageFile } from '../utils.js';
+import { readNpmPackageFile } from '../../utils.js';
 
 /**
  * Implements the {@link ProjectReadVersion} function for JavaScript projects, parsing the version from the

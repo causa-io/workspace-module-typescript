@@ -6,8 +6,8 @@ import { jest } from '@jest/globals';
 import { mkdtemp, rm } from 'fs/promises';
 import 'jest-extended';
 import { resolve } from 'path';
-import { NpmService } from '../services/index.js';
-import { ProjectInitForJavaScript } from './project-init-javascript.js';
+import { NpmService } from '../../services/index.js';
+import { ProjectInitForJavaScript } from './init-javascript.js';
 
 describe('ProjectInitForJavaScript', () => {
   let tmpDir: string;

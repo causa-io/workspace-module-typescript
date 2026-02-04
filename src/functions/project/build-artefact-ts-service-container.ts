@@ -6,13 +6,16 @@ import {
 import { randomUUID } from 'node:crypto';
 import { major } from 'semver';
 import { fileURLToPath } from 'url';
-import type { TypeScriptConfiguration } from '../index.js';
+import type { TypeScriptConfiguration } from '../../index.js';
 
 /**
  * The default Dockerfile for TypeScript service containers.
  */
 const DOCKER_FILE = fileURLToPath(
-  new URL('../assets/Dockerfile-typescript-service-container', import.meta.url),
+  new URL(
+    '../../assets/Dockerfile-typescript-service-container',
+    import.meta.url,
+  ),
 );
 
 /**

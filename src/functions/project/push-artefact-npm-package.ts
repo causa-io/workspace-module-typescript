@@ -2,12 +2,12 @@ import { WorkspaceContext } from '@causa/workspace';
 import { ProjectPushArtefact } from '@causa/workspace-core';
 import { InvalidFunctionArgumentError } from '@causa/workspace/function-registry';
 import * as tar from 'tar';
-import { NpmService } from '../services/index.js';
+import { NpmService } from '../../services/index.js';
 import {
   ARCHIVED_PACKAGE_FILE,
   makeNpmPackageArtefactDestination,
   type NpmPackageInfo,
-} from '../utils.js';
+} from '../../utils.js';
 
 /**
  * Implements the {@link ProjectPushArtefact} function for an npm package by calling `npm publish`.

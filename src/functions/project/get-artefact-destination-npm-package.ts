@@ -3,7 +3,7 @@ import { ProjectGetArtefactDestination } from '@causa/workspace-core';
 import {
   makeNpmPackageArtefactDestination,
   readNpmPackageFile,
-} from '../utils.js';
+} from '../../utils.js';
 
 /**
  * Implements the {@link ProjectGetArtefactDestination} function for an npm package.

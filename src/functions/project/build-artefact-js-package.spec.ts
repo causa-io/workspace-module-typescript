@@ -8,8 +8,8 @@ import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
 import 'jest-extended';
 import { join } from 'path';
-import { NpmService } from '../services/index.js';
-import { ProjectBuildArtefactForJavaScriptPackage } from './project-build-artefact-js-package.js';
+import { NpmService } from '../../services/index.js';
+import { ProjectBuildArtefactForJavaScriptPackage } from './build-artefact-js-package.js';
 
 describe('ProjectBuildArtefactForJavaScriptPackage', () => {
   let context: WorkspaceContext;

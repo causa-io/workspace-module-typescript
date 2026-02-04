@@ -6,8 +6,8 @@ import { jest } from '@jest/globals';
 import { mkdtemp, rm } from 'fs/promises';
 import 'jest-extended';
 import { join, resolve } from 'path';
-import { NpmService } from '../services/index.js';
-import type { ProjectDependenciesUpdateForJavaScript as ProjectDependenciesUpdateForJavaScriptType } from './project-dependencies-update-javascript.js';
+import { NpmService } from '../../services/index.js';
+import type { ProjectDependenciesUpdateForJavaScript as ProjectDependenciesUpdateForJavaScriptType } from './dependencies-update-javascript.js';
 
 // Actually importing `npm-check-updates` is problematic because it relies on `spdx-license-ids` and `spdx-exceptions`,
 // which expose `index.json` files with which Jest has problems.
@@ -29,7 +29,7 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
 
   beforeEach(async () => {
     ({ ProjectDependenciesUpdateForJavaScript } =
-      await import('./project-dependencies-update-javascript.js'));
+      await import('./dependencies-update-javascript.js'));
     tmpDir = resolve(await mkdtemp('causa-test-'));
     ({ context } = createContext({
       workingDirectory: tmpDir,

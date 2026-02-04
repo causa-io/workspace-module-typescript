@@ -5,7 +5,7 @@ import { createContext } from '@causa/workspace/testing';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { ProjectGetArtefactDestinationForNpmPackage } from './project-get-artefact-destination-npm-package.js';
+import { ProjectGetArtefactDestinationForNpmPackage } from './get-artefact-destination-npm-package.js';
 
 describe('ProjectGetArtefactDestinationForNpmPackage', () => {
   let tmpDir: string;

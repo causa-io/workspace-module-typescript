@@ -7,7 +7,7 @@ import archiver from 'archiver';
 import { createWriteStream } from 'fs';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'path';
-import { NpmService } from '../services/index.js';
+import { NpmService } from '../../services/index.js';
 
 /**
  * The default glob patterns that are used to create the serverless functions archive.

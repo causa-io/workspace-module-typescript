@@ -8,8 +8,8 @@ import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import { NpmService } from '../services/index.js';
-import { ProjectSecurityCheckForJavaScript } from './project-security-check.js';
+import { NpmService } from '../../services/index.js';
+import { ProjectSecurityCheckForJavaScript } from './security-check.js';
 
 describe('ProjectSecurityCheckForJavaScript', () => {
   let context: WorkspaceContext;

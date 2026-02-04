@@ -7,8 +7,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
 import 'jest-extended';
 import StreamZip from 'node-stream-zip';
 import { join, resolve } from 'path';
-import { NpmService } from '../services/index.js';
-import { ProjectBuildArtefactForTypeScriptServerlessFunctions } from './project-build-artefact-ts-serverless-functions.js';
+import { NpmService } from '../../services/index.js';
+import { ProjectBuildArtefactForTypeScriptServerlessFunctions } from './build-artefact-ts-serverless-functions.js';
 
 describe('ProjectBuildArtefactForTypeScriptServerlessFunctions', () => {
   let tmpDir: string;
