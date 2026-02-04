@@ -252,3 +252,61 @@ model:
         - ../entities/*.yaml
         - ../firestore/*.yaml
 ```
+
+#### `typescriptNestjsController` generator
+
+This generator produces NestJS controller base classes from OpenAPI specification files. It creates:
+
+- TypeScript classes for path and query parameters, with validation decorators.
+- An interface defining the contract for each API resource.
+- A decorator factory that applies NestJS decorators to the controller class.
+
+The generator requires the `typescriptModelClass` generator to run first, as it references the model classes for request/response bodies.
+
+```yaml
+model:
+  codeGenerators:
+    - generator: typescriptModelClass
+      globs:
+        - ../entities/*.yaml
+        - ../api/dtos/*.yaml
+      output: src/model/generated.ts
+
+    - generator: typescriptNestjsController
+      # Globs that match OpenAPI specification files.
+      globs:
+        - ../api/*.api.yaml
+      # The output directory where controller files will be generated.
+      # A `model.ts` file with parameter classes and a `*.api.controller.ts` file for each API will be created.
+      output: src/api/
+```
+
+The OpenAPI specification files must include the `x-causaResourceName` extension to specify the resource name used in the generated code. For example:
+
+```yaml
+openapi: 3.1.0
+x-causaResourceName: Car
+info:
+  title: Car API
+  version: 1.0.0
+paths:
+  /cars:
+    get:
+      operationId: carList
+      # ...
+```
+
+The generated controller file exports an interface and a decorator factory. To use the generated code, implement the interface and apply the decorator:
+
+```typescript
+@AsCarApiController()
+export class CarController implements CarApiContract {
+  list(query: CarListQueryParams): Promise<CarList> {
+    // Implementation
+  }
+
+  get(params: CarGetPathParams): Promise<Car> {
+    // Implementation
+  }
+}
+```
