@@ -33,28 +33,28 @@
   },
   "dependencies": {
     "@causa/workspace": ">= 0.19.1 < 1.0.0",
-    "@causa/workspace-core": ">= 0.25.2 < 1.0.0",
+    "@causa/workspace-core": ">= 0.26.0 < 1.0.0",
     "archiver": "^7.0.1",
     "audit-ci": "^7.1.0",
     "class-validator": "^0.14.3",
     "js-yaml": "^4.1.1",
     "micromatch": "^4.0.8",
-    "npm-check-updates": "^19.3.1",
-    "pino": "^10.2.0",
-    "prettier": "^3.7.4",
+    "npm-check-updates": "^19.3.2",
+    "pino": "^10.3.0",
+    "prettier": "^3.8.1",
     "quicktype-core": "^23.2.6",
     "semver": "^7.7.3",
-    "tar": "^7.5.2"
+    "tar": "^7.5.7"
   },
   "devDependencies": {
-    "@swc/core": "^1.15.8",
+    "@swc/core": "^1.15.11",
     "@swc/jest": "^0.2.39",
     "@tsconfig/node22": "^22.0.5",
     "@types/archiver": "^7.0.0",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/micromatch": "^4.0.10",
-    "@types/node": "^22.19.6",
+    "@types/node": "^22.19.8",
     "@types/semver": "^7.7.1",
     "copyfiles": "^2.4.1",
     "eslint": "^9.39.2",
@@ -65,6 +65,6 @@
     "node-stream-zip": "^1.15.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.53.0"
+    "typescript-eslint": "^8.54.0"
   }
 }
