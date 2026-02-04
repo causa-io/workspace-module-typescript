@@ -1,6 +1,7 @@
 export type { TypeScriptDecorator } from './decorator.js';
 export { TypeScriptWithDecoratorsTargetLanguage } from './language.js';
 export * from './model-class/index.js';
+export * from './nestjs-controller/index.js';
 export { TypeScriptWithDecoratorsRenderer } from './renderer.js';
 export type { ClassContext, ClassPropertyContext } from './renderer.js';
 export * from './test-expectation/index.js';
