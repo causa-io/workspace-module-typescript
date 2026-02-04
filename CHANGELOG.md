@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Implement a code generator for TypeScript NestJS API controllers, based on OpenAPI specifications.
+
 ## v0.15.2 (2026-01-14)
 
 Chores:
