@@ -33,7 +33,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@causa/workspace": ">= 0.19.1 < 1.0.0",
+    "@causa/workspace": ">= 0.19.2 < 1.0.0",
     "@causa/workspace-core": ">= 0.26.0 < 1.0.0",
     "archiver": "^7.0.1",
     "audit-ci": "^7.1.0",
@@ -44,7 +44,7 @@
     "pino": "^10.3.0",
     "prettier": "^3.8.1",
     "quicktype-core": "^23.2.6",
-    "semver": "^7.7.3",
+    "semver": "^7.7.4",
     "tar": "^7.5.7"
   },
   "devDependencies": {
@@ -56,7 +56,7 @@
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/micromatch": "^4.0.10",
-    "@types/node": "^22.19.8",
+    "@types/node": "^22.19.9",
     "@types/semver": "^7.7.1",
     "copyfiles": "^2.4.1",
     "eslint": "^9.39.2",
