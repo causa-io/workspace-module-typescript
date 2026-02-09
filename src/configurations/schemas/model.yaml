@@ -1,0 +1,195 @@
+# yaml-language-server: $schema=https://json-schema.org/draft-07/schema
+
+title: ModelConfiguration
+type: object
+description: Configuration for model code generators provided by the TypeScript module.
+properties:
+  model:
+    type: object
+    properties:
+      codeGenerators:
+        type: array
+        items:
+          anyOf:
+            - type: object
+              properties:
+                generator:
+                  type: string
+                  description: The name of the generator to run.
+              required:
+                - generator
+
+            - title: TypeScriptModelClassCodeGenerator
+              type: object
+              description: Configuration for the TypeScript model class code generator.
+              properties:
+                generator:
+                  title: TypeScriptModelClassCodeGeneratorName
+                  type: string
+                  enum:
+                    - typescriptModelClass
+                  description: The name of the generator to run.
+
+                output:
+                  type: string
+                  description: The path, relative to the project root, to the file where generated model classes should be written.
+
+                globs:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of glob patterns to find schema definition files.
+
+                nestedSchemas:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of nested schemas to include.
+
+                includeEvents:
+                  type: boolean
+                  description: Whether to include event topic schemas referenced in the project.
+
+                includeFullReferences:
+                  type: boolean
+                  description: Whether to include full JSON Schema references.
+
+                constraintSuffix:
+                  type: string
+                  description: |-
+                    The suffix that should be present on constraint types. It will be removed during code generation.
+                    Defaults to `Constraint`.
+
+              required:
+                - generator
+                - output
+
+            - title: TypeScriptTestObjectCodeGenerator
+              type: object
+              description: Configuration for the TypeScript test object code generator.
+              properties:
+                generator:
+                  title: TypeScriptTestObjectCodeGeneratorName
+                  type: string
+                  enum:
+                    - typescriptTestObject
+                  description: The name of the generator to run.
+
+                output:
+                  type: string
+                  description: The path, relative to the project root, to the file where generated test objects should be written.
+
+                globs:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of glob patterns to find schema definition files.
+
+                nestedSchemas:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of nested schemas to include.
+
+                includeEvents:
+                  type: boolean
+                  description: Whether to include event topic schemas referenced in the project.
+
+                includeFullReferences:
+                  type: boolean
+                  description: Whether to include full JSON Schema references.
+
+                constraintSuffix:
+                  type: string
+                  description: |-
+                    The suffix that should be present on constraint types. It will be removed during code generation.
+                    Defaults to `Constraint`.
+
+              required:
+                - generator
+                - output
+
+            - title: TypeScriptTestExpectationCodeGenerator
+              type: object
+              description: Configuration for the TypeScript test expectation code generator.
+              properties:
+                generator:
+                  title: TypeScriptTestExpectationCodeGeneratorName
+                  type: string
+                  enum:
+                    - typescriptTestExpectation
+                  description: The name of the generator to run.
+
+                output:
+                  type: string
+                  description: The path, relative to the project root, to the file where generated test expectations should be written.
+
+                globs:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of glob patterns to find schema definition files.
+
+                nestedSchemas:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of nested schemas to include.
+
+                includeEvents:
+                  type: boolean
+                  description: Whether to include event topic schemas referenced in the project.
+
+                includeFullReferences:
+                  type: boolean
+                  description: Whether to include full JSON Schema references.
+
+                constraintSuffix:
+                  type: string
+                  description: |-
+                    The suffix that should be present on constraint types. It will be removed during code generation.
+                    Defaults to `Constraint`.
+
+                entitiesGlobs:
+                  type: array
+                  items:
+                    type: string
+                  description: |-
+                    A list of glob patterns to filter which schemas should generate entity expectation functions.
+                    Patterns are resolved relative to the project root.
+                    If not specified, expectations are generated for all types.
+
+              required:
+                - generator
+                - output
+
+            - title: TypeScriptNestjsControllerCodeGenerator
+              type: object
+              description: Configuration for the TypeScript NestJS controller code generator.
+              properties:
+                generator:
+                  title: TypeScriptNestjsControllerCodeGeneratorName
+                  type: string
+                  enum:
+                    - typescriptNestjsController
+                  description: The name of the generator to run.
+
+                output:
+                  type: string
+                  description: The path, relative to the project root, to the directory where generated controllers should be written.
+
+                globs:
+                  type: array
+                  items:
+                    type: string
+                  description: A list of glob patterns to find OpenAPI specification files.
+
+                constraintSuffix:
+                  type: string
+                  description: |-
+                    The suffix that should be present on constraint types. It will be removed during code generation.
+                    Defaults to `Constraint`.
+
+              required:
+                - generator
+                - output
