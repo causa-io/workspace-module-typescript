@@ -13,6 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'os';
 import { basename, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import type { TypeScriptConfiguration } from '../../configurations/index.js';
 
 /**
  * The JavaScript file that will be used to generate the OpenAPI specification.
@@ -41,9 +42,15 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
   async _call(context: WorkspaceContext): Promise<string> {
     const dockerTag = await context.call(ProjectBuildArtefact, {});
 
-    const { sourceFile, name: moduleName } = context
-      .asConfiguration()
+    const applicationModule = context
+      .asConfiguration<TypeScriptConfiguration>()
       .getOrThrow('javascript.openApi.applicationModule');
+    if (!applicationModule) {
+      throw new Error(
+        'The OpenAPI specification cannot be generated because the "javascript.openApi.applicationModule" configuration is not set.',
+      );
+    }
+    const { sourceFile, name: moduleName } = applicationModule;
 
     // The generation script is placed in the Docker container, in the same directory as the application module.
     // This ensures the script can import the application module, but also NestJS and the Causa runtime.
@@ -113,7 +120,9 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
         context.get('project.language') ?? '',
       ) &&
       context.get('project.type') === 'serviceContainer' &&
-      !!context.get('javascript.openApi.applicationModule')
+      !!context
+        .asConfiguration<TypeScriptConfiguration>()
+        .get('javascript.openApi.applicationModule')
     );
   }
 }

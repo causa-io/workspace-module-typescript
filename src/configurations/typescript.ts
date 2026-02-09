@@ -98,7 +98,7 @@ export type TypeScriptConfiguration = {
       /**
        * Defines the location of the NestJS application module when generating the OpenAPI specification for a
        * `serviceContainer` project.
-       * If this is not set, the OpenAPI specification will not be generated.
+       * If this is not set or `null`, the OpenAPI specification will not be generated.
        */
       readonly applicationModule?: {
         /**
@@ -113,7 +113,7 @@ export type TypeScriptConfiguration = {
          * It should be exported from the source file.
          */
         readonly name: string;
-      };
+      } | null;
     };
   };
 
