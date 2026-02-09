@@ -1,6 +1,13 @@
 import { WorkspaceFunction } from '@causa/workspace';
 import { IsObject, IsString } from 'class-validator';
-import { TypeScriptWithDecoratorsRenderer } from '../code-generation/index.js';
+import type { TypeScriptWithDecoratorsRenderer } from '../code-generation/index.js';
+
+/**
+ * A constructor for a {@link TypeScriptWithDecoratorsRenderer}.
+ */
+export type TypeScriptWithDecoratorsRendererType = new (
+  ...args: any[]
+) => TypeScriptWithDecoratorsRenderer;
 
 /**
  * Returns a {@link TypeScriptWithDecoratorsRenderer} that adds decorators to generated TypeScript code.
@@ -9,9 +16,10 @@ import { TypeScriptWithDecoratorsRenderer } from '../code-generation/index.js';
  * {@link TypeScriptGetDecoratorRenderer.generator} is a supported generator for the decorator, and if the
  * {@link TypeScriptGetDecoratorRenderer.configuration} is consistent with the decorator's usage.
  */
-export abstract class TypeScriptGetDecoratorRenderer extends WorkspaceFunction<{
-  new (...args: any[]): TypeScriptWithDecoratorsRenderer;
-}> {
+export abstract class TypeScriptGetDecoratorRenderer extends WorkspaceFunction<
+  | TypeScriptWithDecoratorsRendererType
+  | Promise<TypeScriptWithDecoratorsRendererType>
+> {
   /**
    * The name of the code generator being run.
    */
