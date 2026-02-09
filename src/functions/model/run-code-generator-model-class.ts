@@ -1,9 +1,9 @@
 import type { WorkspaceContext } from '@causa/workspace';
 import {
-  generateCodeForSchemas,
   ModelRunCodeGenerator,
   type GeneratedSchemas,
 } from '@causa/workspace-core';
+import { generateCodeForSchemas } from '@causa/workspace-core/code-generation';
 import { resolve } from 'path';
 import { TypeScriptModelClassTargetLanguage } from '../../code-generation/index.js';
 import { TypeScriptGetDecoratorRenderer } from '../../definitions/index.js';

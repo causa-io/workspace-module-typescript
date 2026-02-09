@@ -1,11 +1,11 @@
+import type { GeneratedSchema } from '@causa/workspace-core';
 import {
   causaTypeAttributeKind,
   findTypeForUri,
   type CausaAttribute,
   type CausaObjectAttributes,
   type CausaPropertyAttributes,
-  type GeneratedSchema,
-} from '@causa/workspace-core';
+} from '@causa/workspace-core/code-generation';
 import { dirname, relative, sep } from 'path';
 import type { Logger } from 'pino';
 import {

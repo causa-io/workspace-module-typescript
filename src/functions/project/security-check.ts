@@ -1,9 +1,9 @@
 import { WorkspaceContext } from '@causa/workspace';
+import { ProjectSecurityCheck } from '@causa/workspace-core';
 import {
   DockerService,
   ProcessServiceExitCodeError,
-  ProjectSecurityCheck,
-} from '@causa/workspace-core';
+} from '@causa/workspace-core/services';
 import { NpmService } from '../../services/index.js';
 
 /**

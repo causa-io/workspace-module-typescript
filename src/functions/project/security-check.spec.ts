@@ -1,9 +1,9 @@
 import { WorkspaceContext } from '@causa/workspace';
+import { ProjectSecurityCheck } from '@causa/workspace-core';
 import {
   DockerService,
   ProcessServiceExitCodeError,
-  ProjectSecurityCheck,
-} from '@causa/workspace-core';
+} from '@causa/workspace-core/services';
 import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';

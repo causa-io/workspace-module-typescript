@@ -1,8 +1,6 @@
 import { WorkspaceContext } from '@causa/workspace';
-import {
-  ProjectBuildArtefact,
-  ServiceContainerBuilderService,
-} from '@causa/workspace-core';
+import { ProjectBuildArtefact } from '@causa/workspace-core';
+import { ServiceContainerBuilderService } from '@causa/workspace-core/services';
 import { randomUUID } from 'node:crypto';
 import { major } from 'semver';
 import { fileURLToPath } from 'url';

@@ -1,8 +1,6 @@
 import type { WorkspaceContext } from '@causa/workspace';
-import type {
-  GeneratedSchemas,
-  TargetLanguageWithWriter,
-} from '@causa/workspace-core';
+import type { GeneratedSchemas } from '@causa/workspace-core';
+import type { TargetLanguageWithWriter } from '@causa/workspace-core/code-generation';
 import { writeFile } from 'fs/promises';
 import prettier from 'prettier';
 import { Option, type StringTypeMapping, TargetLanguage } from 'quicktype-core';

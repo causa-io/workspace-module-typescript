@@ -1,9 +1,9 @@
 import type { WorkspaceContext } from '@causa/workspace';
 import {
-  generateCodeForSchemas,
   ModelRunCodeGenerator,
   type GeneratedSchemas,
 } from '@causa/workspace-core';
+import { generateCodeForSchemas } from '@causa/workspace-core/code-generation';
 import { resolve } from 'path';
 import { TypeScriptTestObjectTargetLanguage } from '../../code-generation/index.js';
 import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';

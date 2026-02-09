@@ -1,5 +1,6 @@
 import { WorkspaceContext } from '@causa/workspace';
-import { GitService, ProjectDependenciesUpdate } from '@causa/workspace-core';
+import { ProjectDependenciesUpdate } from '@causa/workspace-core';
+import { GitService } from '@causa/workspace-core/services';
 import { NoImplementationFoundError } from '@causa/workspace/function-registry';
 import { createContext } from '@causa/workspace/testing';
 import { jest } from '@jest/globals';

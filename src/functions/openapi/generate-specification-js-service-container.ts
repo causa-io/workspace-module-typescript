@@ -1,10 +1,12 @@
 import { WorkspaceContext } from '@causa/workspace';
 import {
-  type DockerContainerMount,
-  DockerService,
   OpenApiGenerateSpecification,
   ProjectBuildArtefact,
 } from '@causa/workspace-core';
+import {
+  type DockerContainerMount,
+  DockerService,
+} from '@causa/workspace-core/services';
 import { open, readFile, rm, stat, writeFile } from 'fs/promises';
 import { dump } from 'js-yaml';
 import { randomUUID } from 'node:crypto';

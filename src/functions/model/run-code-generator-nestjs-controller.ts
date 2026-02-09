@@ -1,11 +1,13 @@
 import type { WorkspaceContext } from '@causa/workspace';
 import {
-  causaJsonSchemaAttributeProducer,
-  generateCodeForSchemas,
   ModelParseCodeGeneratorInputs,
   ModelRunCodeGenerator,
   type GeneratedSchemas,
 } from '@causa/workspace-core';
+import {
+  causaJsonSchemaAttributeProducer,
+  generateCodeForSchemas
+} from '@causa/workspace-core/code-generation';
 import { mkdir } from 'fs/promises';
 import { basename, join, resolve } from 'path';
 import {

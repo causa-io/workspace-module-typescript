@@ -1,5 +1,6 @@
 import { WorkspaceContext } from '@causa/workspace';
-import { GitService, ProjectDependenciesUpdate } from '@causa/workspace-core';
+import { ProjectDependenciesUpdate } from '@causa/workspace-core';
+import { GitService } from '@causa/workspace-core/services';
 import { run } from 'npm-check-updates';
 import { join } from 'path';
 import { NpmService, type TypeScriptConfiguration } from '../../index.js';

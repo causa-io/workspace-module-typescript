@@ -1,4 +1,4 @@
-import { ProcessServiceExitCodeError } from '@causa/workspace-core';
+import { ProcessServiceExitCodeError } from '@causa/workspace-core/services';
 
 /**
  * An error thrown when an npm process returns a non-zero exit code.
