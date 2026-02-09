@@ -3,7 +3,8 @@ import { ProjectDependenciesUpdate } from '@causa/workspace-core';
 import { GitService } from '@causa/workspace-core/services';
 import { run } from 'npm-check-updates';
 import { join } from 'path';
-import { NpmService, type TypeScriptConfiguration } from '../../index.js';
+import type { TypeScriptConfiguration } from '../../configurations/index.js';
+import { NpmService } from '../../services/index.js';
 import { PACKAGE_FILE, PACKAGE_LOCK_FILE } from '../../utils.js';
 
 /**
