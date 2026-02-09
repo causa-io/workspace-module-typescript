@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Move backfill, code generation, and services as separate exports.
+
+Chores:
+
+- Defer loading of heavy dependencies (`quicktype-core`) during function registration.
+
 ## v0.16.1 (2026-02-06)
 
 Chore:
