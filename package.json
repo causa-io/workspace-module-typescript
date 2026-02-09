@@ -47,6 +47,7 @@
     "prettier": "^3.8.1",
     "quicktype-core": "^23.2.6",
     "semver": "^7.7.4",
+    "globby": "^16.1.0",
     "tar": "^7.5.7"
   },
   "devDependencies": {
