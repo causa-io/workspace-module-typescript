@@ -5,17 +5,12 @@ import {
   type GeneratedSchemas,
 } from '@causa/workspace-core';
 import {
-  causaJsonSchemaAttributeProducer,
-  generateCodeForSchemas
+  generateCodeForSchemas,
+  makeJsonSchemaInputDataFromSources,
 } from '@causa/workspace-core/code-generation';
 import { mkdir } from 'fs/promises';
 import { basename, join, resolve } from 'path';
-import {
-  FetchingJSONSchemaStore,
-  InputData,
-  JSONSchemaInput,
-  type JSONSchemaSourceData,
-} from 'quicktype-core';
+import { type JSONSchemaSourceData } from 'quicktype-core';
 import {
   makeParametersSchemasForSpecification,
   parseOpenApiSpec,
@@ -138,14 +133,7 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
       return {};
     }
 
-    const input = new JSONSchemaInput(new FetchingJSONSchemaStore(), [
-      causaJsonSchemaAttributeProducer,
-    ]);
-    for (const source of sources) {
-      await input.addSource(source);
-    }
-    const inputData = new InputData();
-    inputData.addInput(input);
+    const inputData = await makeJsonSchemaInputDataFromSources(sources);
 
     const language = new TypeScriptModelClassTargetLanguage(
       modelFilePath,
