@@ -6,6 +6,10 @@ Breaking changes:
 
 - Move backfill, code generation, and services as separate exports.
 
+Features:
+
+- Define JSONSchemas for configurations and provide them with `CausaListConfigurationSchemas`.
+
 Chores:
 
 - Defer loading of heavy dependencies (`quicktype-core`) during function registration.

@@ -27,12 +27,13 @@
   "scripts": {
     "prebuild": "rimraf ./dist",
     "build": "tsc -p tsconfig.build.json",
-    "postbuild": "copyfiles -u 1 src/**/assets/**/* dist/",
+    "postbuild": "copyfiles -u 1 src/**/assets/**/* dist/ && node transform-schemas.mjs",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings=ExperimentalWarning\" jest",
     "test:cov": "npm run test -- --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generateConfigurationSchemas": "cs model genCode && perl -pi -e 's|\\@causa/runtime|\\@causa/workspace/validation|g' src/configurations/generated.ts"
   },
   "dependencies": {
     "@causa/workspace": ">= 0.22.0 < 1.0.0",
@@ -47,6 +48,7 @@
     "prettier": "^3.8.1",
     "quicktype-core": "^23.2.6",
     "semver": "^7.7.4",
+    "globby": "^16.1.0",
     "tar": "^7.5.7"
   },
   "devDependencies": {

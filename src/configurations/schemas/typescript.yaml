@@ -1,0 +1,145 @@
+# yaml-language-server: $schema=https://json-schema.org/draft-07/schema
+
+title: TypeScriptConfiguration
+type: object
+description: Configuration for TypeScript and JavaScript projects.
+properties:
+  javascript:
+    title: JavaScript
+    type: object
+    description: Configuration for JavaScript-related tools, usually for TypeScript projects.
+    properties:
+      npm:
+        title: Npm
+        type: object
+        description: Configuration for running npm commands.
+        properties:
+          environment:
+            type: object
+            description: |-
+              Environment variables to set when running npm.
+              Supports formatting.
+            additionalProperties:
+              $ref: '#/$defs/_TemplateString'
+
+          version:
+            type: string
+            description: |-
+              The version of npm to use.
+              Can be a semver version, or `latest`.
+
+          packDestination:
+            type: string
+            description: |-
+              The destination directory for built packages, relative to the project's root.
+              This is used when building JavaScript / TypeScript package artefacts.
+
+      node:
+        title: JavaScriptNode
+        type: object
+        description: Configuration related to Node.
+        properties:
+          version:
+            type: string
+            description: |-
+              The Node version to use, for example when building Docker images.
+              Can be a semver version, or `latest`.
+
+      dependencies:
+        title: JavaScriptDependencies
+        type: object
+        description: Configuration related to JavaScript dependencies.
+        properties:
+          check:
+            title: JavaScriptDependenciesCheck
+            type: object
+            description: Configuration used when checking dependencies for vulnerabilities.
+            properties:
+              skipDev:
+                type: boolean
+                description: Whether to ignore vulnerabilities in dev dependencies.
+
+              level:
+                title: JavaScriptDependenciesCheckLevel
+                type: string
+                enum:
+                  - low
+                  - moderate
+                  - high
+                  - critical
+                description: The minimum severity level of vulnerabilities to fail the check.
+
+              allowlist:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  A list of vulnerabilities to allow.
+                  See: https://github.com/IBM/audit-ci#allowlisting
+
+          update:
+            title: JavaScriptDependenciesUpdate
+            type: object
+            description: Configuration related to the update of dependencies.
+            properties:
+              defaultTarget:
+                title: JavaScriptDependenciesUpdateTarget
+                type: string
+                enum:
+                  - latest
+                  - newest
+                  - greatest
+                  - minor
+                  - patch
+                description: |-
+                  The default target version when updating dependencies.
+                  Defaults to `latest`.
+
+              packageTargets:
+                type: object
+                description: |-
+                  The target version for specific packages when updating dependencies.
+                  Keys are package names, values are target versions.
+                additionalProperties:
+                  type: string
+                  enum:
+                    - latest
+                    - newest
+                    - greatest
+                    - minor
+                    - patch
+
+      openApi:
+        title: JavaScriptOpenApi
+        type: object
+        description: Configuration related to the generation of OpenAPI specifications.
+        properties:
+          applicationModule:
+            description: |-
+              Defines the location of the NestJS application module when generating the OpenAPI specification for a `serviceContainer` project.
+              If this is not set or `null`, the OpenAPI specification will not be generated.
+            oneOf:
+              - type: 'null'
+              - title: JavaScriptOpenApiApplicationModule
+                type: object
+                description: The NestJS application module used to generate the OpenAPI specification.
+                properties:
+                  sourceFile:
+                    type: string
+                    description: |-
+                      The JavaScript source file containing the NestJS application module.
+                      This path is relative to the Docker container's `/app` directory (the working directory), which is usually also the project's root.
+
+                  name:
+                    type: string
+                    description: |-
+                      The name of the JavaScript class for NestJS application module.
+                      It should be exported from the source file.
+
+                required:
+                  - sourceFile
+                  - name
+
+$defs:
+  _TemplateString:
+    type: string

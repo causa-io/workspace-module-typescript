@@ -1,1 +1,1 @@
-export type { TypeScriptConfiguration } from './typescript.js';
+export { TypeScriptConfiguration } from './generated.js';
