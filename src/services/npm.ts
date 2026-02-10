@@ -88,10 +88,18 @@ export class NpmService {
        * The path to an archive file to publish instead of the current directory.
        */
       packageSpec?: string;
+
+      /**
+       * The distribution tag to use when publishing (e.g. `alpha`, `beta`, `next`).
+       */
+      tag?: string;
     } & SpawnOptions = {},
   ): Promise<void> {
-    const { packageSpec, ...spawnOptions } = options;
-    const args = packageSpec ? [packageSpec] : [];
+    const { packageSpec, tag, ...spawnOptions } = options;
+    const args = [
+      ...(packageSpec ? [packageSpec] : []),
+      ...(tag ? ['--tag', tag] : []),
+    ];
     await this.npm('publish', args, spawnOptions);
   }
 
