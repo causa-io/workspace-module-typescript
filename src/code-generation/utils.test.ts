@@ -1,4 +1,4 @@
-import { causaJsonSchemaAttributeProducer } from '@causa/workspace-core';
+import { causaJsonSchemaAttributeProducer } from '@causa/workspace-core/code-generation';
 import { readFile } from 'fs/promises';
 import {
   FetchingJSONSchemaStore,

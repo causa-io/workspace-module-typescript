@@ -1,4 +1,4 @@
-import { findTypeForUri } from '@causa/workspace-core';
+import { findTypeForUri } from '@causa/workspace-core/code-generation';
 import { ClassType, EnumType, panic, type Sourcelike } from 'quicktype-core';
 import {
   TypeScriptWithDecoratorsRenderer,

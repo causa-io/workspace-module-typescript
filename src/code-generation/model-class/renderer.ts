@@ -1,4 +1,7 @@
-import { causaTypeAttributeKind, findTypeForUri } from '@causa/workspace-core';
+import {
+  causaTypeAttributeKind,
+  findTypeForUri,
+} from '@causa/workspace-core/code-generation';
 import {
   ArrayType,
   ClassProperty,

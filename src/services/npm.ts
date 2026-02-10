@@ -4,7 +4,7 @@ import {
   ProcessServiceExitCodeError,
   type SpawnOptions,
   type SpawnedProcessResult,
-} from '@causa/workspace-core';
+} from '@causa/workspace-core/services';
 import { satisfies } from 'semver';
 import { IncompatibleNpmVersionError, NpmExitCodeError } from './npm.errors.js';
 

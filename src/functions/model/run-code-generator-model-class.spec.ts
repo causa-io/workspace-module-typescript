@@ -1,9 +1,9 @@
 import type { BaseConfiguration } from '@causa/workspace';
 import {
-  makeJsonSchemaInputData,
   ModelMakeGeneratorQuicktypeInputData,
   ModelRunCodeGenerator,
 } from '@causa/workspace-core';
+import { makeJsonSchemaInputData } from '@causa/workspace-core/code-generation';
 import {
   NoImplementationFoundError,
   type ImplementableFunctionArguments,

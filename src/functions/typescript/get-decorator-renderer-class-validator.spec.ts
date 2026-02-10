@@ -46,7 +46,7 @@ describe('TypeScriptGetDecoratorRendererForClassValidator', () => {
     ).toThrow(NoImplementationFoundError);
   });
 
-  it('should return the renderer for the correct generator', () => {
+  it('should return the renderer for the correct generator', async () => {
     const { context } = createContext({
       configuration: {
         project: {
@@ -58,7 +58,7 @@ describe('TypeScriptGetDecoratorRendererForClassValidator', () => {
       functions: [TypeScriptGetDecoratorRendererForClassValidator],
     });
 
-    const actualRenderer = context.call(TypeScriptGetDecoratorRenderer, {
+    const actualRenderer = await context.call(TypeScriptGetDecoratorRenderer, {
       generator: TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR,
       configuration: {},
     });

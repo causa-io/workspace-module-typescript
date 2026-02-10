@@ -14,7 +14,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./code-generation": "./dist/code-generation/index.js",
+    "./services": "./dist/services/index.js"
   },
   "files": [
     "dist/",
@@ -33,15 +35,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@causa/workspace": ">= 0.19.2 < 1.0.0",
-    "@causa/workspace-core": ">= 0.26.0 < 1.0.0",
+    "@causa/workspace": ">= 0.22.0 < 1.0.0",
+    "@causa/workspace-core": ">= 0.27.0-rc.1 < 1.0.0",
     "archiver": "^7.0.1",
     "audit-ci": "^7.1.0",
     "class-validator": "^0.14.3",
     "js-yaml": "^4.1.1",
     "micromatch": "^4.0.8",
     "npm-check-updates": "^19.3.2",
-    "pino": "^10.3.0",
+    "pino": "^10.3.1",
     "prettier": "^3.8.1",
     "quicktype-core": "^23.2.6",
     "semver": "^7.7.4",
@@ -56,7 +58,7 @@
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/micromatch": "^4.0.10",
-    "@types/node": "^22.19.9",
+    "@types/node": "^22.19.10",
     "@types/semver": "^7.7.1",
     "copyfiles": "^2.4.1",
     "eslint": "^9.39.2",
@@ -67,6 +69,6 @@
     "node-stream-zip": "^1.15.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.55.0"
   }
 }

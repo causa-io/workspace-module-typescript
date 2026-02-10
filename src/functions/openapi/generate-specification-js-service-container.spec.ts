@@ -1,9 +1,9 @@
 import { WorkspaceContext } from '@causa/workspace';
 import {
-  DockerService,
   OpenApiGenerateSpecification,
   ProjectBuildArtefact,
 } from '@causa/workspace-core';
+import { DockerService } from '@causa/workspace-core/services';
 import {
   FunctionRegistry,
   NoImplementationFoundError,
