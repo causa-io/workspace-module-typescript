@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Pass a tag to `npm publish` when pushing a prerelease artefact.
+
 ## v0.17.0-rc.1 (2026-02-10)
 
 Breaking changes:
