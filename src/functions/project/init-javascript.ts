@@ -29,8 +29,11 @@ export class ProjectInitForJavaScript extends ProjectInit {
   }
 
   _supports(context: WorkspaceContext): boolean {
-    return ['javascript', 'typescript'].includes(
-      context.get('project.language') ?? '',
+    return (
+      !this.workspace &&
+      ['javascript', 'typescript'].includes(
+        context.get('project.language') ?? '',
+      )
     );
   }
 }

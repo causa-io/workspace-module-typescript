@@ -35,6 +35,12 @@ describe('ProjectInitForJavaScript', () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
+  it('should not support the workspace option', () => {
+    expect(() => context.call(ProjectInit, { workspace: true })).toThrow(
+      NoImplementationFoundError,
+    );
+  });
+
   it('should not support projects that are not written in JavaScript or TypeScript', () => {
     ({ context } = createContext({
       projectPath: tmpDir,

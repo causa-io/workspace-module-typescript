@@ -5,6 +5,7 @@
 Breaking changes:
 
 - Move backfill, code generation, and services as separate exports.
+- Support the `--workspace` option in `ProjectInit` (`cs init`).
 
 Features:
 
