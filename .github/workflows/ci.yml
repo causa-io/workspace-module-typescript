@@ -79,4 +79,4 @@ jobs:
         run: cs init
 
       - name: 🚀 Publish
-        run: cs publish -t semantic
+        run: cs publish -t semantic -v
