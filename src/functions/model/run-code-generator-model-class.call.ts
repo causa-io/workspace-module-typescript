@@ -26,12 +26,10 @@ export default async function call(
   const outputPath = resolve(context.getProjectPathOrThrow(), output);
 
   const decoratorRenderers = await Promise.all(
-    context
-      .getFunctionImplementations(TypeScriptGetDecoratorRenderer, {
-        generator,
-        configuration,
-      })
-      .map((f) => f._call(context)),
+    context.callAll(TypeScriptGetDecoratorRenderer, {
+      generator,
+      configuration,
+    }),
   );
   decoratorRenderers.sort((r1, r2) => r1.name.localeCompare(r2.name));
 

@@ -1,6 +1,7 @@
 import { WorkspaceContext } from '@causa/workspace';
 import { ProjectPushArtefact } from '@causa/workspace-core';
 import { InvalidFunctionArgumentError } from '@causa/workspace/function-registry';
+import { prerelease } from 'semver';
 import * as tar from 'tar';
 import { NpmService } from '../../services/index.js';
 import {
@@ -38,9 +39,14 @@ export class ProjectPushArtefactForNpmPackage extends ProjectPushArtefact {
       `🚚 Publishing npm package for project '${projectName}'.`,
     );
 
+    // Setting the tag when publishing a prerelease version is required by npm.
+    const prereleaseComponents = prerelease(packageInfo.version);
+    const tag = prereleaseComponents?.[0]?.toString();
+
     await npmService.publish({
       packageSpec: this.artefact,
       workingDirectory: projectPath,
+      ...(tag && { tag }),
     });
 
     context.logger.info(`🚚 Successfully published npm package.`);

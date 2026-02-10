@@ -118,4 +118,31 @@ describe('ProjectPushArtefactForNpmPackage', () => {
       workingDirectory: tmpDir,
     });
   });
+
+  it('should publish with a tag for a prerelease version', async () => {
+    const prereleasePackageInfo = {
+      name: 'my-project',
+      version: '1.0.0-rc.1',
+    };
+    await writeFile(
+      join(tmpDir, 'package', 'package.json'),
+      JSON.stringify(prereleasePackageInfo),
+    );
+    const rcArtefact = join(tmpDir, 'my-project-rc.tgz');
+    await tar.c({ file: rcArtefact, gzip: true, cwd: tmpDir }, ['package']);
+    jest.spyOn(npmService, 'publish').mockResolvedValueOnce();
+
+    const expectedDestination = 'my-project@1.0.0-rc.1';
+    const actualDestination = await context.call(ProjectPushArtefact, {
+      artefact: rcArtefact,
+      destination: expectedDestination,
+    });
+
+    expect(actualDestination).toEqual(expectedDestination);
+    expect(npmService.publish).toHaveBeenCalledExactlyOnceWith({
+      packageSpec: rcArtefact,
+      workingDirectory: tmpDir,
+      tag: 'rc',
+    });
+  });
 });

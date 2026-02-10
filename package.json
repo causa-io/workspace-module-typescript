@@ -36,8 +36,8 @@
     "generateConfigurationSchemas": "cs model genCode && perl -pi -e 's|\\@causa/runtime|\\@causa/workspace/validation|g' src/configurations/generated.ts"
   },
   "dependencies": {
-    "@causa/workspace": ">= 0.22.0 < 1.0.0",
-    "@causa/workspace-core": ">= 0.27.0-rc.1 < 1.0.0",
+    "@causa/workspace": ">= 0.22.1 < 1.0.0",
+    "@causa/workspace-core": ">= 0.27.0-rc.2 < 1.0.0",
     "archiver": "^7.0.1",
     "audit-ci": "^7.1.0",
     "class-validator": "^0.14.3",

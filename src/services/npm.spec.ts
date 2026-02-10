@@ -164,6 +164,18 @@ describe('NpmService', () => {
         {},
       );
     });
+
+    it('should run the publish command with a tag', async () => {
+      jest.spyOn(service, 'npm').mockResolvedValueOnce({ code: 0 });
+
+      await service.publish({ tag: 'rc' });
+
+      expect(service.npm).toHaveBeenCalledExactlyOnceWith(
+        'publish',
+        ['--tag', 'rc'],
+        {},
+      );
+    });
   });
 
   describe('run', () => {
