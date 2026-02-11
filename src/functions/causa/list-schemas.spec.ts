@@ -15,8 +15,9 @@ describe('CausaListConfigurationSchemasForTypeScript', () => {
 
     const actualBaseNames = actualSchemas.map((s) => basename(s));
     expect(actualBaseNames).toIncludeSameMembers([
-      'typescript.yaml',
       'model.yaml',
+      'project.yaml',
+      'typescript.yaml',
     ]);
   });
 });

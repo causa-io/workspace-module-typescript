@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://json-schema.org/draft-07/schema
+
+title: TypeScriptProjectConfiguration
+type: object
+description: Refinement of the project configuration with known JavaScript and TypeScript languages.
+properties:
+  project:
+    type: object
+    properties:
+      language:
+        anyOf:
+          - type: string
+
+          - title: JavaScriptLanguage
+            type: string
+            enum:
+              - javascript
+            description: A JavaScript project.
+
+          - title: TypeScriptLanguage
+            type: string
+            enum:
+              - typescript
+            description: A TypeScript project.

@@ -106,6 +106,30 @@ export class ModelConfiguration {
   [property: string]: any;
 }
 
+export class Project {
+  constructor(init: Project) {
+    Object.assign(this, init);
+  }
+
+  @AllowMissing()
+  @IsString()
+  readonly language?: string;
+  [property: string]: any;
+}
+
+/**
+ * Refinement of the project configuration with known JavaScript and TypeScript languages.
+ */
+export class TypeScriptProjectConfiguration {
+  constructor(init: TypeScriptProjectConfiguration) {
+    Object.assign(this, init);
+  }
+
+  @AllowMissing()
+  readonly project?: Project;
+  [property: string]: any;
+}
+
 /**
  * The minimum severity level of vulnerabilities to fail the check.
  */
