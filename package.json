@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@causa/workspace": ">= 0.22.1 < 1.0.0",
-    "@causa/workspace-core": ">= 0.27.0-rc.2 < 1.0.0",
+    "@causa/workspace-core": ">= 0.27.0 < 1.0.0",
     "archiver": "^7.0.1",
     "audit-ci": "^7.1.0",
     "class-validator": "^0.14.3",
@@ -60,7 +60,7 @@
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/micromatch": "^4.0.10",
-    "@types/node": "^22.19.10",
+    "@types/node": "^22.19.11",
     "@types/semver": "^7.7.1",
     "copyfiles": "^2.4.1",
     "eslint": "^9.39.2",
