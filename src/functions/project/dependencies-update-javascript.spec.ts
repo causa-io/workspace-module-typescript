@@ -118,8 +118,34 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
     expect(process.env.SOME_VAR).toBeUndefined();
   });
 
-  it('should not run npm update if there are no dependencies to update', async () => {
+  it('should return true when only indirect dependencies are updated', async () => {
     jest.spyOn(npmService, 'update').mockResolvedValueOnce();
+    jest
+      .spyOn(gitService, 'filesDiff')
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(['package-lock.json']);
+
+    const actualDidUpdate = await context.call(ProjectDependenciesUpdate, {});
+
+    expect(actualDidUpdate).toBeTrue();
+    expect(ncuRunMock).toHaveBeenCalledExactlyOnceWith({
+      cwd: tmpDir,
+      target: expect.any(Function),
+      jsonUpgraded: true,
+      upgrade: true,
+    });
+    expect(npmService.update).toHaveBeenCalledExactlyOnceWith({
+      workingDirectory: tmpDir,
+    });
+    expect(gitService.filesDiff).toHaveBeenCalledTimes(2);
+  });
+
+  it('should return false when no direct or indirect dependency is updated', async () => {
+    jest.spyOn(npmService, 'update').mockResolvedValueOnce();
+    jest
+      .spyOn(gitService, 'filesDiff')
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
 
     const actualDidUpdate = await context.call(ProjectDependenciesUpdate, {});
 
@@ -130,6 +156,9 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
       jsonUpgraded: true,
       upgrade: true,
     });
-    expect(npmService.update).not.toHaveBeenCalled();
+    expect(npmService.update).toHaveBeenCalledExactlyOnceWith({
+      workingDirectory: tmpDir,
+    });
+    expect(gitService.filesDiff).toHaveBeenCalledTimes(2);
   });
 });
