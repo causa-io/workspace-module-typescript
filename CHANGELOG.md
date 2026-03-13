@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Always run `npm update` when updating JavaScript dependencies.
+
 ## v0.18.0 (2026-02-11)
 
 Features:

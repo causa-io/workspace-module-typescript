@@ -16,22 +16,35 @@ export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesU
   async _call(context: WorkspaceContext): Promise<boolean> {
     const projectPath = context.getProjectPathOrThrow();
 
-    await this.checkForUncommittedChanges(context);
-
-    const upgrades = await this.lookForUpdates(context);
-    if (!upgrades || Object.keys(upgrades).length === 0) {
-      context.logger.info(`✅ No dependency to update.`);
-      return false;
+    if (await this.hasUncommittedPackageChanges(context)) {
+      throw new Error(
+        `The package file(s) contain uncommitted changes but would be modified during the update. Changes should be committed or stashed before running the update.`,
+      );
     }
 
-    context.logger.info(
-      `⬆️ Upgraded the following dependencies:\n${Object.entries(upgrades)
-        .map(([name, version]) => `  ${name} => ${version}`)
-        .join('\n')}.`,
-    );
+    const upgrades = await this.lookForUpdates(context);
+    const hasDirectUpdates = Object.keys(upgrades).length > 0;
+    if (hasDirectUpdates) {
+      context.logger.info(
+        `⬆️ Upgraded the following dependencies:\n${Object.entries(upgrades)
+          .map(([name, version]) => `  ${name} => ${version}`)
+          .join('\n')}.`,
+      );
+    }
 
     context.logger.info(`⬆️ Running 'npm update'.`);
     await context.service(NpmService).update({ workingDirectory: projectPath });
+
+    if (!hasDirectUpdates) {
+      const hasIndirectUpdates =
+        await this.hasUncommittedPackageChanges(context);
+      if (!hasIndirectUpdates) {
+        context.logger.info(`✅ No dependency to update.`);
+        return false;
+      }
+
+      context.logger.info(`⬆️ Indirect dependencies have been updated.`);
+    }
 
     return true;
   }
@@ -43,13 +56,14 @@ export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesU
   }
 
   /**
-   * Ensures that there are no uncommitted changes in the package files.
+   * Checks whether the package files have uncommitted changes.
    *
    * @param context The {@link WorkspaceContext}.
+   * @returns `true` if the package files have uncommitted changes.
    */
-  private async checkForUncommittedChanges(
+  private async hasUncommittedPackageChanges(
     context: WorkspaceContext,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const projectPath = context.getProjectPathOrThrow();
     const packageFiles = [PACKAGE_FILE, PACKAGE_LOCK_FILE].map((file) =>
       join(projectPath, file),
@@ -60,11 +74,7 @@ export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesU
       paths: packageFiles,
     });
 
-    if (changedFiles.length > 0) {
-      throw new Error(
-        `The package file(s) contain uncommitted changes but would be modified during the update. Changes should be committed or stashed before running the update.`,
-      );
-    }
+    return changedFiles.length > 0;
   }
 
   /**
