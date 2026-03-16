@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.19.0 (2026-03-16)
+
 Features:
 
 - Always run `npm update` when updating JavaScript dependencies.
