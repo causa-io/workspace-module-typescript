@@ -5,8 +5,9 @@ import {
 } from '@causa/workspace-core';
 import archiver from 'archiver';
 import { createWriteStream } from 'fs';
+import { mkdir } from 'fs/promises';
 import { randomUUID } from 'node:crypto';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
 import { NpmService } from '../../services/index.js';
 
 /**
@@ -76,6 +77,7 @@ export class ProjectBuildArtefactForTypeScriptServerlessFunctions extends Projec
     rootPath: string,
     globPatterns: string[],
   ): Promise<void> {
+    await mkdir(dirname(archivePath), { recursive: true });
     const archive = archiver('zip', { zlib: { level: 9 } });
     const output = createWriteStream(archivePath);
 
