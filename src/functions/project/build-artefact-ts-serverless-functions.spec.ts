@@ -141,6 +141,25 @@ describe('ProjectBuildArtefactForTypeScriptServerlessFunctions', () => {
     artefactPath = actualArtefact;
   });
 
+  it('should create the archive directory if it does not exist', async () => {
+    jest.spyOn(npmService, 'build').mockResolvedValueOnce();
+    await mkdir(resolve(tmpDir, 'dist'));
+    await writeFile(resolve(tmpDir, 'package.json'), '{}');
+    await writeFile(resolve(tmpDir, 'dist', 'index.js'), '🧑‍💻');
+    const expectedArtefact = join(tmpDir, 'sub', 'dir', 'my-archive.zip');
+
+    const actualArtefact = await context.call(ProjectBuildArtefact, {
+      artefact: expectedArtefact,
+    });
+
+    expect(actualArtefact).toEqual(expectedArtefact);
+    expect(await readArchiveContent(actualArtefact)).toMatchObject({
+      'package.json': '{}',
+      'dist/index.js': '🧑‍💻',
+    });
+    artefactPath = actualArtefact;
+  });
+
   async function readArchiveContent(
     archivePath: string,
   ): Promise<Record<string, string>> {

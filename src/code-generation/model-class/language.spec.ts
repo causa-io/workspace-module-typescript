@@ -344,6 +344,19 @@ describe('TypeScriptModelClassLanguage', () => {
     });
   });
 
+  it('should create the output directory if it does not exist', async () => {
+    outputFile = join(tmpDir, 'sub', 'dir', 'test-output.ts');
+    const language = new TypeScriptModelClassTargetLanguage(
+      outputFile,
+      context,
+      {},
+    );
+
+    const actualCode = await generateFromSchema(language, SCHEMA, outputFile);
+
+    expect(actualCode).toContain('export class MyClass');
+  });
+
   it('should enforce options', async () => {
     const language = new TypeScriptModelClassTargetLanguage(
       outputFile,

@@ -167,9 +167,7 @@ function parseSuccessResponse(
 
     const jsonContent = content['application/json'];
     if (!jsonContent) {
-      throw new Error(
-        `Only 'application/json' responses are supported for status code '${statusCode}' in operation '${operationId}'.`,
-      );
+      return { statusCode, description };
     }
 
     const { schema } = jsonContent;

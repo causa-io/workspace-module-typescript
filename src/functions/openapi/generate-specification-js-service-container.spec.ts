@@ -240,6 +240,20 @@ describe('OpenApiGenerateSpecificationForJavaScriptServiceContainer', () => {
     await expectLocalOutputFileDeleted(runMock);
   });
 
+  it('should create the output directory if it does not exist', async () => {
+    const outputFile = join(tmpDir, 'sub', 'dir', 'test.yaml');
+    const runMock = mockDockerRun();
+
+    const actualResult = await context.call(OpenApiGenerateSpecification, {
+      output: outputFile,
+    });
+
+    expect(actualResult).toEqual(outputFile);
+    expectDockerRunCall(runMock);
+    const actualFile = await readFile(outputFile);
+    expect(actualFile.toString()).toEqual('openapi: 3.1.0\n');
+  });
+
   it('should remove the temporary local file if the Docker run fails', async () => {
     const runMock = mockDockerRun(new Error('🔥'));
 

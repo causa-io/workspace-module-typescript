@@ -5,6 +5,8 @@
 Features:
 
 - Always run `npm update` when updating JavaScript dependencies.
+- Support content types other than JSON in generated HTTP controllers.
+- Create the output directory if it does not exist in several places where files are emitted.
 
 ## v0.18.0 (2026-02-11)
 

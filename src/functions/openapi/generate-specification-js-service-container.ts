@@ -7,7 +7,7 @@ import {
   type DockerContainerMount,
   DockerService,
 } from '@causa/workspace-core/services';
-import { open, readFile, rm, stat, writeFile } from 'fs/promises';
+import { mkdir, open, readFile, rm, stat, writeFile } from 'fs/promises';
 import { dump } from 'js-yaml';
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'os';
@@ -110,6 +110,7 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
     }
 
     const output = this.output ?? DEFAULT_OUTPUT;
+    await mkdir(dirname(output), { recursive: true });
     await writeFile(output, openApiSpecYaml);
     return output;
   }

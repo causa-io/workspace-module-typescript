@@ -87,6 +87,25 @@ paths:
             application/json:
               schema:
                 $ref: ./errors/not-found.yaml
+  /cars/{id}/export:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: carExport
+      summary: Exports a car as PDF.
+      responses:
+        "200":
+          description: The PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
 `;
     await writeFile(filePath, spec);
 
@@ -166,6 +185,24 @@ paths:
           successResponse: {
             statusCode: 204,
             description: 'Deleted successfully',
+          },
+        },
+        {
+          operationId: 'carExport',
+          method: 'get',
+          path: '/cars/{id}/export',
+          summary: 'Exports a car as PDF.',
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              schema: { type: 'string', format: 'uuid' },
+            },
+          ],
+          successResponse: {
+            statusCode: 200,
+            description: 'The PDF file',
           },
         },
       ],
