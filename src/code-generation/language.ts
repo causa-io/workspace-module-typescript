@@ -1,7 +1,8 @@
 import type { WorkspaceContext } from '@causa/workspace';
 import type { GeneratedSchemas } from '@causa/workspace-core';
 import type { TargetLanguageWithWriter } from '@causa/workspace-core/code-generation';
-import { writeFile } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
+import { dirname } from 'path';
 import prettier from 'prettier';
 import { Option, type StringTypeMapping, TargetLanguage } from 'quicktype-core';
 
@@ -73,6 +74,7 @@ export abstract class TypeScriptWithDecoratorsTargetLanguage<
       ...prettierConfig,
     });
 
+    await mkdir(dirname(this.outputPath), { recursive: true });
     await writeFile(this.outputPath, formattedOutput);
   }
 }
