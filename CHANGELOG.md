@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- When generating code, add `IsObject` decorator on class properties.
+
 ## v0.19.0 (2026-03-16)
 
 Features:
