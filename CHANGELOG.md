@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.19.1 (2026-03-19)
+
 Fixes:
 
 - When generating code, add `IsObject` decorator on class properties.
