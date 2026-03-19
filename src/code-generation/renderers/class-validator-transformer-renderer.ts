@@ -45,7 +45,10 @@ type DecoratorDefinition = {
 const TYPE_KIND_TO_DECORATORS: Partial<
   Record<TypeKind, DecoratorDefinition[]>
 > = {
-  class: [{ name: 'ValidateNested', source: () => '@ValidateNested()' }],
+  class: [
+    { name: 'IsObject' },
+    { name: 'ValidateNested', source: () => '@ValidateNested()' },
+  ],
   date: [{ name: 'IsDate' }],
   'date-time': [{ name: 'IsDate' }],
   uuid: [

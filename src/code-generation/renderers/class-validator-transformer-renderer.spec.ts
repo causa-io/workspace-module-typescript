@@ -74,7 +74,7 @@ describe('ClassValidatorTransformerPropertyDecoratorsRenderer', () => {
     expect(actualCode).toMatch(/@IsNumber\(\)\n\s+readonly myNumber/);
     expect(actualCode).toMatch(/@IsBoolean\(\)\n\s+readonly myBool/);
     expect(actualCode).toMatch(
-      /@ValidateNested\(\)\n\s+@IsDefined\(\)\n\s+@Type\(\(\) => MyClass\)\s+readonly myClass/,
+      /@IsObject\(\)\n\s+@ValidateNested\(\)\n\s+@IsDefined\(\)\n\s+@Type\(\(\) => MyClass\)\s+readonly myClass/,
     );
     expect(actualCode).toMatch(
       /@IsArray\(\)\n\s+@IsUUID\(undefined, { each: true }\)\n\s+readonly myArray/,
