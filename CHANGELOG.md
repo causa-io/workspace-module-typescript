@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.19.2 (2026-04-02)
+
 Chores:
 
 - Add missing `semver` option to `javascript.dependencies.update.packageTargets`.
