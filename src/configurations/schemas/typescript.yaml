@@ -108,6 +108,7 @@ properties:
                     - greatest
                     - minor
                     - patch
+                    - semver
 
       openApi:
         title: JavaScriptOpenApi
