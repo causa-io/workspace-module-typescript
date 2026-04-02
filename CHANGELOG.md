@@ -6,6 +6,10 @@ Chores:
 
 - Add missing `semver` option to `javascript.dependencies.update.packageTargets`.
 
+Fixes:
+
+- Use read-only transactions in generated expectation code.
+
 ## v0.19.1 (2026-03-19)
 
 Fixes:
