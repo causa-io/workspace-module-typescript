@@ -180,8 +180,9 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
     expect(actualOutput).toInclude('expected: Partial<User>,');
     expect(actualOutput).toInclude('): Promise<User> {');
     expect(actualOutput).toInclude(
-      'const actual = await runner.run((t) => t.get(User, expected));',
+      'const actual = await runner.run({ readOnly: true }, (t) =>',
     );
+    expect(actualOutput).toInclude('t.get(User, expected)');
     expect(actualOutput).toInclude('expect(actual).toEqual({');
     expect(actualOutput).toInclude('id: expect.any(String),');
     expect(actualOutput).toInclude('name: expect.any(String),');
