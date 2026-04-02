@@ -150,7 +150,7 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
     this.emitLine(`expected: Partial<${expectationTypeName}>,`);
     this.emitLine(`): Promise<${expectationTypeName}> {`);
     this.emitLine(
-      `const actual = await runner.run((t) => t.get(${entityTypeName}, expected));`,
+      `const actual = await runner.run({ readOnly: true }, (t) => t.get(${entityTypeName}, expected));`,
     );
     this.emitLine(`expect(actual).toEqual({`);
     this.emitPropertyMatchers(context);
@@ -174,7 +174,7 @@ export class TypeScriptTestExpectationRenderer extends TypeScriptWithDecoratorsR
       this.emitLine(`key: Partial<${expectationTypeName}>,`);
       this.emitLine(`): Promise<void> {`);
       this.emitLine(
-        `const actual = await runner.run((t) => t.get(${entityTypeName}, key));`,
+        `const actual = await runner.run({ readOnly: true }, (t) => t.get(${entityTypeName}, key));`,
       );
       this.emitLine(`expect(actual).toEqual(null);`);
       this.emitLine(`}`);
