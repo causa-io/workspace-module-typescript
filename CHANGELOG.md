@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Resolve the serverless functions archive path relative to the project path instead of the current working directory.
+
 ## v0.20.0 (2026-04-13)
 
 Breaking changes:

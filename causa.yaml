@@ -21,7 +21,6 @@ javascript:
     update:
       packageTargets:
         '@types/node': minor
-        typescript: minor
 
 model:
   schema: jsonschema
