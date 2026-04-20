@@ -41,7 +41,7 @@ export class ProjectBuildArtefactForTypeScriptServerlessFunctions extends Projec
     context.logger.info(`🍱 Creating ZIP archive for serverless functions.`);
 
     const archivePath = resolve(
-      process.cwd(),
+      projectPath,
       this.artefact ?? `${randomUUID()}.zip`,
     );
     const globPatterns = [
