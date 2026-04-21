@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.22.0 (2026-04-21)
+
 Breaking changes:
 
 - Default to putting the serverless functions archive at the project path.
