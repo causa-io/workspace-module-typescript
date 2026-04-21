@@ -86,14 +86,12 @@ describe('ProjectBuildArtefactForTypeScriptServerlessFunctions', () => {
     await writeFile(resolve(tmpDir, '.npmrc'), '🔧');
     await writeFile(resolve(tmpDir, 'nope.js'), '🙈');
 
-    const actualArtefact = await context.call(ProjectBuildArtefact, {
-      artefact: 'my-archive.zip',
-    });
+    const actualArtefact = await context.call(ProjectBuildArtefact, {});
 
     expect(npmService.build).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: tmpDir,
     });
-    expect(actualArtefact).toEqual(`${tmpDir}/my-archive.zip`);
+    expect(actualArtefact).toMatch(new RegExp(`^${tmpDir}/.*\\.zip$`));
     expect(await readArchiveContent(actualArtefact)).toEqual({
       'package.json': '{}',
       'package-lock.json': '🔒',

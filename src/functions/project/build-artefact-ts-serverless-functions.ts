@@ -7,6 +7,7 @@ import archiver from 'archiver';
 import { createWriteStream } from 'fs';
 import { mkdir } from 'fs/promises';
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
 import { dirname, resolve } from 'path';
 import { NpmService } from '../../services/index.js';
 
@@ -40,10 +41,9 @@ export class ProjectBuildArtefactForTypeScriptServerlessFunctions extends Projec
 
     context.logger.info(`🍱 Creating ZIP archive for serverless functions.`);
 
-    const archivePath = resolve(
-      projectPath,
-      this.artefact ?? `${randomUUID()}.zip`,
-    );
+    const archivePath = this.artefact
+      ? resolve(this.artefact)
+      : join(projectPath, `${randomUUID()}.zip`);
     const globPatterns = [
       ...DEFAULT_ARCHIVE_GLOB_PATTERNS,
       ...(context
