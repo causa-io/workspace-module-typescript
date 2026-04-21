@@ -10,6 +10,7 @@ import {
 import { mkdir, open, readFile, rm, stat, writeFile } from 'fs/promises';
 import { dump } from 'js-yaml';
 import { randomUUID } from 'node:crypto';
+import { resolve } from 'node:path';
 import { tmpdir } from 'os';
 import { basename, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -40,6 +41,8 @@ const DEFAULT_OUTPUT = 'openapi.yaml';
  */
 export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends OpenApiGenerateSpecification {
   async _call(context: WorkspaceContext): Promise<string> {
+    const projectPath = context.getProjectPathOrThrow();
+
     const dockerTag = await context.call(ProjectBuildArtefact, {});
 
     const applicationModule = context
@@ -68,7 +71,7 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
     const localFd = await open(localOutputFile, 'w');
     await localFd.close();
 
-    const envFile = join(context.getProjectPathOrThrow(), '.env');
+    const envFile = join(projectPath, '.env');
     const envFileExists = !!(await stat(envFile).catch(() => false));
 
     let openApiSpec: object;
@@ -109,7 +112,9 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
       return openApiSpecYaml;
     }
 
-    const output = this.output ?? DEFAULT_OUTPUT;
+    const output = this.output
+      ? resolve(this.output)
+      : join(projectPath, DEFAULT_OUTPUT);
     await mkdir(dirname(output), { recursive: true });
     await writeFile(output, openApiSpecYaml);
     return output;
