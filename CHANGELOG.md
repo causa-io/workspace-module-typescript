@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Default to putting the serverless functions archive at the project path.
+- Default to putting the OpenAPI output specification at the project path.
+
 ## v0.21.0 (2026-04-20)
 
 Breaking changes:
