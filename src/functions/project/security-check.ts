@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import { ProjectSecurityCheck } from '@causa/workspace-core';
 import {
   DockerService,
@@ -22,24 +21,26 @@ const CONTAINER_CODE_LOCATION = '/workdir';
  * For TypeScript projects, the code is first compiled to JavaScript as checks only run on JavaScript code.
  */
 export class ProjectSecurityCheckForJavaScript extends ProjectSecurityCheck {
-  async _call(context: WorkspaceContext): Promise<void> {
-    const projectPath = context.getProjectPathOrThrow();
-    const projectName = context.get('project.name');
+  async _call(): Promise<void> {
+    const projectPath = this._context.getProjectPathOrThrow();
+    const projectName = this._context.get('project.name');
 
-    if (context.get('project.language') === 'typescript') {
-      context.logger.info(`🍱 Compiling TypeScript project '${projectName}'.`);
+    if (this._context.get('project.language') === 'typescript') {
+      this._context.logger.info(
+        `🍱 Compiling TypeScript project '${projectName}'.`,
+      );
 
-      await context
+      await this._context
         .service(NpmService)
         .build({ workingDirectory: projectPath });
     }
 
-    context.logger.info(
+    this._context.logger.info(
       `🔒 Running static security checks on source code for project '${projectName}'.`,
     );
 
     try {
-      await context.service(DockerService).run(NJSSCAN_DOCKER_IMAGE, {
+      await this._context.service(DockerService).run(NJSSCAN_DOCKER_IMAGE, {
         rm: true,
         mounts: [
           {
@@ -53,7 +54,7 @@ export class ProjectSecurityCheckForJavaScript extends ProjectSecurityCheck {
         logging: 'info',
       });
 
-      context.logger.info(`✅ Code passed security checks.`);
+      this._context.logger.info(`✅ Code passed security checks.`);
     } catch (error) {
       if (error instanceof ProcessServiceExitCodeError) {
         throw new Error('Code failed security checks.');
@@ -63,9 +64,9 @@ export class ProjectSecurityCheckForJavaScript extends ProjectSecurityCheck {
     }
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return ['javascript', 'typescript'].includes(
-      context.get('project.language') ?? '',
+      this._context.get('project.language') ?? '',
     );
   }
 }

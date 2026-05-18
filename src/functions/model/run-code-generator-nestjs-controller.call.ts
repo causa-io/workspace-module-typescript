@@ -68,10 +68,9 @@ async function generateParameterSchemas(
 
 export default async function call(
   this: ModelRunCodeGeneratorForTypeScriptNestjsController,
-  context: WorkspaceContext,
 ): Promise<GeneratedSchemas> {
   const { configuration, previousGeneratorsOutput } = this;
-  const projectPath = context.getProjectPathOrThrow();
+  const projectPath = this._context.getProjectPathOrThrow();
 
   const { output } = configuration;
   if (!output || typeof output !== 'string') {
@@ -90,24 +89,24 @@ export default async function call(
     );
   }
 
-  const { files } = await context.call(ModelParseCodeGeneratorInputs, {
+  const { files } = await this._context.call(ModelParseCodeGeneratorInputs, {
     configuration,
   });
   if (files.length === 0) {
-    context.logger.warn(
+    this._context.logger.warn(
       `No OpenAPI specification files found for generator '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}'.`,
     );
     return {};
   }
 
-  context.logger.debug(
+  this._context.logger.debug(
     `Found ${files.length} OpenAPI specification file(s) to process.`,
   );
 
   const parsedSpecs = await Promise.all(files.map(parseOpenApiSpec));
   const specs = parsedSpecs.filter((spec) => spec.operations.length > 0);
   if (specs.length === 0) {
-    context.logger.warn(
+    this._context.logger.warn(
       `No operations found in the OpenAPI specification files for generator '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}'.`,
     );
     return {};
@@ -122,7 +121,7 @@ export default async function call(
     this,
     parametersJsonSchemas,
     modelFilePath,
-    context,
+    this._context,
   );
 
   for (const spec of specs) {
@@ -139,7 +138,7 @@ export default async function call(
       LEADING_COMMENT,
     );
 
-    context.logger.debug(`Generated '${controllerFileName}'.`);
+    this._context.logger.debug(`Generated '${controllerFileName}'.`);
   }
 
   return parameterSchemas;

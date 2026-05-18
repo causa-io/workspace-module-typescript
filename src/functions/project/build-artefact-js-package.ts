@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import { ProjectBuildArtefact } from '@causa/workspace-core';
 import { InvalidFunctionArgumentError } from '@causa/workspace/function-registry';
 import { mkdir } from 'fs/promises';
@@ -14,17 +13,17 @@ import { NpmService } from '../../services/index.js';
  * The returned output artefact is the path to the packed archive file.
  */
 export class ProjectBuildArtefactForJavaScriptPackage extends ProjectBuildArtefact {
-  async _call(context: WorkspaceContext): Promise<string> {
-    const projectPath = context.getProjectPathOrThrow();
-    const projectName = context.get('project.name');
-    const projectLanguage = context.get('project.language');
+  async _call(): Promise<string> {
+    const projectPath = this._context.getProjectPathOrThrow();
+    const projectName = this._context.get('project.name');
+    const projectLanguage = this._context.get('project.language');
     const packDestination = resolve(
       projectPath,
-      context
+      this._context
         .asConfiguration<TypeScriptConfiguration>()
         .get('javascript.npm.packDestination') ?? '',
     );
-    const npmService = context.service(NpmService);
+    const npmService = this._context.service(NpmService);
 
     if (this.artefact) {
       throw new InvalidFunctionArgumentError(
@@ -33,28 +32,30 @@ export class ProjectBuildArtefactForJavaScriptPackage extends ProjectBuildArtefa
     }
 
     if (projectLanguage === 'typescript') {
-      context.logger.info(`🍱 Compiling TypeScript project '${projectName}'.`);
+      this._context.logger.info(
+        `🍱 Compiling TypeScript project '${projectName}'.`,
+      );
       await npmService.build({ workingDirectory: projectPath });
-      context.logger.info(`🍱 Successfully compiled TypeScript project.`);
+      this._context.logger.info(`🍱 Successfully compiled TypeScript project.`);
     }
 
     await mkdir(packDestination, { recursive: true });
 
-    context.logger.info(`📦 Packing project '${projectName}'.`);
+    this._context.logger.info(`📦 Packing project '${projectName}'.`);
     const archiveName = await npmService.pack({
       workingDirectory: projectPath,
       packDestination,
     });
-    context.logger.info(`📦 Successfully packed project.`);
+    this._context.logger.info(`📦 Successfully packed project.`);
 
     return join(packDestination, archiveName);
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
       ['javascript', 'typescript'].includes(
-        context.get('project.language') ?? '',
-      ) && context.get('project.type') === 'package'
+        this._context.get('project.language') ?? '',
+      ) && this._context.get('project.type') === 'package'
     );
   }
 }

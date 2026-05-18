@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import { ProjectTest } from '@causa/workspace-core';
 import { NpmExitCodeError, NpmService } from '../../services/index.js';
 
@@ -17,21 +16,21 @@ const NPM_TEST_COVERAGE_SCRIPT = 'test:cov';
  * If the `coverage` option is set, the `test:cov` script is run instead.
  */
 export class ProjectTestForJavaScript extends ProjectTest {
-  async _call(context: WorkspaceContext): Promise<void> {
-    const projectPath = context.getProjectPathOrThrow();
-    const projectName = context.get('project.name');
+  async _call(): Promise<void> {
+    const projectPath = this._context.getProjectPathOrThrow();
+    const projectName = this._context.get('project.name');
 
-    context.logger.info(`🧪 Running tests for project '${projectName}'.`);
+    this._context.logger.info(`🧪 Running tests for project '${projectName}'.`);
 
     const script = this.coverage ? NPM_TEST_COVERAGE_SCRIPT : NPM_TEST_SCRIPT;
 
     try {
-      await context.service(NpmService).run(script, {
+      await this._context.service(NpmService).run(script, {
         workingDirectory: projectPath,
         logging: 'info',
       });
 
-      context.logger.info('✅ Code passed tests.');
+      this._context.logger.info('✅ Code passed tests.');
     } catch (error) {
       if (error instanceof NpmExitCodeError) {
         throw new Error('Code failed tests.');
@@ -41,9 +40,9 @@ export class ProjectTestForJavaScript extends ProjectTest {
     }
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return ['javascript', 'typescript'].includes(
-      context.get('project.language') ?? '',
+      this._context.get('project.language') ?? '',
     );
   }
 }

@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import {
   ProjectBuildArtefact,
   type ServerlessFunctionsConfiguration,
@@ -28,40 +27,44 @@ const DEFAULT_ARCHIVE_GLOB_PATTERNS = [
  * The returned artefact is the path to the created ZIP archive.
  */
 export class ProjectBuildArtefactForTypeScriptServerlessFunctions extends ProjectBuildArtefact {
-  async _call(context: WorkspaceContext): Promise<string> {
-    const projectPath = context.getProjectPathOrThrow();
-    const npmService = context.service(NpmService);
+  async _call(): Promise<string> {
+    const projectPath = this._context.getProjectPathOrThrow();
+    const npmService = this._context.service(NpmService);
 
-    const projectName = context.get('project.name');
-    context.logger.info(`🍱 Compiling TypeScript project '${projectName}'.`);
+    const projectName = this._context.get('project.name');
+    this._context.logger.info(
+      `🍱 Compiling TypeScript project '${projectName}'.`,
+    );
 
     await npmService.build({ workingDirectory: projectPath });
 
-    context.logger.info(`🍱 Successfully compiled TypeScript project.`);
+    this._context.logger.info(`🍱 Successfully compiled TypeScript project.`);
 
-    context.logger.info(`🍱 Creating ZIP archive for serverless functions.`);
+    this._context.logger.info(
+      `🍱 Creating ZIP archive for serverless functions.`,
+    );
 
     const archivePath = this.artefact
       ? resolve(this.artefact)
       : join(projectPath, `${randomUUID()}.zip`);
     const globPatterns = [
       ...DEFAULT_ARCHIVE_GLOB_PATTERNS,
-      ...(context
+      ...(this._context
         .asConfiguration<ServerlessFunctionsConfiguration>()
         .get('serverlessFunctions.build.globPatterns') ?? []),
     ];
 
     await this.createArchive(archivePath, projectPath, globPatterns);
 
-    context.logger.info(`🍱 Successfully created the archive.`);
+    this._context.logger.info(`🍱 Successfully created the archive.`);
 
     return archivePath;
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
-      context.get('project.language') === 'typescript' &&
-      context.get('project.type') === 'serverlessFunctions'
+      this._context.get('project.language') === 'typescript' &&
+      this._context.get('project.type') === 'serverlessFunctions'
     );
   }
 

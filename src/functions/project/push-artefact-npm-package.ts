@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import { ProjectPushArtefact } from '@causa/workspace-core';
 import { InvalidFunctionArgumentError } from '@causa/workspace/function-registry';
 import { prerelease } from 'semver';
@@ -16,9 +15,9 @@ import {
  * The destination must match the package information in the archive.
  */
 export class ProjectPushArtefactForNpmPackage extends ProjectPushArtefact {
-  async _call(context: WorkspaceContext): Promise<string> {
-    const projectPath = context.getProjectPathOrThrow();
-    const npmService = context.service(NpmService);
+  async _call(): Promise<string> {
+    const projectPath = this._context.getProjectPathOrThrow();
+    const npmService = this._context.service(NpmService);
 
     if (this.overwrite) {
       throw new InvalidFunctionArgumentError(
@@ -34,8 +33,8 @@ export class ProjectPushArtefactForNpmPackage extends ProjectPushArtefact {
       );
     }
 
-    const projectName = context.get('project.name');
-    context.logger.info(
+    const projectName = this._context.get('project.name');
+    this._context.logger.info(
       `🚚 Publishing npm package for project '${projectName}'.`,
     );
 
@@ -49,7 +48,7 @@ export class ProjectPushArtefactForNpmPackage extends ProjectPushArtefact {
       ...(tag && { tag }),
     });
 
-    context.logger.info(`🚚 Successfully published npm package.`);
+    this._context.logger.info(`🚚 Successfully published npm package.`);
 
     return this.destination;
   }
@@ -80,11 +79,11 @@ export class ProjectPushArtefactForNpmPackage extends ProjectPushArtefact {
     return JSON.parse(Buffer.concat(packageJson).toString());
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
       ['javascript', 'typescript'].includes(
-        context.get('project.language') ?? '',
-      ) && context.get('project.type') === 'package'
+        this._context.get('project.language') ?? '',
+      ) && this._context.get('project.type') === 'package'
     );
   }
 }

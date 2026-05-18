@@ -1,4 +1,3 @@
-import type { WorkspaceContext } from '@causa/workspace';
 import type { GeneratedSchemas } from '@causa/workspace-core';
 import { generateCodeForSchemas } from '@causa/workspace-core/code-generation';
 import { resolve } from 'path';
@@ -10,11 +9,10 @@ import { LEADING_COMMENT, tryMakeGeneratorInputData } from './utils.js';
 
 export default async function call(
   this: ModelRunCodeGeneratorForTypeScriptTestObject,
-  context: WorkspaceContext,
 ): Promise<GeneratedSchemas> {
   const { configuration, previousGeneratorsOutput } = this;
 
-  const input = await tryMakeGeneratorInputData(context, configuration);
+  const input = await tryMakeGeneratorInputData(this._context, configuration);
 
   const { output } = configuration;
   if (!output || typeof output !== 'string') {
@@ -31,13 +29,17 @@ export default async function call(
     );
   }
 
-  const outputPath = resolve(context.getProjectPathOrThrow(), output);
+  const outputPath = resolve(this._context.getProjectPathOrThrow(), output);
 
-  const language = new TypeScriptTestObjectTargetLanguage(outputPath, context, {
-    leadingComment: LEADING_COMMENT,
-    generatorOptions: configuration,
-    modelClassSchemas,
-  });
+  const language = new TypeScriptTestObjectTargetLanguage(
+    outputPath,
+    this._context,
+    {
+      leadingComment: LEADING_COMMENT,
+      generatorOptions: configuration,
+      modelClassSchemas,
+    },
+  );
 
   await generateCodeForSchemas(language, input);
 

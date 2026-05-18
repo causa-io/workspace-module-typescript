@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import {
   OpenApiGenerateSpecification,
   ProjectBuildArtefact,
@@ -40,12 +39,12 @@ const DEFAULT_OUTPUT = 'openapi.yaml';
  * Generation is ignored if the `javascript.openApi.applicationModule` configuration is not set.
  */
 export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends OpenApiGenerateSpecification {
-  async _call(context: WorkspaceContext): Promise<string> {
-    const projectPath = context.getProjectPathOrThrow();
+  async _call(): Promise<string> {
+    const projectPath = this._context.getProjectPathOrThrow();
 
-    const dockerTag = await context.call(ProjectBuildArtefact, {});
+    const dockerTag = await this._context.call(ProjectBuildArtefact, {});
 
-    const applicationModule = context
+    const applicationModule = this._context
       .asConfiguration<TypeScriptConfiguration>()
       .getOrThrow('javascript.openApi.applicationModule');
     if (!applicationModule) {
@@ -90,7 +89,7 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
         },
       ];
 
-      await context.service(DockerService).run(dockerTag, {
+      await this._context.service(DockerService).run(dockerTag, {
         rm: true,
         network: 'host',
         mounts,
@@ -120,13 +119,13 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
     return output;
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
       ['javascript', 'typescript'].includes(
-        context.get('project.language') ?? '',
+        this._context.get('project.language') ?? '',
       ) &&
-      context.get('project.type') === 'serviceContainer' &&
-      !!context
+      this._context.get('project.type') === 'serviceContainer' &&
+      !!this._context
         .asConfiguration<TypeScriptConfiguration>()
         .get('javascript.openApi.applicationModule')
     );
