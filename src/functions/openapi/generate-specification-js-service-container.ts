@@ -7,7 +7,7 @@ import {
   DockerService,
 } from '@causa/workspace-core/services';
 import { mkdir, open, readFile, rm, stat, writeFile } from 'fs/promises';
-import { dump } from 'js-yaml';
+import { stringify } from 'yaml';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { tmpdir } from 'os';
@@ -105,7 +105,7 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
       await rm(localOutputFile, { force: true });
     }
 
-    const openApiSpecYaml = dump(openApiSpec);
+    const openApiSpecYaml = stringify(openApiSpec);
 
     if (this.returnSpecification) {
       return openApiSpecYaml;
