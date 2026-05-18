@@ -1,6 +1,6 @@
 import type { OpenAPIV3_1 } from '@scalar/openapi-types';
 import { readFile } from 'fs/promises';
-import { load } from 'js-yaml';
+import { parse } from 'yaml';
 import {
   HTTP_METHODS,
   type HttpMethod,
@@ -257,7 +257,7 @@ export async function parseOpenApiSpec(
   filePath: string,
 ): Promise<ParsedApiSpecification> {
   const content = await readFile(filePath, 'utf-8');
-  const doc = load(content) as OpenAPIV3_1.Document;
+  const doc = parse(content) as OpenAPIV3_1.Document;
 
   const resourceName = doc['x-causaResourceName'];
   if (!resourceName) {

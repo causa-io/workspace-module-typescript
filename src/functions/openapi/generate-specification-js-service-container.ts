@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import {
   OpenApiGenerateSpecification,
   ProjectBuildArtefact,
@@ -8,7 +7,7 @@ import {
   DockerService,
 } from '@causa/workspace-core/services';
 import { mkdir, open, readFile, rm, stat, writeFile } from 'fs/promises';
-import { dump } from 'js-yaml';
+import { stringify } from 'yaml';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { tmpdir } from 'os';
@@ -40,12 +39,12 @@ const DEFAULT_OUTPUT = 'openapi.yaml';
  * Generation is ignored if the `javascript.openApi.applicationModule` configuration is not set.
  */
 export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends OpenApiGenerateSpecification {
-  async _call(context: WorkspaceContext): Promise<string> {
-    const projectPath = context.getProjectPathOrThrow();
+  async _call(): Promise<string> {
+    const projectPath = this._context.getProjectPathOrThrow();
 
-    const dockerTag = await context.call(ProjectBuildArtefact, {});
+    const dockerTag = await this._context.call(ProjectBuildArtefact, {});
 
-    const applicationModule = context
+    const applicationModule = this._context
       .asConfiguration<TypeScriptConfiguration>()
       .getOrThrow('javascript.openApi.applicationModule');
     if (!applicationModule) {
@@ -90,7 +89,7 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
         },
       ];
 
-      await context.service(DockerService).run(dockerTag, {
+      await this._context.service(DockerService).run(dockerTag, {
         rm: true,
         network: 'host',
         mounts,
@@ -106,7 +105,7 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
       await rm(localOutputFile, { force: true });
     }
 
-    const openApiSpecYaml = dump(openApiSpec);
+    const openApiSpecYaml = stringify(openApiSpec);
 
     if (this.returnSpecification) {
       return openApiSpecYaml;
@@ -120,13 +119,13 @@ export class OpenApiGenerateSpecificationForJavaScriptServiceContainer extends O
     return output;
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
       ['javascript', 'typescript'].includes(
-        context.get('project.language') ?? '',
+        this._context.get('project.language') ?? '',
       ) &&
-      context.get('project.type') === 'serviceContainer' &&
-      !!context
+      this._context.get('project.type') === 'serviceContainer' &&
+      !!this._context
         .asConfiguration<TypeScriptConfiguration>()
         .get('javascript.openApi.applicationModule')
     );

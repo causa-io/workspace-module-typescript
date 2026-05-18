@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import { ProjectDependenciesCheck } from '@causa/workspace-core';
 import type { VulnerabilityLevels } from 'audit-ci';
 import { mapVulnerabilityLevelInput, npmAudit } from 'audit-ci';
@@ -29,8 +28,8 @@ const ALLOWED_VULNERABILITY_LEVELS: VulnerabilityLevel[] = [
  * This uses `audit-ci`, which is a wrapper around `npm audit`.
  */
 export class ProjectDependenciesCheckForJavaScript extends ProjectDependenciesCheck {
-  async _call(context: WorkspaceContext): Promise<void> {
-    const conf = context.asConfiguration<TypeScriptConfiguration>();
+  async _call(): Promise<void> {
+    const conf = this._context.asConfiguration<TypeScriptConfiguration>();
     const level = conf.get('javascript.dependencies.check.level');
     const skipDev = conf.get('javascript.dependencies.check.skipDev');
     const allowlist = conf.get('javascript.dependencies.check.allowlist');
@@ -39,16 +38,16 @@ export class ProjectDependenciesCheckForJavaScript extends ProjectDependenciesCh
       throw new Error(`Invalid dependencies check level '${level}'.`);
     }
 
-    context.logger.info('🔍 Checking for vulnerable dependencies.');
+    this._context.logger.info('🔍 Checking for vulnerable dependencies.');
 
-    await this.auditDependencies(context, { allowlist, skipDev, level });
+    await this.auditDependencies({ allowlist, skipDev, level });
 
-    context.logger.info('✅ No vulnerable dependency found.');
+    this._context.logger.info('✅ No vulnerable dependency found.');
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return ['javascript', 'typescript'].includes(
-      context.get('project.language') ?? '',
+      this._context.get('project.language') ?? '',
     );
   }
 
@@ -56,18 +55,16 @@ export class ProjectDependenciesCheckForJavaScript extends ProjectDependenciesCh
    * Audits the dependencies of the project using `audit-ci`.
    * Handles the mapping of `audit-ci` options.
    *
-   * @param context The workspace context.
    * @param options Options when auditing dependencies.
    */
   private async auditDependencies(
-    context: WorkspaceContext,
     options: {
       allowlist?: string[];
       skipDev?: boolean;
       level?: VulnerabilityLevel;
     } = {},
   ): Promise<void> {
-    const projectPath = context.getProjectPathOrThrow();
+    const projectPath = this._context.getProjectPathOrThrow();
     const allowlist = options.allowlist ?? [];
     const skipDev = options.skipDev ?? false;
     const level = options.level ?? DEFAULT_VULNERABILITY_LEVEL;

@@ -1,4 +1,3 @@
-import type { WorkspaceContext } from '@causa/workspace';
 import {
   TypeScriptGetDecoratorRenderer,
   type TypeScriptWithDecoratorsRendererType,
@@ -15,9 +14,9 @@ export class TypeScriptGetDecoratorRendererForOpenApi extends TypeScriptGetDecor
     return OpenApiRenderer;
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
-      context.get('project.language') === 'typescript' &&
+      this._context.get('project.language') === 'typescript' &&
       this.generator === TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR
     );
   }

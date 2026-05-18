@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import { ProjectBuildArtefact } from '@causa/workspace-core';
 import { ServiceContainerBuilderService } from '@causa/workspace-core/services';
 import { randomUUID } from 'node:crypto';
@@ -30,13 +29,16 @@ const DEFAULT_NODE_MAJOR_VERSION = '20';
  * `javascript.node.version` and `javascript.npm.version` configurations.
  */
 export class ProjectBuildArtefactForTypeScriptServiceContainer extends ProjectBuildArtefact {
-  async _call(context: WorkspaceContext): Promise<string> {
-    const path = context.getProjectPathOrThrow();
-    const builderService = context.service(ServiceContainerBuilderService);
-    const typeScriptConf = context.asConfiguration<TypeScriptConfiguration>();
+  async _call(): Promise<string> {
+    const path = this._context.getProjectPathOrThrow();
+    const builderService = this._context.service(
+      ServiceContainerBuilderService,
+    );
+    const typeScriptConf =
+      this._context.asConfiguration<TypeScriptConfiguration>();
 
-    const projectName = context.get('project.name');
-    context.logger.info(
+    const projectName = this._context.get('project.name');
+    this._context.logger.info(
       `🍱 Building Docker image for TypeScript project '${projectName}'.`,
     );
 
@@ -55,15 +57,17 @@ export class ProjectBuildArtefactForTypeScriptServiceContainer extends ProjectBu
 
     await builderService.build(path, imageName, DOCKER_FILE, { baseBuildArgs });
 
-    context.logger.info(`🍱 Successfully built image with tag '${imageName}'.`);
+    this._context.logger.info(
+      `🍱 Successfully built image with tag '${imageName}'.`,
+    );
 
     return imageName;
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
-      context.get('project.language') === 'typescript' &&
-      context.get('project.type') === 'serviceContainer'
+      this._context.get('project.language') === 'typescript' &&
+      this._context.get('project.type') === 'serviceContainer'
     );
   }
 }

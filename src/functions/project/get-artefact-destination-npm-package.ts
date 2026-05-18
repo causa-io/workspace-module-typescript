@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import { ProjectGetArtefactDestination } from '@causa/workspace-core';
 import {
   makeNpmPackageArtefactDestination,
@@ -10,17 +9,17 @@ import {
  * This returns a normalized destination based on the package name and the provided tag: `<package-name>@<tag>`.
  */
 export class ProjectGetArtefactDestinationForNpmPackage extends ProjectGetArtefactDestination {
-  async _call(context: WorkspaceContext): Promise<string> {
-    const projectPath = context.getProjectPathOrThrow();
+  async _call(): Promise<string> {
+    const projectPath = this._context.getProjectPathOrThrow();
     const packageInfo = await readNpmPackageFile(projectPath);
     return makeNpmPackageArtefactDestination(packageInfo, this.tag);
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
       ['javascript', 'typescript'].includes(
-        context.get('project.language') ?? '',
-      ) && context.get('project.type') === 'package'
+        this._context.get('project.language') ?? '',
+      ) && this._context.get('project.type') === 'package'
     );
   }
 }

@@ -1,4 +1,3 @@
-import type { WorkspaceContext } from '@causa/workspace';
 import type { GeneratedSchemas } from '@causa/workspace-core';
 import { generateCodeForSchemas } from '@causa/workspace-core/code-generation';
 import { resolve } from 'path';
@@ -10,11 +9,10 @@ import { LEADING_COMMENT, tryMakeGeneratorInputData } from './utils.js';
 
 export default async function call(
   this: ModelRunCodeGeneratorForTypeScriptModelClass,
-  context: WorkspaceContext,
 ): Promise<GeneratedSchemas> {
   const { generator, configuration } = this;
 
-  const input = await tryMakeGeneratorInputData(context, configuration);
+  const input = await tryMakeGeneratorInputData(this._context, configuration);
 
   const { output } = configuration;
   if (!output || typeof output !== 'string') {
@@ -23,21 +21,25 @@ export default async function call(
     );
   }
 
-  const outputPath = resolve(context.getProjectPathOrThrow(), output);
+  const outputPath = resolve(this._context.getProjectPathOrThrow(), output);
 
   const decoratorRenderers = await Promise.all(
-    context.callAll(TypeScriptGetDecoratorRenderer, {
+    this._context.callAll(TypeScriptGetDecoratorRenderer, {
       generator,
       configuration,
     }),
   );
   decoratorRenderers.sort((r1, r2) => r1.name.localeCompare(r2.name));
 
-  const language = new TypeScriptModelClassTargetLanguage(outputPath, context, {
-    decoratorRenderers,
-    leadingComment: LEADING_COMMENT,
-    generatorOptions: configuration,
-  });
+  const language = new TypeScriptModelClassTargetLanguage(
+    outputPath,
+    this._context,
+    {
+      decoratorRenderers,
+      leadingComment: LEADING_COMMENT,
+      generatorOptions: configuration,
+    },
+  );
 
   await generateCodeForSchemas(language, input);
 

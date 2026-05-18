@@ -1,4 +1,3 @@
-import { WorkspaceContext } from '@causa/workspace';
 import { ProjectReadVersion } from '@causa/workspace-core';
 import { readNpmPackageFile } from '../../utils.js';
 
@@ -7,15 +6,15 @@ import { readNpmPackageFile } from '../../utils.js';
  * `package.json` file.
  */
 export class ProjectReadVersionForJavaScript extends ProjectReadVersion {
-  async _call(context: WorkspaceContext): Promise<string> {
-    const projectPath = context.getProjectPathOrThrow();
+  async _call(): Promise<string> {
+    const projectPath = this._context.getProjectPathOrThrow();
     const packageInfo = await readNpmPackageFile(projectPath);
     return packageInfo.version;
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return ['javascript', 'typescript'].includes(
-      context.get('project.language') ?? '',
+      this._context.get('project.language') ?? '',
     );
   }
 }

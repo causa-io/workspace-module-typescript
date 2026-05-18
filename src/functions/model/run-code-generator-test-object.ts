@@ -1,4 +1,4 @@
-import { callDeferred, type WorkspaceContext } from '@causa/workspace';
+import { callDeferred } from '@causa/workspace';
 import {
   ModelRunCodeGenerator,
   type GeneratedSchemas,
@@ -13,13 +13,13 @@ export const TYPESCRIPT_TEST_OBJECT_GENERATOR = 'typescriptTestObject';
  * The implementation of {@link ModelRunCodeGenerator} for the TypeScript test object generator.
  */
 export class ModelRunCodeGeneratorForTypeScriptTestObject extends ModelRunCodeGenerator {
-  async _call(context: WorkspaceContext): Promise<GeneratedSchemas> {
-    return await callDeferred(this, context, import.meta.url);
+  async _call(): Promise<GeneratedSchemas> {
+    return await callDeferred(this, import.meta.url);
   }
 
-  _supports(context: WorkspaceContext): boolean {
+  _supports(): boolean {
     return (
-      context.get('project.language') === 'typescript' &&
+      this._context.get('project.language') === 'typescript' &&
       this.generator === TYPESCRIPT_TEST_OBJECT_GENERATOR
     );
   }
