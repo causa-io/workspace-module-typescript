@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.23.0-beta.1 (2026-05-18)
+
 Chores:
 
 - Adapt to `@causa/workspace` breaking changes: `_call` and `_supports` (and secondary helper methods) no longer receive a `context` argument and rely on the `_context` property instead.
