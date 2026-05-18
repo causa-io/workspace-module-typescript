@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Chores:
+
+- Adapt to `@causa/workspace` breaking changes: `_call` and `_supports` (and secondary helper methods) no longer receive a `context` argument and rely on the `_context` property instead.
+- Replace `js-yaml` with `yaml`.
+
 ## v0.22.0 (2026-04-21)
 
 Breaking changes:
