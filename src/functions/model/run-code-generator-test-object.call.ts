@@ -2,7 +2,7 @@ import type { GeneratedSchemas } from '@causa/workspace-core';
 import { generateCodeForSchemas } from '@causa/workspace-core/code-generation';
 import { resolve } from 'path';
 import { TypeScriptTestObjectTargetLanguage } from '../../code-generation/index.js';
-import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
+import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import type { ModelRunCodeGeneratorForTypeScriptTestObject } from './run-code-generator-test-object.js';
 import { TYPESCRIPT_TEST_OBJECT_GENERATOR } from './run-code-generator-test-object.js';
 import { LEADING_COMMENT, tryMakeGeneratorInputData } from './utils.js';
@@ -22,10 +22,10 @@ export default async function call(
   }
 
   const modelClassSchemas =
-    previousGeneratorsOutput[TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR];
+    previousGeneratorsOutput[TYPESCRIPT_MODEL_CLASS_GENERATOR];
   if (!modelClassSchemas) {
     throw new Error(
-      `The '${TYPESCRIPT_TEST_OBJECT_GENERATOR}' generator requires the output of the '${TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR}' generator. Make sure it runs before this generator.`,
+      `The '${TYPESCRIPT_TEST_OBJECT_GENERATOR}' generator requires the output of the '${TYPESCRIPT_MODEL_CLASS_GENERATOR}' generator. Make sure it runs before this generator.`,
     );
   }
 

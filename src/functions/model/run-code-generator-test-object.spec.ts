@@ -13,7 +13,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
+import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import { ModelRunCodeGeneratorForTypeScriptTestObject } from './run-code-generator-test-object.js';
 import { LEADING_COMMENT } from './utils.js';
 
@@ -87,7 +87,7 @@ describe('ModelRunCodeGeneratorForTypeScriptTestObject', () => {
     generator: 'typescriptTestObject',
     configuration: {},
     previousGeneratorsOutput: {
-      [TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR]: {},
+      [TYPESCRIPT_MODEL_CLASS_GENERATOR]: {},
     },
   };
 
@@ -181,7 +181,7 @@ describe('ModelRunCodeGeneratorForTypeScriptTestObject', () => {
       ...baseArguments,
       configuration,
       previousGeneratorsOutput: {
-        [TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR]: modelClassSchemas,
+        [TYPESCRIPT_MODEL_CLASS_GENERATOR]: modelClassSchemas,
       },
     });
 
