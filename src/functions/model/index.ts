@@ -1,3 +1,4 @@
+export { ModelGenerateTypeScriptDecoratorsForCausaValidator } from './generate-typescript-decorators-causa-validator.js';
 export { ModelRunCodeGeneratorForTypeScriptModelClass } from './run-code-generator-model-class.js';
 export { ModelRunCodeGeneratorForTypeScriptNestjsController } from './run-code-generator-nestjs-controller.js';
 export { ModelRunCodeGeneratorForTypeScriptTestExpectation } from './run-code-generator-test-expectation.js';

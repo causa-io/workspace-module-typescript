@@ -1,6 +1,7 @@
 import type { ModuleRegistrationContext } from '@causa/workspace';
 import { CausaListConfigurationSchemasForTypeScript } from './causa/index.js';
 import {
+  ModelGenerateTypeScriptDecoratorsForCausaValidator,
   ModelRunCodeGeneratorForTypeScriptModelClass,
   ModelRunCodeGeneratorForTypeScriptNestjsController,
   ModelRunCodeGeneratorForTypeScriptTestExpectation,
@@ -30,6 +31,7 @@ import {
 export function registerFunctions(context: ModuleRegistrationContext) {
   context.registerFunctionImplementations(
     CausaListConfigurationSchemasForTypeScript,
+    ModelGenerateTypeScriptDecoratorsForCausaValidator,
     ModelRunCodeGeneratorForTypeScriptModelClass,
     ModelRunCodeGeneratorForTypeScriptNestjsController,
     ModelRunCodeGeneratorForTypeScriptTestExpectation,
