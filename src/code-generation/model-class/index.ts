@@ -1,2 +1,7 @@
-export { TypeScriptModelClassTargetLanguage } from './language.js';
-export { TypeScriptModelClassRenderer } from './renderer.js';
+export {
+  TypeScriptModelClassGenerator,
+  type ModelClassSchemaDecorators,
+  type TypeScriptDecorator,
+  type TypeScriptModelClassGeneratorOptions,
+} from './generator.js';
+export { addDecoratorToList } from './utilities.js';
