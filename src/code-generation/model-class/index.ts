@@ -1,4 +1,5 @@
 export { makeCausaValidatorDecorators } from './causa-validator-decorators.js';
+export { makeClassValidatorDecorators } from './class-validator-decorators.js';
 export {
   TypeScriptModelClassGenerator,
   type ModelClassSchemaDecorators,
