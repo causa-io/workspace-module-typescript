@@ -6,4 +6,5 @@ export {
   type TypeScriptDecorator,
   type TypeScriptModelClassGeneratorOptions,
 } from './generator.js';
+export { makeOpenApiDecorators } from './openapi-decorators.js';
 export { addDecoratorToList } from './utilities.js';

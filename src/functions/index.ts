@@ -3,6 +3,7 @@ import { CausaListConfigurationSchemasForTypeScript } from './causa/index.js';
 import {
   ModelGenerateTypeScriptDecoratorsForCausaValidator,
   ModelGenerateTypeScriptDecoratorsForClassValidator,
+  ModelGenerateTypeScriptDecoratorsForOpenApi,
   ModelRunCodeGeneratorForTypeScriptModelClass,
   ModelRunCodeGeneratorForTypeScriptNestjsController,
   ModelRunCodeGeneratorForTypeScriptTestExpectation,
@@ -23,17 +24,13 @@ import {
   ProjectSecurityCheckForJavaScript,
   ProjectTestForJavaScript,
 } from './project/index.js';
-import {
-  TypeScriptGetDecoratorRendererForCausaValidator,
-  TypeScriptGetDecoratorRendererForClassValidator,
-  TypeScriptGetDecoratorRendererForOpenApi,
-} from './typescript/index.js';
 
 export function registerFunctions(context: ModuleRegistrationContext) {
   context.registerFunctionImplementations(
     CausaListConfigurationSchemasForTypeScript,
     ModelGenerateTypeScriptDecoratorsForCausaValidator,
     ModelGenerateTypeScriptDecoratorsForClassValidator,
+    ModelGenerateTypeScriptDecoratorsForOpenApi,
     ModelRunCodeGeneratorForTypeScriptModelClass,
     ModelRunCodeGeneratorForTypeScriptNestjsController,
     ModelRunCodeGeneratorForTypeScriptTestExpectation,
@@ -51,8 +48,5 @@ export function registerFunctions(context: ModuleRegistrationContext) {
     ProjectReadVersionForJavaScript,
     ProjectSecurityCheckForJavaScript,
     ProjectTestForJavaScript,
-    TypeScriptGetDecoratorRendererForCausaValidator,
-    TypeScriptGetDecoratorRendererForClassValidator,
-    TypeScriptGetDecoratorRendererForOpenApi,
   );
 }
