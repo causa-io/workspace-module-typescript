@@ -1,49 +1,22 @@
 import type { BaseConfiguration } from '@causa/workspace';
 import {
   EventTopicList,
-  ModelMakeGeneratorQuicktypeInputData,
+  ModelParseCodeGeneratorInputs,
   ModelRunCodeGenerator,
+  ModelSchemaParse,
+  type Schema,
 } from '@causa/workspace-core';
-import { makeJsonSchemaInputData } from '@causa/workspace-core/code-generation';
 import {
   NoImplementationFoundError,
   type ImplementableFunctionArguments,
 } from '@causa/workspace/function-registry';
 import { createContext, registerMockFunction } from '@causa/workspace/testing';
-import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
+import { mkdtemp, readFile, rm } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import { ModelRunCodeGeneratorForTypeScriptTestExpectation } from './run-code-generator-test-expectation.js';
-import { LEADING_COMMENT } from './utils.js';
-
-const SCHEMA = {
-  title: 'User',
-  type: 'object',
-  description: 'A user in the system',
-  additionalProperties: false,
-  properties: {
-    id: {
-      type: 'string',
-      description: "The user's ID",
-    },
-    name: {
-      type: 'string',
-      description: "The user's name",
-    },
-    email: {
-      type: 'string',
-      format: 'email',
-      description: "The user's email address",
-    },
-    isActive: {
-      type: 'boolean',
-      description: 'Whether the user is active',
-    },
-  },
-  required: ['id', 'name', 'email'],
-};
 
 describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
   const baseConfiguration: BaseConfiguration = {
@@ -107,11 +80,14 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
     const { context } = createContext({
       projectPath: tmpDir,
       configuration: baseConfiguration,
-      // ModelMakeGeneratorQuicktypeInputData will not be present.
+      // ModelParseCodeGeneratorInputs will not be present.
       functions: [ModelRunCodeGeneratorForTypeScriptTestExpectation],
     });
 
-    const actualPromise = context.call(ModelRunCodeGenerator, baseArguments);
+    const actualPromise = context.call(ModelRunCodeGenerator, {
+      ...baseArguments,
+      configuration: { output: 'test-expectations.ts' },
+    });
 
     await expect(actualPromise).rejects.toThrow(
       'Could not generate input data for code generation. Ensure the model schema format is supported.',
@@ -121,18 +97,63 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
   it('should generate TypeScript test expectation functions from JSON schemas and return GeneratedSchemas', async () => {
     const schemaFile = join(tmpDir, 'user.schema.json');
     const modelFile = join(tmpDir, 'model.ts');
-    await writeFile(schemaFile, JSON.stringify(SCHEMA));
+    const schemas: Record<string, Schema> = {
+      [schemaFile]: {
+        kind: 'object',
+        name: 'User',
+        path: schemaFile,
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'id',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+          {
+            name: 'name',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+          {
+            name: 'email',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+          {
+            name: 'isActive',
+            type: { kind: 'primitive', type: 'boolean' },
+            nullable: false,
+            required: false,
+            extensions: {},
+          },
+        ],
+      },
+    };
     const { context, functionRegistry } = createContext({
       projectPath: tmpDir,
       configuration: baseConfiguration,
       functions: [ModelRunCodeGeneratorForTypeScriptTestExpectation],
     });
-    const input = await makeJsonSchemaInputData([schemaFile]);
     const parseMock = registerMockFunction(
       functionRegistry,
-      ModelMakeGeneratorQuicktypeInputData,
-      async () => input,
+      ModelParseCodeGeneratorInputs,
+      async () => ({
+        includeEvents: false,
+        globs: ['*.schema.json'],
+        files: [schemaFile],
+      }),
     );
+    registerMockFunction(functionRegistry, ModelSchemaParse, async () => ({
+      schemas,
+      errors: {},
+    }));
     const eventTopicsMock = registerMockFunction(
       functionRegistry,
       EventTopicList,
@@ -168,7 +189,9 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
     expect(result).toEqual({
       [schemaFile]: { name: 'expectUser,expectUserNotToExist', file },
     });
-    expect(actualOutput).toStartWith(`// ${LEADING_COMMENT}`);
+    expect(actualOutput).toStartWith(
+      '// This file was generated by the Causa command line. Do not edit it manually.',
+    );
     expect(actualOutput).toInclude(
       'import {\n  type ReadOnlyStateTransaction,\n  type Transaction,\n  type TransactionRunner,\n} from "@causa/runtime";',
     );
@@ -201,11 +224,10 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
       configuration: baseConfiguration,
       functions: [ModelRunCodeGeneratorForTypeScriptTestExpectation],
     });
-    const input = await makeJsonSchemaInputData([]);
     registerMockFunction(
       functionRegistry,
-      ModelMakeGeneratorQuicktypeInputData,
-      async () => input,
+      ModelParseCodeGeneratorInputs,
+      async () => ({ includeEvents: false, globs: [], files: [] }),
     );
     registerMockFunction(functionRegistry, EventTopicList, async () => []);
 
@@ -226,11 +248,10 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
       configuration: baseConfiguration,
       functions: [ModelRunCodeGeneratorForTypeScriptTestExpectation],
     });
-    const input = await makeJsonSchemaInputData([]);
     registerMockFunction(
       functionRegistry,
-      ModelMakeGeneratorQuicktypeInputData,
-      async () => input,
+      ModelParseCodeGeneratorInputs,
+      async () => ({ includeEvents: false, globs: [], files: [] }),
     );
     registerMockFunction(functionRegistry, EventTopicList, async () => []);
 
@@ -250,11 +271,10 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
       configuration: baseConfiguration,
       functions: [ModelRunCodeGeneratorForTypeScriptTestExpectation],
     });
-    const input = await makeJsonSchemaInputData([]);
     registerMockFunction(
       functionRegistry,
-      ModelMakeGeneratorQuicktypeInputData,
-      async () => input,
+      ModelParseCodeGeneratorInputs,
+      async () => ({ includeEvents: false, globs: [], files: [] }),
     );
     registerMockFunction(functionRegistry, EventTopicList, async () => []);
 
