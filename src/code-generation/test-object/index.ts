@@ -1,2 +1,1 @@
-export { TypeScriptTestObjectTargetLanguage } from './language.js';
-export { TypeScriptTestObjectRenderer } from './renderer.js';
+export { TypeScriptTestObjectGenerator } from './generator.js';
