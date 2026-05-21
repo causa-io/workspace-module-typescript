@@ -207,7 +207,7 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
       }
 
       for (const property of schema.properties) {
-        collectRefFiles(property.type, files);
+        collectRefFiles(property.type, files, parameterSchemas);
       }
     }
     if (files.size === 0) {
@@ -227,19 +227,26 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
 
 /**
  * Collects the absolute file path of every `$ref` reachable from the given property type into {@link out}, stripping
- * the JSON-Pointer fragment so the path can be fed to {@link loadSchemas}.
+ * the JSON-Pointer fragment so the path can be fed to {@link loadSchemas}. Refs already present in {@link known} (such
+ * as inline enums materialized into the parameter schema map) are skipped so they aren't loaded externally.
  */
-function collectRefFiles(type: PropertyType, out: Set<string>): void {
+function collectRefFiles(
+  type: PropertyType,
+  out: Set<string>,
+  known: Record<string, Schema>,
+): void {
   switch (type.kind) {
     case 'ref':
-      out.add(type.ref.split('#')[0]);
+      if (!known[type.ref]) {
+        out.add(type.ref.split('#')[0]);
+      }
       return;
     case 'array':
-      collectRefFiles(type.items, out);
+      collectRefFiles(type.items, out, known);
       return;
     case 'map':
       if (type.items !== 'any') {
-        collectRefFiles(type.items, out);
+        collectRefFiles(type.items, out, known);
       }
       return;
     default:

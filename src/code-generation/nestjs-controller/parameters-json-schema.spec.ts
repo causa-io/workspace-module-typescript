@@ -72,6 +72,16 @@ describe('makeParametersSchemasForSpecification', () => {
               required: false,
               schema: { $ref: '../entities/car-kind.yaml' },
             },
+            {
+              name: 'publisher',
+              in: 'query',
+              required: false,
+              schema: {
+                title: 'CarListPublisherFilter',
+                type: 'string',
+                enum: ['true', 'false'],
+              },
+            },
           ],
         },
       ],
@@ -163,7 +173,26 @@ describe('makeParametersSchemasForSpecification', () => {
             description: undefined,
             extensions: {},
           },
+          {
+            name: 'publisher',
+            type: {
+              kind: 'ref',
+              ref: '/project/api/car.api.yaml#/inlineEnums/CarListPublisherFilter',
+            },
+            nullable: false,
+            required: false,
+            description: undefined,
+            extensions: {},
+          },
         ],
+      },
+      '/project/api/car.api.yaml#/inlineEnums/CarListPublisherFilter': {
+        kind: 'enum',
+        type: 'string',
+        name: 'CarListPublisherFilter',
+        path: '/project/api/car.api.yaml#/inlineEnums/CarListPublisherFilter',
+        extensions: {},
+        values: ['true', 'false'],
       },
     });
   });
