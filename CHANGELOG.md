@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Rewrite the model class, test object, test expectation, and NestJS controller code generators to use the new `@causa/workspace-core` `Schema` model instead of `quicktype`. The `quicktype-core` dependency is removed.
+- Replace `TypeScriptGetDecoratorRenderer` with the `ModelGenerateTypeScriptDecorators` workspace function, which is dispatched per object schema and property by the model class generator.
+- Move the `constraintSuffix` option from each code generator's configuration to `model.constraintSuffix`, applying it consistently to every TypeScript model generator.
+
 ## v0.23.0-beta.1 (2026-05-18)
 
 Chores:
