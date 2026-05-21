@@ -1,1 +1,5 @@
-export { TypeScriptConfiguration } from './generated.js';
+export {
+  TypeScriptModelConfiguration,
+  TypeScriptConfiguration,
+  TypeScriptProjectConfiguration,
+} from './generated.js';
