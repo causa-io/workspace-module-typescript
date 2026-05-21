@@ -7,7 +7,7 @@ import {
 } from '@causa/workspace-core';
 import { loadSchemas } from '@causa/workspace-core/jsonschema';
 import { mkdir, readFile } from 'fs/promises';
-import { basename, join, resolve } from 'path';
+import { basename, join } from 'path';
 import {
   makeParametersSchemasForSpecification,
   parseOpenApiSpec,
@@ -20,7 +20,13 @@ import {
   TypeScriptModelClassGenerator,
   type ModelClassSchemaDecorators,
 } from '../../code-generation/model-class/index.js';
+import type { TypeScriptModelConfiguration } from '../../configurations/index.js';
 import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
+import {
+  requirePreviousGeneratorOutput,
+  resolveOutputPath,
+  throwOnSchemaErrors,
+} from './utils.js';
 
 /**
  * The name of the generator for {@link ModelRunCodeGeneratorForTypeScriptNestjsController}.
@@ -44,25 +50,21 @@ export const TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR =
  */
 export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRunCodeGenerator {
   async _call(): Promise<GeneratedSchemas> {
-    const { configuration, previousGeneratorsOutput } = this;
-    const projectPath = this._context.getProjectPathOrThrow();
+    const { configuration } = this;
 
-    const { output } = configuration;
-    if (!output || typeof output !== 'string') {
-      throw new Error(
-        `The 'output' configuration for generator '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}' must be a string (directory path).`,
-      );
-    }
-    const outputDir = resolve(projectPath, output);
+    const outputDir = resolveOutputPath(
+      this._context,
+      TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
+      configuration.output,
+      'directory path',
+    );
     const modelFilePath = join(outputDir, 'model.ts');
 
-    const modelClassSchemas =
-      previousGeneratorsOutput[TYPESCRIPT_MODEL_CLASS_GENERATOR];
-    if (!modelClassSchemas) {
-      throw new Error(
-        `The '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}' generator requires the output of the '${TYPESCRIPT_MODEL_CLASS_GENERATOR}' generator. Make sure it runs before this generator.`,
-      );
-    }
+    const modelClassSchemas = requirePreviousGeneratorOutput(
+      this.previousGeneratorsOutput,
+      TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
+      TYPESCRIPT_MODEL_CLASS_GENERATOR,
+    );
 
     const { files } = await this._context.call(ModelParseCodeGeneratorInputs, {
       configuration,
@@ -148,6 +150,10 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
       return {};
     }
 
+    const constraintSuffix = this._context
+      .asConfiguration<TypeScriptModelConfiguration>()
+      .get('model.constraintSuffix');
+
     const decorators: Record<string, ModelClassSchemaDecorators> = {};
     for (const schema of Object.values(schemas)) {
       if (schema.kind !== 'object' || existingSchemas[schema.path]) {
@@ -176,7 +182,7 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
     const generator = new TypeScriptModelClassGenerator(
       modelFilePath,
       schemas,
-      { decorators, existingSchemas },
+      { decorators, existingSchemas, constraintSuffix },
     );
     await generator.generate();
 
@@ -211,16 +217,10 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
     const { schemas, errors } = await loadSchemas([...files], {
       fileReader: (path) => readFile(path, { encoding: 'utf-8' }),
     });
-    const errorEntries = Object.entries(errors);
-    if (errorEntries.length > 0) {
-      const details = errorEntries
-        .map(([path, err]) => `${path}: ${err.message}`)
-        .join('\n');
-      throw new Error(
-        `Failed to load one or more schema files referenced from OpenAPI parameters:\n${details}`,
-      );
-    }
-
+    throwOnSchemaErrors(
+      errors,
+      'Failed to load one or more schema files referenced from OpenAPI parameters:',
+    );
     return schemas;
   }
 }

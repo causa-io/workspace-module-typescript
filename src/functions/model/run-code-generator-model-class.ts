@@ -1,18 +1,16 @@
 import {
-  ModelParseCodeGeneratorInputs,
   ModelRunCodeGenerator,
-  ModelSchemaParse,
   type GeneratedSchemas,
   type Schema,
 } from '@causa/workspace-core';
-import { NoImplementationFoundError } from '@causa/workspace/function-registry';
-import { resolve } from 'path';
 import {
   TypeScriptModelClassGenerator,
   type ModelClassSchemaDecorators,
   type TypeScriptDecorator,
 } from '../../code-generation/index.js';
+import type { TypeScriptModelConfiguration } from '../../configurations/index.js';
 import { ModelGenerateTypeScriptDecorators } from '../../definitions/index.js';
+import { parseInputSchemas, resolveOutputPath } from './utils.js';
 
 /**
  * The name of the generator for {@link ModelRunCodeGeneratorForTypeScriptModelClass}.
@@ -20,55 +18,22 @@ import { ModelGenerateTypeScriptDecorators } from '../../definitions/index.js';
 export const TYPESCRIPT_MODEL_CLASS_GENERATOR = 'typescriptModelClass';
 
 /**
- * Runs the TypeScript model class code generator: parses input schemas with {@link ModelSchemaParse}, pre-computes
+ * Runs the TypeScript model class code generator: parses input schemas with {@link parseInputSchemas}, pre-computes
  * decorators, and renders everything through {@link TypeScriptModelClassGenerator}.
  */
 export class ModelRunCodeGeneratorForTypeScriptModelClass extends ModelRunCodeGenerator {
   async _call(): Promise<GeneratedSchemas> {
-    const { output, constraintSuffix } = this.configuration;
-    if (!output || typeof output !== 'string') {
-      throw new Error(
-        `The 'output' configuration for generator '${TYPESCRIPT_MODEL_CLASS_GENERATOR}' must be a string.`,
-      );
-    }
-    const outputPath = resolve(this._context.getProjectPathOrThrow(), output);
+    const outputPath = resolveOutputPath(
+      this._context,
+      TYPESCRIPT_MODEL_CLASS_GENERATOR,
+      this.configuration.output,
+    );
+    const constraintSuffix = this._context
+      .asConfiguration<TypeScriptModelConfiguration>()
+      .get('model.constraintSuffix');
 
-    let files: string[];
-    try {
-      ({ files } = await this._context.call(ModelParseCodeGeneratorInputs, {
-        configuration: this.configuration,
-      }));
-    } catch (error) {
-      if (error instanceof NoImplementationFoundError) {
-        throw new Error(
-          'Could not generate input data for code generation. Ensure the model schema format is supported.',
-        );
-      }
-      throw error;
-    }
-
-    const { schemas, errors } = await this._context.call(ModelSchemaParse, {
-      paths: files,
-    });
-
-    const errorEntries = Object.entries(errors);
-    if (errorEntries.length > 0) {
-      const details = errorEntries
-        .map(([path, err]) => `${path}: ${err.message}`)
-        .join('\n');
-      throw new Error(`Failed to parse one or more schema files:\n${details}`);
-    }
-
+    const schemas = await parseInputSchemas(this._context, this.configuration);
     const decorators = await this.computeTypeScriptDecorators(schemas);
-
-    if (
-      constraintSuffix !== undefined &&
-      typeof constraintSuffix !== 'string'
-    ) {
-      throw new Error(
-        `The 'constraintSuffix' configuration for generator '${TYPESCRIPT_MODEL_CLASS_GENERATOR}' must be a string.`,
-      );
-    }
 
     const codeGenerator = new TypeScriptModelClassGenerator(
       outputPath,
