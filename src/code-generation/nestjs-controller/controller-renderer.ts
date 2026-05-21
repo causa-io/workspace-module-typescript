@@ -1,7 +1,11 @@
 import type { GeneratedSchema, GeneratedSchemas } from '@causa/workspace-core';
-import { writeFile } from 'fs/promises';
-import { dirname, relative, resolve, sep } from 'path';
-import prettier from 'prettier';
+import { dirname, resolve } from 'path';
+import {
+  formatAndWriteTypeScript,
+  LEADING_COMMENT,
+  mergeImports,
+  renderImports as renderImportsBlock,
+} from '../base.js';
 import { getParameterSchemaKey } from './parameters-json-schema.js';
 import type {
   ApiControllerMethod,
@@ -168,26 +172,6 @@ function buildMethodInfo(
 }
 
 /**
- * Adds a symbol to the import dictionary.
- *
- * @param imports The import dictionary.
- * @param filePath The file path to import from.
- * @param symbol The symbol to import.
- */
-function addImport(
-  imports: ImportDictionary,
-  filePath: string,
-  symbol: string,
-): void {
-  const existing = imports[filePath];
-  if (existing) {
-    existing.add(symbol);
-  } else {
-    imports[filePath] = new Set([symbol]);
-  }
-}
-
-/**
  * Adds a NestJS common import with underscore prefix to avoid clashes.
  *
  * @param imports The import dictionary.
@@ -202,50 +186,8 @@ function addNestJsImport(
 ): string {
   const prefixed = `_${symbol}`;
   const importSpec = `${isType ? 'type ' : ''}${symbol} as ${prefixed}`;
-  addImport(imports, '@nestjs/common', importSpec);
+  mergeImports(imports, { '@nestjs/common': [importSpec] });
   return prefixed;
-}
-
-/**
- * Renders the imports section of the controller file.
- *
- * @param imports The import dictionary.
- * @param lines The lines array to append to.
- * @param controllerFilePath The path to the controller file being generated.
- */
-function renderImports(
-  imports: ImportDictionary,
-  lines: string[],
-  controllerFilePath: string,
-): void {
-  const outputDir = dirname(controllerFilePath);
-
-  // Sort entries: module imports first, then relative imports alphabetically.
-  const sortedEntries = Object.entries(imports).toSorted(
-    ([path1], [path2]) =>
-      Number(path1.startsWith('/')) - Number(path2.startsWith('/')) ||
-      path1.localeCompare(path2),
-  );
-
-  const importLines: string[] = [];
-  for (const [filePath, symbols] of sortedEntries) {
-    let importPath = filePath;
-    if (filePath.startsWith('/')) {
-      let relativePath = relative(outputDir, filePath);
-      if (!relativePath.startsWith('.')) {
-        relativePath = `.${sep}${relativePath}`;
-      }
-      importPath = relativePath.replace(/\.ts$/, '.js');
-    }
-
-    const symbolsList = [...symbols]
-      .filter((s) => !s.startsWith('type ') || !symbols.has(s.slice(5)))
-      .toSorted()
-      .join(', ');
-    importLines.push(`import { ${symbolsList} } from '${importPath}';`);
-  }
-
-  lines.unshift(...importLines, '');
 }
 
 /**
@@ -289,25 +231,33 @@ function renderInterface(
     const params: string[] = [];
 
     if (pathParamsSchema) {
-      addImport(imports, pathParamsSchema.file, pathParamsSchema.name);
+      mergeImports(imports, {
+        [pathParamsSchema.file]: [pathParamsSchema.name],
+      });
       prototypeDoc.push(`   * @param params The path parameters.`);
       params.push(`params: ${pathParamsSchema.name}`);
     }
 
     if (queryParamsSchema) {
-      addImport(imports, queryParamsSchema.file, queryParamsSchema.name);
+      mergeImports(imports, {
+        [queryParamsSchema.file]: [queryParamsSchema.name],
+      });
       prototypeDoc.push(`   * @param query The query parameters.`);
       params.push(`query: ${queryParamsSchema.name}`);
     }
 
     if (requestBodySchema) {
-      addImport(imports, requestBodySchema.file, requestBodySchema.name);
+      mergeImports(imports, {
+        [requestBodySchema.file]: [requestBodySchema.name],
+      });
       prototypeDoc.push(`   * @param body The request body.`);
       params.push(`body: ${requestBodySchema.name}`);
     }
 
     if (returnTypeSchema) {
-      addImport(imports, returnTypeSchema.file, `type ${returnTypeName}`);
+      mergeImports(imports, {
+        [returnTypeSchema.file]: [`type ${returnTypeName}`],
+      });
       prototypeDoc.push(
         `   * @returns ${method.returnTypeDescription ?? 'The response.'}`,
       );
@@ -464,7 +414,8 @@ export function renderControllerFile(
     lines,
   );
 
-  renderImports(imports, lines, controllerFilePath);
+  const importsBlock = renderImportsBlock(imports, controllerFilePath);
+  lines.unshift(importsBlock, '');
 
   return lines.join('\n');
 }
@@ -476,32 +427,21 @@ export function renderControllerFile(
  * @param modelClassSchemas The generated schemas from the model class generator.
  * @param paramsSchemas The generated schemas for parameter classes.
  * @param controllerFilePath The path where the controller file will be written.
- * @param leadingComment An optional leading comment.
  */
 export async function writeControllerFile(
   apiSpec: ParsedApiSpecification,
   modelClassSchemas: GeneratedSchemas,
   paramsSchemas: GeneratedSchemas,
   controllerFilePath: string,
-  leadingComment?: string,
 ): Promise<void> {
-  let source = renderControllerFile(
+  const body = renderControllerFile(
     apiSpec,
     modelClassSchemas,
     paramsSchemas,
     controllerFilePath,
   );
-
-  if (leadingComment) {
-    source = `// ${leadingComment}\n${source}`;
-  }
-
-  const prettierConfig = await prettier.resolveConfig(controllerFilePath);
-
-  const formattedOutput = await prettier.format(source, {
-    parser: 'typescript',
-    ...prettierConfig,
-  });
-
-  await writeFile(controllerFilePath, formattedOutput);
+  await formatAndWriteTypeScript(
+    controllerFilePath,
+    `// ${LEADING_COMMENT}\n${body}`,
+  );
 }

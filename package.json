@@ -37,16 +37,16 @@
   },
   "dependencies": {
     "@causa/workspace": ">= 0.25.0-beta.3 < 1.0.0",
-    "@causa/workspace-core": ">= 0.35.0-beta.1 < 1.0.0",
+    "@causa/workspace-core": ">= 0.35.0-beta.3 < 1.0.0",
     "archiver": "^7.0.1",
     "audit-ci": "^7.1.0",
+    "change-case": "^5.4.4",
     "class-validator": "^0.15.1",
     "globby": "^16.2.0",
     "micromatch": "^4.0.8",
     "npm-check-updates": "^22.2.0",
     "pino": "^10.3.1",
     "prettier": "^3.8.3",
-    "quicktype-core": "^23.2.6",
     "semver": "^7.8.0",
     "tar": "^7.5.15",
     "yaml": "^2.9.0"
@@ -70,6 +70,6 @@
     "node-stream-zip": "^1.15.0",
     "rimraf": "^6.1.3",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.4"
   }
 }

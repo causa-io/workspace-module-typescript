@@ -18,14 +18,6 @@ export class TypeScriptCodeGenerator {
   readonly generator!: string;
 
   /**
-   * The suffix that should be present on constraint types. It will be removed during code generation.
-   * Defaults to `Constraint`.
-   */
-  @AllowMissing()
-  @IsString()
-  readonly constraintSuffix?: string;
-
-  /**
    * A list of glob patterns to find schema definition files.
    *
    * A list of glob patterns to find OpenAPI specification files.
@@ -90,14 +82,23 @@ export class Model {
   @AllowMissing()
   @IsArray()
   readonly codeGenerators?: TypeScriptCodeGenerator[];
+
+  /**
+   * The suffix that should be present on constraint types. It will be removed during code generation.
+   * Defaults to `Constraint`.
+   * Applies to every TypeScript model code generator.
+   */
+  @AllowMissing()
+  @IsString()
+  readonly constraintSuffix?: string;
   [property: string]: any;
 }
 
 /**
  * Configuration for model code generators provided by the TypeScript module.
  */
-export class ModelConfiguration {
-  constructor(init: ModelConfiguration) {
+export class TypeScriptModelConfiguration {
+  constructor(init: TypeScriptModelConfiguration) {
     Object.assign(this, init);
   }
 
@@ -185,6 +186,15 @@ export enum JavaScriptDependenciesUpdateTarget {
   Patch = 'patch',
 }
 
+export enum PackageTarget {
+  Greatest = 'greatest',
+  Latest = 'latest',
+  Minor = 'minor',
+  Newest = 'newest',
+  Patch = 'patch',
+  Semver = 'semver',
+}
+
 /**
  * Configuration related to the update of dependencies.
  */
@@ -207,9 +217,7 @@ export class JavaScriptDependenciesUpdate {
    */
   @AllowMissing()
   @IsObject()
-  readonly packageTargets?: {
-    [key: string]: JavaScriptDependenciesUpdateTarget;
-  };
+  readonly packageTargets?: { [key: string]: PackageTarget };
   [property: string]: any;
 }
 

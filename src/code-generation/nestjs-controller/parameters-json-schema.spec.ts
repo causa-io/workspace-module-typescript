@@ -32,7 +32,7 @@ describe('makeParametersSchemasForSpecification', () => {
               in: 'path',
               required: true,
               description: 'The car ID',
-              schema: { $ref: '../schemas/car-id.yaml#/$defs/CarId' },
+              schema: { type: 'string', format: 'uuid' },
             },
             {
               name: 'Authorization',
@@ -47,16 +47,39 @@ describe('makeParametersSchemasForSpecification', () => {
               schema: { type: 'string' },
             },
             {
-              name: 'filter',
+              name: 'updatedAt',
+              in: 'query',
+              required: true,
+              schema: { type: 'string', format: 'date-time' },
+            },
+            {
+              name: 'tags',
+              in: 'query',
+              required: false,
+              schema: { type: 'array', items: { type: 'string' } },
+            },
+            {
+              name: 'state',
               in: 'query',
               required: false,
               schema: {
-                oneOf: [
-                  { $ref: '../schemas/filter-a.yaml' },
-                  { $ref: '#/$defs/FilterB' },
-                  { $ref: '/absolute/filter-c.yaml' },
-                  { $ref: 'https://example.com/filter-d.yaml' },
-                ],
+                oneOf: [{ $ref: '../entities/car.yaml#/$defs/CarState' }],
+              },
+            },
+            {
+              name: 'kind',
+              in: 'query',
+              required: false,
+              schema: { $ref: '../entities/car-kind.yaml' },
+            },
+            {
+              name: 'publisher',
+              in: 'query',
+              required: false,
+              schema: {
+                title: 'CarListPublisherFilter',
+                type: 'string',
+                enum: ['true', 'false'],
               },
             },
           ],
@@ -64,65 +87,113 @@ describe('makeParametersSchemasForSpecification', () => {
       ],
     };
 
-    const result = makeParametersSchemasForSpecification(spec);
+    const actual = makeParametersSchemasForSpecification(spec);
 
-    expect(result).toIncludeSameMembers([
-      {
-        name: 'carList/query',
-        schema: expect.toSatisfy((s) => {
-          expect(JSON.parse(s)).toEqual({
-            title: 'carList-query-params',
-            type: 'object',
-            description: 'The query parameters for the `carList` operation.',
-            additionalProperties: false,
-            properties: { limit: { type: 'integer' } },
-            required: [],
-          });
-          return true;
-        }),
+    expect(actual).toEqual({
+      'carList/query': {
+        kind: 'object',
+        name: 'carList-query-params',
+        path: 'carList/query',
+        description: 'The query parameters for the `carList` operation.',
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'limit',
+            type: { kind: 'primitive', type: 'integer' },
+            nullable: false,
+            required: false,
+            description: undefined,
+            extensions: {},
+          },
+        ],
       },
-      {
-        name: 'carGet/path',
-        schema: expect.toSatisfy((s) => {
-          expect(JSON.parse(s)).toEqual({
-            title: 'carGet-path-params',
-            type: 'object',
-            description: 'The path parameters for the `carGet` operation.',
-            additionalProperties: false,
-            properties: {
-              id: {
-                description: 'The car ID',
-                $ref: '/project/schemas/car-id.yaml#/$defs/CarId',
-              },
+      'carGet/path': {
+        kind: 'object',
+        name: 'carGet-path-params',
+        path: 'carGet/path',
+        description: 'The path parameters for the `carGet` operation.',
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'id',
+            type: { kind: 'primitive', type: 'uuid' },
+            nullable: false,
+            required: true,
+            description: 'The car ID',
+            extensions: {},
+          },
+        ],
+      },
+      'carGet/query': {
+        kind: 'object',
+        name: 'carGet-query-params',
+        path: 'carGet/query',
+        description: 'The query parameters for the `carGet` operation.',
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'updatedAt',
+            type: { kind: 'primitive', type: 'datetime' },
+            nullable: false,
+            required: true,
+            description: undefined,
+            extensions: {},
+          },
+          {
+            name: 'tags',
+            type: {
+              kind: 'array',
+              items: { kind: 'primitive', type: 'string' },
+              itemNullable: false,
             },
-            required: ['id'],
-          });
-          return true;
-        }),
-      },
-      {
-        name: 'carGet/query',
-        schema: expect.toSatisfy((s) => {
-          expect(JSON.parse(s)).toEqual({
-            title: 'carGet-query-params',
-            type: 'object',
-            description: 'The query parameters for the `carGet` operation.',
-            additionalProperties: false,
-            properties: {
-              filter: {
-                oneOf: [
-                  { $ref: '/project/schemas/filter-a.yaml' },
-                  { $ref: '#/$defs/FilterB' },
-                  { $ref: '/absolute/filter-c.yaml' },
-                  { $ref: 'https://example.com/filter-d.yaml' },
-                ],
-              },
+            nullable: false,
+            required: false,
+            description: undefined,
+            extensions: {},
+          },
+          {
+            name: 'state',
+            type: {
+              kind: 'ref',
+              ref: '/project/entities/car.yaml#/$defs/CarState',
             },
-            required: [],
-          });
-          return true;
-        }),
+            nullable: false,
+            required: false,
+            description: undefined,
+            extensions: {},
+          },
+          {
+            name: 'kind',
+            type: { kind: 'ref', ref: '/project/entities/car-kind.yaml' },
+            nullable: false,
+            required: false,
+            description: undefined,
+            extensions: {},
+          },
+          {
+            name: 'publisher',
+            type: {
+              kind: 'ref',
+              ref: '/project/api/car.api.yaml#/inlineEnums/CarListPublisherFilter',
+            },
+            nullable: false,
+            required: false,
+            description: undefined,
+            extensions: {},
+          },
+        ],
       },
-    ]);
+      '/project/api/car.api.yaml#/inlineEnums/CarListPublisherFilter': {
+        kind: 'enum',
+        type: 'string',
+        name: 'CarListPublisherFilter',
+        path: '/project/api/car.api.yaml#/inlineEnums/CarListPublisherFilter',
+        extensions: {},
+        values: ['true', 'false'],
+      },
+    });
   });
 });

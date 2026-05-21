@@ -1,55 +1,21 @@
 import type { BaseConfiguration } from '@causa/workspace';
 import {
-  ModelMakeGeneratorQuicktypeInputData,
+  ModelParseCodeGeneratorInputs,
   ModelRunCodeGenerator,
+  ModelSchemaParse,
+  type Schema,
 } from '@causa/workspace-core';
-import { makeJsonSchemaInputData } from '@causa/workspace-core/code-generation';
+import { ModelGenerateTypeScriptDecorators } from '../../definitions/index.js';
 import {
   NoImplementationFoundError,
   type ImplementableFunctionArguments,
 } from '@causa/workspace/function-registry';
 import { createContext, registerMockFunction } from '@causa/workspace/testing';
-import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
+import { mkdtemp, readFile, rm } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { ModelRunCodeGeneratorForTypeScriptModelClass } from './run-code-generator-model-class.js';
-import { LEADING_COMMENT } from './utils.js';
-
-const SCHEMA = {
-  title: 'Person',
-  type: 'object',
-  description: 'A person in the system',
-  additionalProperties: false,
-  properties: {
-    name: {
-      type: 'string',
-      description: "The person's name",
-    },
-    age: {
-      type: 'integer',
-      minimum: 0,
-      description: "The person's age",
-    },
-    email: {
-      type: 'string',
-      format: 'email',
-      description: "The person's email address",
-    },
-    address: {
-      title: 'Address',
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        street: { type: 'string' },
-        city: { type: 'string' },
-        zipCode: { type: 'string' },
-      },
-      required: ['street', 'city'],
-    },
-  },
-  required: ['name', 'email'],
-};
 
 describe('ModelRunCodeGeneratorForTypeScriptModelClass', () => {
   const baseConfiguration: BaseConfiguration = {
@@ -63,7 +29,7 @@ describe('ModelRunCodeGeneratorForTypeScriptModelClass', () => {
   };
   const baseArguments: ImplementableFunctionArguments<ModelRunCodeGenerator> = {
     generator: 'typescriptModelClass',
-    configuration: {},
+    configuration: { output: 'generated.ts', globs: ['*.schema.json'] },
     previousGeneratorsOutput: {},
   };
 
@@ -111,7 +77,7 @@ describe('ModelRunCodeGeneratorForTypeScriptModelClass', () => {
     const { context } = createContext({
       projectPath: tmpDir,
       configuration: baseConfiguration,
-      // ModelMakeGeneratorQuicktypeInputData will not be present.
+      // ModelParseCodeGeneratorInputs will not be present.
       functions: [ModelRunCodeGeneratorForTypeScriptModelClass],
     });
 
@@ -124,37 +90,126 @@ describe('ModelRunCodeGeneratorForTypeScriptModelClass', () => {
 
   it('should generate TypeScript classes from JSON schemas and return GeneratedSchemas', async () => {
     const schemaFile = join(tmpDir, 'person.schema.json');
-    await writeFile(schemaFile, JSON.stringify(SCHEMA));
+    const addressPath = `${schemaFile}#/properties/address`;
+    const schemas: Record<string, Schema> = {
+      [schemaFile]: {
+        kind: 'object',
+        name: 'Person',
+        path: schemaFile,
+        description: 'A person in the system',
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'name',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            description: "The person's name",
+            extensions: {},
+          },
+          {
+            name: 'age',
+            type: { kind: 'primitive', type: 'integer' },
+            nullable: false,
+            required: false,
+            description: "The person's age",
+            extensions: {},
+          },
+          {
+            name: 'email',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            description: "The person's email address",
+            extensions: {},
+          },
+          {
+            name: 'address',
+            type: { kind: 'ref', ref: addressPath },
+            nullable: false,
+            required: false,
+            extensions: {},
+          },
+        ],
+      },
+      [addressPath]: {
+        kind: 'object',
+        name: 'Address',
+        path: addressPath,
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'street',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+          {
+            name: 'city',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+          {
+            name: 'zipCode',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: false,
+            extensions: {},
+          },
+        ],
+      },
+    };
     const { context, functionRegistry } = createContext({
       projectPath: tmpDir,
       configuration: baseConfiguration,
       functions: [ModelRunCodeGeneratorForTypeScriptModelClass],
     });
-    const input = await makeJsonSchemaInputData([schemaFile]);
-    const makeMock = registerMockFunction(
+    registerMockFunction(
       functionRegistry,
-      ModelMakeGeneratorQuicktypeInputData,
-      async () => input,
+      ModelParseCodeGeneratorInputs,
+      async () => ({
+        includeEvents: false,
+        globs: ['*.schema.json'],
+        files: [schemaFile],
+      }),
     );
-    const configuration = {
-      output: 'generated.ts',
-      globs: ['*.schema.json'],
-    };
+    registerMockFunction(functionRegistry, ModelSchemaParse, async () => ({
+      schemas,
+      errors: {},
+    }));
+    registerMockFunction(
+      functionRegistry,
+      ModelGenerateTypeScriptDecorators,
+      async (_, args) =>
+        args.property
+          ? []
+          : [
+              {
+                source: '@TestDecorator()',
+                imports: { 'test-module': ['TestDecorator'] },
+              },
+            ],
+    );
 
-    const result = await context.call(ModelRunCodeGenerator, {
-      ...baseArguments,
-      configuration,
-    });
+    const result = await context.call(ModelRunCodeGenerator, baseArguments);
 
     const file = join(tmpDir, 'generated.ts');
-    expect(makeMock).toHaveBeenCalledWith(context, { configuration });
     expect(result).toEqual({
       [schemaFile]: { name: 'Person', file },
-      [`${schemaFile}#/properties/address`]: { name: 'Address', file },
+      [addressPath]: { name: 'Address', file },
     });
     const actualOutput = await readFile(file, 'utf8');
-    expect(actualOutput).toStartWith(`// ${LEADING_COMMENT}`);
+    expect(actualOutput).toStartWith(
+      '// This file was generated by the Causa command line. Do not edit it manually.',
+    );
     expect(actualOutput).toInclude('export class Person');
     expect(actualOutput).toInclude('export class Address');
+    expect(actualOutput).toInclude('@TestDecorator()');
+    expect(actualOutput).toInclude('from "test-module"');
   });
 });

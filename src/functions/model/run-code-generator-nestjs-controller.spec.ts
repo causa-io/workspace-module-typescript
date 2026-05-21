@@ -12,11 +12,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import {
-  TypeScriptGetDecoratorRendererForCausaValidator,
-  TypeScriptGetDecoratorRendererForClassValidator,
-} from '../typescript/index.js';
-import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
+import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import {
   ModelRunCodeGeneratorForTypeScriptNestjsController,
   TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
@@ -42,6 +38,18 @@ paths:
             type: integer
             minimum: 1
             maximum: 100
+        - name: state
+          in: query
+          required: false
+          schema:
+            oneOf:
+              - $ref: ../entities/car.yaml#/$defs/CarState
+        - name: kind
+          in: query
+          required: false
+          schema:
+            oneOf:
+              - $ref: ../entities/car-kind.yaml
       responses:
         "200":
           description: Success
@@ -114,6 +122,7 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
       type: 'serviceContainer',
       language: 'typescript',
     },
+    model: { schema: 'jsonschema' },
   };
   let baseArguments: ImplementableFunctionArguments<ModelRunCodeGenerator>;
 
@@ -122,18 +131,43 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), 'causa-test-'));
     await mkdir(join(tmpDir, 'api'), { recursive: true });
+    await mkdir(join(tmpDir, 'entities'), { recursive: true });
+    await writeFile(
+      join(tmpDir, 'entities/car.yaml'),
+      `
+title: Car
+type: object
+$defs:
+  CarState:
+    title: CarState
+    type: string
+    enum: [on, off]
+`,
+    );
+    await writeFile(
+      join(tmpDir, 'entities/car-kind.yaml'),
+      `
+title: CarKind
+type: string
+enum: [sedan, suv]
+`,
+    );
 
     baseArguments = {
       generator: TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
       configuration: {},
       previousGeneratorsOutput: {
-        [TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR]: {
+        [TYPESCRIPT_MODEL_CLASS_GENERATOR]: {
           [join(tmpDir, 'entities/car.yaml')]: {
             name: 'Car',
             file: join(tmpDir, 'src/model/generated.ts'),
           },
           [join(tmpDir, 'entities/car-list.yaml')]: {
             name: 'CarList',
+            file: join(tmpDir, 'src/model/generated.ts'),
+          },
+          [`${join(tmpDir, 'entities/car.yaml')}#/$defs/CarState`]: {
+            name: 'CarState',
             file: join(tmpDir, 'src/model/generated.ts'),
           },
         },
@@ -227,11 +261,7 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
     const { context, functionRegistry } = createContext({
       projectPath: tmpDir,
       configuration: baseConfiguration,
-      functions: [
-        ModelRunCodeGeneratorForTypeScriptNestjsController,
-        TypeScriptGetDecoratorRendererForCausaValidator,
-        TypeScriptGetDecoratorRendererForClassValidator,
-      ],
+      functions: [ModelRunCodeGeneratorForTypeScriptNestjsController],
     });
     registerMockFunction(
       functionRegistry,
@@ -255,6 +285,7 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
       'carUpdate/path': { file, name: 'CarUpdatePathParams' },
       'carUpdate/query': { file, name: 'CarUpdateQueryParams' },
       'carDelete/path': { file, name: 'CarDeletePathParams' },
+      [join(tmpDir, 'entities/car-kind.yaml')]: { file, name: 'CarKind' },
     });
 
     const modelFile = join(tmpDir, 'src/api/model.ts');
@@ -264,6 +295,13 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
     expect(modelContent).toContain('export class CarUpdatePathParams');
     expect(modelContent).toContain('export class CarUpdateQueryParams');
     expect(modelContent).toContain('export class CarDeletePathParams');
+    expect(modelContent).toContain(
+      `import { CarState } from "../model/generated.js";`,
+    );
+    expect(modelContent).not.toContain('export enum CarState');
+    expect(modelContent).toContain('readonly state?: CarState;');
+    expect(modelContent).toContain('export enum CarKind');
+    expect(modelContent).toContain('readonly kind?: CarKind;');
 
     const controllerFile = join(tmpDir, 'src/api/car.api.controller.ts');
     const controllerContent = await readFile(controllerFile, 'utf-8');
