@@ -57,17 +57,12 @@ export type ModelClassSchemaDecorators = {
 /**
  * Options for {@link TypeScriptModelClassGenerator}.
  */
-export type TypeScriptModelClassGeneratorOptions = {
-  /**
-   * The suffix used to identify constraint classes. Defaults to `Constraint`.
-   */
-  readonly constraintSuffix?: string;
-
-  /**
-   * Pre-computed decorators for each object schema and its properties, keyed by schema path.
-   */
-  readonly decorators?: Record<string, ModelClassSchemaDecorators>;
-};
+export type TypeScriptModelClassGeneratorOptions = Partial<
+  Pick<
+    TypeScriptModelClassGenerator,
+    'constraintSuffix' | 'decorators' | 'existingSchemas'
+  >
+>;
 
 /**
  * Generates TypeScript model classes from a set of {@link Schema}s and writes the formatted output to disk.
@@ -104,13 +99,22 @@ export class TypeScriptModelClassGenerator {
 
   /**
    * The suffix used to identify constraint classes.
+   * Defaults to `Constraint`.
    */
-  private readonly constraintSuffix: string;
+  readonly constraintSuffix: string;
 
   /**
    * Pre-computed decorators for each object schema and its properties, keyed by schema path.
    */
-  private readonly decorators: Record<string, ModelClassSchemaDecorators>;
+  readonly decorators: Record<string, ModelClassSchemaDecorators>;
+
+  /**
+   * Schemas that were already emitted by a previous generator run, keyed by absolute schema path. Paths in this map
+   * are not re-emitted; references to them resolve to the {@link GeneratedSchema.name} and add an import from
+   * {@link GeneratedSchema.file}. The full {@link Schema} for these paths should still be present in `schemas` so
+   * decorator builders can introspect their kind.
+   */
+  readonly existingSchemas: GeneratedSchemas;
 
   /**
    * Creates a new generator.
@@ -127,8 +131,13 @@ export class TypeScriptModelClassGenerator {
     this.constraintSuffix =
       options.constraintSuffix ?? DEFAULT_CONSTRAINT_SUFFIX;
     this.decorators = options.decorators ?? {};
+    this.existingSchemas = options.existingSchemas ?? {};
 
     for (const [path, schema] of Object.entries(schemas)) {
+      if (this.existingSchemas[path]) {
+        continue;
+      }
+
       this.classNames[path] = pascalCase(schema.name);
 
       if (this.getBasePathForConstraintSchema(schema) !== undefined) {
@@ -136,6 +145,9 @@ export class TypeScriptModelClassGenerator {
           this.stripConstraintSuffix(schema.name),
         );
       }
+    }
+    for (const [path, existing] of Object.entries(this.existingSchemas)) {
+      this.classNames[path] = existing.name;
     }
   }
 
@@ -264,7 +276,9 @@ export class TypeScriptModelClassGenerator {
    * emit-name (alphabetical), then by path for determinism.
    */
   private topologicalSort(): Schema[] {
-    const paths = Object.keys(this.schemas);
+    const paths = Object.keys(this.schemas).filter(
+      (p) => !this.existingSchemas[p],
+    );
     const inDegree = new Map<string, number>();
     const dependents = new Map<string, string[]>();
     for (const path of paths) {
@@ -498,6 +512,10 @@ export class TypeScriptModelClassGenerator {
       const enumSchema = this.schemas[enumHint];
       if (enumSchema && enumSchema.kind === 'enum') {
         const enumName = this.getSchemaName(enumSchema);
+        const existing = this.existingSchemas[enumHint];
+        if (existing && existing.file !== this.outputPath) {
+          this.addImports({ [existing.file]: [existing.name] });
+        }
         if (property.type.kind === 'array') {
           const itemSource = this.sourceForPropertyType(property.type.items);
           const itemBase = property.type.itemNullable
@@ -540,6 +558,13 @@ export class TypeScriptModelClassGenerator {
       case 'const':
         return JSON.stringify(type.value);
       case 'ref': {
+        const existing = this.existingSchemas[type.ref];
+        if (existing) {
+          if (existing.file !== this.outputPath) {
+            this.addImports({ [existing.file]: [existing.name] });
+          }
+          return existing.name;
+        }
         const target = this.schemas[type.ref];
         if (!target) {
           throw new Error(`Unknown schema reference '${type.ref}'.`);

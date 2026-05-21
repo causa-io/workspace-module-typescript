@@ -12,11 +12,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import {
-  TypeScriptGetDecoratorRendererForCausaValidator,
-  TypeScriptGetDecoratorRendererForClassValidator,
-} from '../typescript/index.js';
-import { TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
+import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import {
   ModelRunCodeGeneratorForTypeScriptNestjsController,
   TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
@@ -114,6 +110,7 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
       type: 'serviceContainer',
       language: 'typescript',
     },
+    model: { schema: 'jsonschema' },
   };
   let baseArguments: ImplementableFunctionArguments<ModelRunCodeGenerator>;
 
@@ -127,7 +124,7 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
       generator: TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
       configuration: {},
       previousGeneratorsOutput: {
-        [TYPESCRIPT_JSON_SCHEMA_MODEL_CLASS_GENERATOR]: {
+        [TYPESCRIPT_MODEL_CLASS_GENERATOR]: {
           [join(tmpDir, 'entities/car.yaml')]: {
             name: 'Car',
             file: join(tmpDir, 'src/model/generated.ts'),
@@ -227,11 +224,7 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
     const { context, functionRegistry } = createContext({
       projectPath: tmpDir,
       configuration: baseConfiguration,
-      functions: [
-        ModelRunCodeGeneratorForTypeScriptNestjsController,
-        TypeScriptGetDecoratorRendererForCausaValidator,
-        TypeScriptGetDecoratorRendererForClassValidator,
-      ],
+      functions: [ModelRunCodeGeneratorForTypeScriptNestjsController],
     });
     registerMockFunction(
       functionRegistry,

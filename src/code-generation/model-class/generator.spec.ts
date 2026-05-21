@@ -414,4 +414,51 @@ describe('TypeScriptModelClassGenerator', () => {
 
     expect(source).toContain('export class MyClass');
   });
+
+  it('should not re-emit schemas listed in existingSchemas and import them instead', async () => {
+    const externalEnumPath = join(tmpDir, 'external/state.yaml#/$defs/State');
+    const externalFile = join(tmpDir, 'external/generated.ts');
+    const ownerPath = join(tmpDir, 'owner.yaml');
+    const schemas: Record<string, Schema> = {
+      [externalEnumPath]: {
+        kind: 'enum',
+        type: 'string',
+        name: 'State',
+        path: externalEnumPath,
+        extensions: {},
+        values: ['on', 'off'],
+      },
+      [ownerPath]: {
+        kind: 'object',
+        name: 'Owner',
+        path: ownerPath,
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'state',
+            type: { kind: 'ref', ref: externalEnumPath },
+            nullable: false,
+            required: false,
+            extensions: {},
+          },
+        ],
+      },
+    };
+
+    const { source, generatedSchemas } = await generate(schemas, {
+      existingSchemas: {
+        [externalEnumPath]: { name: 'State', file: externalFile },
+      },
+    });
+
+    expect(source).not.toContain('export enum State');
+    expect(source).toContain('export class Owner');
+    expect(source).toContain(`from "./external/generated.js"`);
+    expect(source).toContain('State');
+    expect(source).toContain('readonly state?: State;');
+    expect(generatedSchemas).toEqual({
+      [ownerPath]: { name: 'Owner', file: outputFile },
+    });
+  });
 });
