@@ -2,9 +2,11 @@ import {
   ModelParseCodeGeneratorInputs,
   ModelRunCodeGenerator,
   type GeneratedSchemas,
+  type PropertyType,
   type Schema,
 } from '@causa/workspace-core';
-import { mkdir } from 'fs/promises';
+import { loadSchemas } from '@causa/workspace-core/jsonschema';
+import { mkdir, readFile } from 'fs/promises';
 import { basename, join, resolve } from 'path';
 import {
   makeParametersSchemasForSpecification,
@@ -19,7 +21,6 @@ import {
   type ModelClassSchemaDecorators,
 } from '../../code-generation/model-class/index.js';
 import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
-import { LEADING_COMMENT } from './utils.js';
 
 /**
  * The name of the generator for {@link ModelRunCodeGeneratorForTypeScriptNestjsController}.
@@ -33,8 +34,13 @@ export const TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR =
  * This generator:
  * 1. Parses OpenAPI YAML specification files.
  * 2. Extracts path and query parameters and builds {@link Schema}s for them.
- * 3. Feeds those schemas through {@link TypeScriptModelClassGenerator} to produce `model.ts`.
- * 4. Generates `*.api.controller.ts` files with TypeScript interfaces and decorator factories.
+ * 3. Loads any external JSON Schema files referenced by parameter `$ref`s (following transitive refs) so the merged
+ *    schema set carries enough information to render the parameter classes.
+ * 4. Feeds those schemas through {@link TypeScriptModelClassGenerator} to produce `model.ts`. Schemas already emitted
+ *    by the preceding `typescriptModelClass` generator are imported from its output file rather than re-emitted;
+ *    transitive dependencies that were not previously emitted are written into `model.ts` alongside the parameter
+ *    classes.
+ * 5. Generates `*.api.controller.ts` files with TypeScript interfaces and decorator factories.
  */
 export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRunCodeGenerator {
   async _call(): Promise<GeneratedSchemas> {
@@ -83,13 +89,16 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
 
     await mkdir(outputDir, { recursive: true });
 
-    const parameterSchemas = await this.generateParameterSchemas(
-      specs.reduce(
-        (acc, spec) =>
-          Object.assign(acc, makeParametersSchemasForSpecification(spec)),
-        {} as Record<string, Schema>,
-      ),
+    const parameterSchemas = specs.reduce(
+      (acc, spec) =>
+        Object.assign(acc, makeParametersSchemasForSpecification(spec)),
+      {} as Record<string, Schema>,
+    );
+    const externalSchemas = await this.loadExternalRefSchemas(parameterSchemas);
+    const generatedParameterSchemas = await this.generateParameterSchemas(
+      { ...externalSchemas, ...parameterSchemas },
       modelFilePath,
+      modelClassSchemas,
     );
 
     for (const spec of specs) {
@@ -101,15 +110,14 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
       await writeControllerFile(
         spec,
         modelClassSchemas,
-        parameterSchemas,
+        generatedParameterSchemas,
         controllerFilePath,
-        LEADING_COMMENT,
       );
 
       this._context.logger.debug(`Generated '${controllerFileName}'.`);
     }
 
-    return parameterSchemas;
+    return generatedParameterSchemas;
   }
 
   _supports(): boolean {
@@ -120,17 +128,21 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
   }
 
   /**
-   * Generates TypeScript classes for parameter schemas using {@link TypeScriptModelClassGenerator}. The synthetic
-   * schema paths (`${operationId}/${location}`) flow through to the {@link GeneratedSchemas} the controller renderer
-   * relies on.
+   * Generates TypeScript classes for parameter schemas (and any external schemas they reference) using
+   * {@link TypeScriptModelClassGenerator}. The synthetic schema paths (`${operationId}/${location}`) flow through to
+   * the {@link GeneratedSchemas} the controller renderer relies on. Decorator computation is skipped for paths in
+   * `existingSchemas` since those classes are imported, not emitted.
    *
-   * @param schemas The parameter schemas to generate classes for.
+   * @param schemas The parameter schemas plus any external schemas reachable from their `$ref`s.
    * @param modelFilePath The file path to generate the classes at.
-   * @returns The generated schemas.
+   * @param existingSchemas Schemas already emitted by a previous generator that should be imported instead of
+   *   re-emitted. Passed straight to {@link TypeScriptModelClassGenerator}.
+   * @returns The generated schemas, keyed by the synthetic parameter schema paths.
    */
   private async generateParameterSchemas(
     schemas: Record<string, Schema>,
     modelFilePath: string,
+    existingSchemas: GeneratedSchemas,
   ): Promise<GeneratedSchemas> {
     if (Object.keys(schemas).length === 0) {
       return {};
@@ -138,7 +150,7 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
 
     const decorators: Record<string, ModelClassSchemaDecorators> = {};
     for (const schema of Object.values(schemas)) {
-      if (schema.kind !== 'object') {
+      if (schema.kind !== 'object' || existingSchemas[schema.path]) {
         continue;
       }
 
@@ -164,10 +176,73 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
     const generator = new TypeScriptModelClassGenerator(
       modelFilePath,
       schemas,
-      { decorators },
+      { decorators, existingSchemas },
     );
     await generator.generate();
 
     return generator.generatedSchemas;
+  }
+
+  /**
+   * Loads any external JSON Schema files referenced from the given parameter schemas using {@link loadSchemas},
+   * following transitive `$ref`s. The returned map covers every dependency reachable from the parameters and is
+   * suitable for merging into the schema set passed to {@link TypeScriptModelClassGenerator}.
+   *
+   * @param parameterSchemas The parameter schemas to inspect for external refs.
+   * @returns The external schemas, indexed by their absolute source path.
+   */
+  private async loadExternalRefSchemas(
+    parameterSchemas: Record<string, Schema>,
+  ): Promise<Record<string, Schema>> {
+    const files = new Set<string>();
+    for (const schema of Object.values(parameterSchemas)) {
+      if (schema.kind !== 'object') {
+        continue;
+      }
+
+      for (const property of schema.properties) {
+        collectRefFiles(property.type, files);
+      }
+    }
+    if (files.size === 0) {
+      return {};
+    }
+
+    const { schemas, errors } = await loadSchemas([...files], {
+      fileReader: (path) => readFile(path, { encoding: 'utf-8' }),
+    });
+    const errorEntries = Object.entries(errors);
+    if (errorEntries.length > 0) {
+      const details = errorEntries
+        .map(([path, err]) => `${path}: ${err.message}`)
+        .join('\n');
+      throw new Error(
+        `Failed to load one or more schema files referenced from OpenAPI parameters:\n${details}`,
+      );
+    }
+
+    return schemas;
+  }
+}
+
+/**
+ * Collects the absolute file path of every `$ref` reachable from the given property type into {@link out}, stripping
+ * the JSON-Pointer fragment so the path can be fed to {@link loadSchemas}.
+ */
+function collectRefFiles(type: PropertyType, out: Set<string>): void {
+  switch (type.kind) {
+    case 'ref':
+      out.add(type.ref.split('#')[0]);
+      return;
+    case 'array':
+      collectRefFiles(type.items, out);
+      return;
+    case 'map':
+      if (type.items !== 'any') {
+        collectRefFiles(type.items, out);
+      }
+      return;
+    default:
+      return;
   }
 }

@@ -38,6 +38,18 @@ paths:
             type: integer
             minimum: 1
             maximum: 100
+        - name: state
+          in: query
+          required: false
+          schema:
+            oneOf:
+              - $ref: ../entities/car.yaml#/$defs/CarState
+        - name: kind
+          in: query
+          required: false
+          schema:
+            oneOf:
+              - $ref: ../entities/car-kind.yaml
       responses:
         "200":
           description: Success
@@ -119,6 +131,27 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), 'causa-test-'));
     await mkdir(join(tmpDir, 'api'), { recursive: true });
+    await mkdir(join(tmpDir, 'entities'), { recursive: true });
+    await writeFile(
+      join(tmpDir, 'entities/car.yaml'),
+      `
+title: Car
+type: object
+$defs:
+  CarState:
+    title: CarState
+    type: string
+    enum: [on, off]
+`,
+    );
+    await writeFile(
+      join(tmpDir, 'entities/car-kind.yaml'),
+      `
+title: CarKind
+type: string
+enum: [sedan, suv]
+`,
+    );
 
     baseArguments = {
       generator: TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
@@ -131,6 +164,10 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
           },
           [join(tmpDir, 'entities/car-list.yaml')]: {
             name: 'CarList',
+            file: join(tmpDir, 'src/model/generated.ts'),
+          },
+          [`${join(tmpDir, 'entities/car.yaml')}#/$defs/CarState`]: {
+            name: 'CarState',
             file: join(tmpDir, 'src/model/generated.ts'),
           },
         },
@@ -248,6 +285,7 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
       'carUpdate/path': { file, name: 'CarUpdatePathParams' },
       'carUpdate/query': { file, name: 'CarUpdateQueryParams' },
       'carDelete/path': { file, name: 'CarDeletePathParams' },
+      [join(tmpDir, 'entities/car-kind.yaml')]: { file, name: 'CarKind' },
     });
 
     const modelFile = join(tmpDir, 'src/api/model.ts');
@@ -257,6 +295,13 @@ describe('ModelRunCodeGeneratorForTypeScriptNestjsController', () => {
     expect(modelContent).toContain('export class CarUpdatePathParams');
     expect(modelContent).toContain('export class CarUpdateQueryParams');
     expect(modelContent).toContain('export class CarDeletePathParams');
+    expect(modelContent).toContain(
+      `import { CarState } from "../model/generated.js";`,
+    );
+    expect(modelContent).not.toContain('export enum CarState');
+    expect(modelContent).toContain('readonly state?: CarState;');
+    expect(modelContent).toContain('export enum CarKind');
+    expect(modelContent).toContain('readonly kind?: CarKind;');
 
     const controllerFile = join(tmpDir, 'src/api/car.api.controller.ts');
     const controllerContent = await readFile(controllerFile, 'utf-8');
