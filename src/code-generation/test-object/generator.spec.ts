@@ -40,6 +40,7 @@ describe('TypeScriptTestObjectGenerator', () => {
     const TEST_PATH = 'test.json';
     const ENUM_PATH = 'test.json#/$defs/MyEnum';
     const CHILD_PATH = 'test.json#/$defs/ChildClass';
+    const UNION_PATH = 'test.json#/$defs/MyUnion';
     const schemas: Record<string, Schema> = {
       [TEST_PATH]: {
         kind: 'object',
@@ -193,6 +194,23 @@ describe('TypeScriptTestObjectGenerator', () => {
             required: false,
             extensions: { testObjectDefaultValue: ['SECOND', 'THIRD'] },
           },
+          {
+            name: 'unionProp',
+            type: { kind: 'ref', ref: UNION_PATH },
+            nullable: false,
+            required: false,
+            extensions: {},
+          },
+        ],
+      },
+      [UNION_PATH]: {
+        kind: 'union',
+        name: 'MyUnion',
+        path: UNION_PATH,
+        extensions: {},
+        types: [
+          { kind: 'primitive', type: 'integer' },
+          { kind: 'primitive', type: 'string' },
         ],
       },
       [ENUM_PATH]: {
@@ -267,6 +285,7 @@ describe('TypeScriptTestObjectGenerator', () => {
       'optionalInteger: 0,',
       'optionalString: "string",',
       'stringProp: "string",',
+      'unionProp: 0,',
       'uuidProp: randomUUID\\(\\),',
       '...data,',
       '}\\);',

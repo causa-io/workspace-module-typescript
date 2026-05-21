@@ -257,6 +257,18 @@ export class TypeScriptTestObjectGenerator extends BaseTypeScriptCodeGenerator {
         if (target?.kind === 'object') {
           return `make${this.factoryNameFor(target)}(${serialized ?? ''})`;
         }
+        if (target?.kind === 'union') {
+          const firstType = target.types[0];
+          if (firstType === undefined) {
+            throw new Error(
+              `Union '${target.name}' referenced from property '${property.name}' has no member types.`,
+            );
+          }
+          return this.defaultValueForProperty(
+            { ...property, type: firstType, nullable: false },
+            baseSchema,
+          );
+        }
         return serialized ?? "'unknown'";
       }
       case 'string': {
