@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.23.0-beta.2 (2026-05-21)
+
 Breaking changes:
 
 - Rewrite the model class, test object, test expectation, and NestJS controller code generators to use the new `@causa/workspace-core` `Schema` model instead of `quicktype`. The `quicktype-core` dependency is removed.
