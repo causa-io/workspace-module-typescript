@@ -64,6 +64,11 @@ All generators' inputs and outputs are configured in the same way, as presented 
 
 ```yaml
 model:
+  # The suffix that must be present on all schema names that are constraints on other schemas
+  # (using the `constraintFor` Causa attribute). Applied to every TypeScript model generator.
+  # This is optional and defaults to `Constraint`.
+  constraintSuffix: Constraint
+
   codeGenerators:
     - generator: <Generator name>
 
@@ -81,11 +86,6 @@ model:
       # The generated file, relative to the project directory.
       # This must be provided.
       output: src/generated.ts
-
-      # The suffix that must be present on all schema names that are constraints on other schemas
-      # (using the `constraintFor` Causa attribute).
-      # This is optional and defaults to `Constraint`.
-      constraintSuffix: Constraint
 ```
 
 #### `typescriptModelClass` generator
@@ -100,7 +100,7 @@ Many decorators are added to the classes and properties, and other Causa workspa
 
 The behavior of this generator can be customized for each object and properties by using the `causa` attribute (e.g. in JSONSchema definitions):
 
-- `tsExcludedDecorators`: Provides a list of decorators that should not be added to the class or property by decorator renderers (see below). The exclusion list at the object level is inherited by all properties.
+- `tsExcludedDecorators`: Provides a list of decorators that should not be added to the class or property by decorator generators. The exclusion list at the object level is inherited by all properties.
 - `tsDecorators`: A list of custom decorators that should be added to the class or property.
 - `tsType`: Properties only. Forces the type of the property to the provided TypeScript code.
 - `tsDefault`: Properties only. Uses the provided TypeScript code as the default value for the property.
