@@ -1,8 +1,10 @@
 import type {
   ConstPropertyType,
+  EnumSchema,
   EventTopicDefinition,
   GeneratedSchemas,
   ObjectSchema,
+  Property,
   PropertyType,
   RefPropertyType,
   Schema,
@@ -11,10 +13,13 @@ import micromatch from 'micromatch';
 import {
   BaseTypeScriptCodeGenerator,
   DEFAULT_CONSTRAINT_SUFFIX,
+  enumCaseNames,
+  findEnumCaseName,
   findModelClass,
   getConstraintBaseObject,
   getConstraintBasePath,
   propertyKey,
+  resolveEnumForObjectProperty,
   stripConstraintSuffix,
 } from '../base.js';
 
@@ -445,17 +450,23 @@ ${this.emitPropertyMatchers(entityObject, (n) => set.has(n))}
     filter: (name: string) => boolean = () => true,
   ): string {
     const baseObject = getConstraintBaseObject(schema, this.schemas);
+    const matcherFor = (p: Property): string =>
+      this.matcherForType(
+        p.type,
+        p,
+        resolveEnumForObjectProperty(schema, p.name, this.schemas),
+      );
 
     const own = schema.properties
       .filter((p) => filter(p.name))
-      .map((p) => [p.name, this.matcherForType(p.type, p)])
+      .map((p) => [p.name, matcherFor(p)])
       .sort(([a], [b]) => a.localeCompare(b));
 
     const ownNames = new Set(schema.properties.map((p) => p.name));
     const baseExtras =
       baseObject?.properties
         .filter((p) => !ownNames.has(p.name) && filter(p.name))
-        .map((p) => [p.name, this.matcherForType(p.type, p)])
+        .map((p) => [p.name, matcherFor(p)])
         .sort(([a], [b]) => a.localeCompare(b)) ?? [];
 
     return [...own, ...baseExtras]
@@ -469,6 +480,7 @@ ${this.emitPropertyMatchers(entityObject, (n) => set.has(n))}
   private matcherForType(
     type: PropertyType,
     options: { nullable?: boolean; required?: boolean } = {},
+    enumContext?: EnumSchema,
   ): string {
     this.addImports({ 'jest-extended': [] });
 
@@ -489,7 +501,20 @@ ${this.emitPropertyMatchers(entityObject, (n) => set.has(n))}
         break;
       }
       case 'const': {
-        items.push(JSON.stringify((type as ConstPropertyType).value));
+        const value = (type as ConstPropertyType).value;
+        const caseName = enumContext
+          ? findEnumCaseName(enumContext, value)
+          : undefined;
+        if (enumContext && caseName) {
+          const modelClass = findModelClass(
+            this.modelClassSchemas,
+            enumContext.path,
+          );
+          this.addImports({ [modelClass.file]: [modelClass.name] });
+          items.push(`${modelClass.name}.${caseName}`);
+        } else {
+          items.push(JSON.stringify(value));
+        }
         break;
       }
       case 'ref': {
@@ -499,7 +524,14 @@ ${this.emitPropertyMatchers(entityObject, (n) => set.has(n))}
         }
 
         if (target.kind === 'enum') {
-          items.push(...target.values.map((v) => JSON.stringify(v)));
+          const modelClass = findModelClass(
+            this.modelClassSchemas,
+            target.path,
+          );
+          this.addImports({ [modelClass.file]: [modelClass.name] });
+          items.push(
+            ...enumCaseNames(target).map((c) => `${modelClass.name}.${c}`),
+          );
         } else if (target.kind === 'union') {
           items.push(...target.types.map((t) => this.matcherForType(t)));
         } else {

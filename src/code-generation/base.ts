@@ -69,6 +69,31 @@ export function getConstraintBaseObject(
 }
 
 /**
+ * Returns the {@link EnumSchema} referenced by a property named `propertyName` on `schema` or on its `constraintFor`
+ * base object, or `undefined` when neither has a ref-to-enum property of that name.
+ *
+ * Used to recover the enum case behind a const-valued constraint property, so generated code can reference the enum
+ * member by name rather than emitting the raw value.
+ */
+export function resolveEnumForObjectProperty(
+  schema: ObjectSchema,
+  propertyName: string,
+  schemas: Record<string, Schema>,
+): EnumSchema | undefined {
+  for (const obj of [schema, getConstraintBaseObject(schema, schemas)]) {
+    const property = obj?.properties.find((p) => p.name === propertyName);
+    if (property?.type.kind === 'ref') {
+      const target = schemas[property.type.ref];
+      if (target?.kind === 'enum') {
+        return target;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Returns the {@link GeneratedSchema} entry for the given schema path; throws when missing.
  */
 export function findModelClass(
