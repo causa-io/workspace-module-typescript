@@ -41,6 +41,88 @@ export function stripConstraintSuffix(name: string, suffix: string): string {
 }
 
 /**
+ * Returns a shallow copy of `schemas` with each schema's `name` rewritten to a PascalCase, deduplicated identifier
+ * suitable for use as a TypeScript top-level export. All emitted names (object classes, constraint aliases + their
+ * constraint classes, enums, unions) share a single global namespace. Collisions are resolved by appending `_2`,
+ * `_3`, … to the colliding name. For constraint schemas the stripped (alias) form is deduplicated first, then the
+ * suffix is reapplied to derive the class name, so both names land in the taken set.
+ *
+ * Schemas whose path appears in `options.existingSchemas` are rewritten to use the existing name verbatim and are
+ * also registered into the taken set, so newly-emitted names never clash with imported ones.
+ *
+ * Iteration is path-sorted, so the deduplication numbering is stable across runs regardless of the upstream scan order.
+ *
+ * @param schemas The schema map to normalize.
+ * @param options Normalization options.
+ * @returns A new schema map with the rewritten names. Schema instances are themselves cloned shallowly; nested
+ *   properties / types are shared with the input.
+ */
+export function assignSchemaNames(
+  schemas: Record<string, Schema>,
+  options: {
+    /**
+     * Suffix used to identify constraint classes.
+     * Defaults to {@link DEFAULT_CONSTRAINT_SUFFIX}.
+     */
+    constraintSuffix?: string;
+
+    /**
+     * Schemas already emitted by a previous generator run, keyed by absolute schema path.
+     */
+    existingSchemas?: GeneratedSchemas;
+  } = {},
+): Record<string, Schema> {
+  const constraintSuffix =
+    options.constraintSuffix ?? DEFAULT_CONSTRAINT_SUFFIX;
+  const existingSchemas = options.existingSchemas ?? {};
+  const taken = new Set<string>(
+    Object.values(existingSchemas).map((s) => s.name),
+  );
+
+  const dedupe = (candidate: string): string => {
+    if (!taken.has(candidate)) {
+      return candidate;
+    }
+
+    for (let i = 2; ; i++) {
+      const next = `${candidate}_${i}`;
+      if (!taken.has(next)) {
+        return next;
+      }
+    }
+  };
+
+  const result: Record<string, Schema> = {};
+  const paths = Object.keys(schemas).toSorted((a, b) => a.localeCompare(b));
+  for (const path of paths) {
+    const schema = schemas[path];
+    const existing = existingSchemas[path];
+    if (existing) {
+      result[path] = { ...schema, name: existing.name };
+      continue;
+    }
+
+    let name: string;
+    if (getConstraintBasePath(schema) !== undefined) {
+      const aliasCandidate = pascalCase(
+        stripConstraintSuffix(schema.name, constraintSuffix),
+      );
+      const alias = dedupe(aliasCandidate);
+      name = `${alias}${constraintSuffix}`;
+      taken.add(alias);
+      taken.add(name);
+    } else {
+      name = dedupe(pascalCase(schema.name));
+      taken.add(name);
+    }
+
+    result[path] = { ...schema, name };
+  }
+
+  return result;
+}
+
+/**
  * Returns the path of the schema constrained by `schema` (via `extensions.constraintFor`), or `undefined` when
  * `schema` is not an object schema or carries no `constraintFor` extension.
  */

@@ -3,6 +3,7 @@ import {
   type GeneratedSchemas,
   type Schema,
 } from '@causa/workspace-core';
+import { assignSchemaNames } from '../../code-generation/base.js';
 import {
   TypeScriptModelClassGenerator,
   type ModelClassSchemaDecorators,
@@ -32,7 +33,11 @@ export class ModelRunCodeGeneratorForTypeScriptModelClass extends ModelRunCodeGe
       .asConfiguration<TypeScriptModelConfiguration>()
       .get('model.constraintSuffix');
 
-    const schemas = await parseInputSchemas(this._context, this.configuration);
+    const inputSchemas = await parseInputSchemas(
+      this._context,
+      this.configuration,
+    );
+    const schemas = assignSchemaNames(inputSchemas, { constraintSuffix });
     const decorators = await this.computeTypeScriptDecorators(schemas);
 
     const codeGenerator = new TypeScriptModelClassGenerator(

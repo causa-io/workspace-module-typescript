@@ -12,7 +12,6 @@ import type {
 import micromatch from 'micromatch';
 import {
   BaseTypeScriptCodeGenerator,
-  DEFAULT_CONSTRAINT_SUFFIX,
   enumCaseNames,
   findEnumCaseName,
   findModelClass,
@@ -20,14 +19,13 @@ import {
   getConstraintBasePath,
   propertyKey,
   resolveEnumForObjectProperty,
-  stripConstraintSuffix,
 } from '../base.js';
 
 /**
  * Options for {@link TypeScriptTestExpectationGenerator}.
  */
 export type TypeScriptTestExpectationGeneratorOptions = Partial<
-  Pick<TypeScriptTestExpectationGenerator, 'constraintSuffix' | 'entitiesGlobs'>
+  Pick<TypeScriptTestExpectationGenerator, 'entitiesGlobs'>
 >;
 
 /**
@@ -43,11 +41,6 @@ export type TypeScriptTestExpectationGeneratorOptions = Partial<
  *    schemas) `expect<EntityName>NotToExist`.
  */
 export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenerator {
-  /**
-   * The suffix used to identify constraint classes. Defaults to `Constraint`.
-   */
-  readonly constraintSuffix: string;
-
   /**
    * Absolute globs describing which schemas should generate entity expectations. When omitted, every schema not
    * matching a more specific case generates entity expectations.
@@ -73,8 +66,6 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
     readonly options: TypeScriptTestExpectationGeneratorOptions = {},
   ) {
     super(outputPath);
-    this.constraintSuffix =
-      options.constraintSuffix ?? DEFAULT_CONSTRAINT_SUFFIX;
     this.entitiesGlobs = options.entitiesGlobs;
   }
 
@@ -580,12 +571,11 @@ ${this.emitPropertyMatchers(entityObject, (n) => set.has(n))}
   }
 
   /**
-   * Returns the PascalCase base name used to build expectation function names (e.g. `expect<X>`). Constraint
-   * schemas have their suffix stripped so a `FooConstraint` becomes `expectFoo`.
+   * Returns the base name used to build expectation function names (e.g. `expect<X>`). Mirrors the corresponding
+   * model-class output name, so a `FooConstraint` schema (whose model-class output is the alias `Foo`) becomes
+   * `expectFoo`.
    */
   private functionBaseName(schema: ObjectSchema): string {
-    return getConstraintBasePath(schema) !== undefined
-      ? stripConstraintSuffix(schema.name, this.constraintSuffix)
-      : schema.name;
+    return findModelClass(this.modelClassSchemas, schema.path).name;
   }
 }

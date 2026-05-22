@@ -7,7 +7,6 @@ import type {
   Schema,
   UnionSchema,
 } from '@causa/workspace-core';
-import { pascalCase } from 'change-case';
 import {
   BaseTypeScriptCodeGenerator,
   collectRefs,
@@ -118,11 +117,12 @@ export class TypeScriptModelClassGenerator extends BaseTypeScriptCodeGenerator {
         continue;
       }
 
-      this.classNames[path] = pascalCase(schema.name);
+      this.classNames[path] = schema.name;
 
       if (getConstraintBasePath(schema) !== undefined) {
-        this.constraintAliasNames[path] = pascalCase(
-          stripConstraintSuffix(schema.name, this.constraintSuffix),
+        this.constraintAliasNames[path] = stripConstraintSuffix(
+          schema.name,
+          this.constraintSuffix,
         );
       }
     }

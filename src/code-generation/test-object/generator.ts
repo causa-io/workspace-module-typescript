@@ -10,22 +10,13 @@ import type {
 import {
   BaseTypeScriptCodeGenerator,
   collectRefs,
-  DEFAULT_CONSTRAINT_SUFFIX,
   findEnumCaseName,
   findModelClass,
   getConstraintBaseObject,
   getConstraintBasePath,
   propertyKey,
-  stripConstraintSuffix,
   topologicalSort,
 } from '../base.js';
-
-/**
- * Options for {@link TypeScriptTestObjectGenerator}.
- */
-export type TypeScriptTestObjectGeneratorOptions = Partial<
-  Pick<TypeScriptTestObjectGenerator, 'constraintSuffix'>
->;
 
 /**
  * Generates TypeScript `make*` factory functions for the given {@link Schema}s and writes the formatted output to
@@ -38,11 +29,6 @@ export type TypeScriptTestObjectGeneratorOptions = Partial<
  */
 export class TypeScriptTestObjectGenerator extends BaseTypeScriptCodeGenerator {
   /**
-   * The suffix used to identify constraint classes. Defaults to `Constraint`.
-   */
-  readonly constraintSuffix: string;
-
-  /**
    * Creates a new generator.
    *
    * @param outputPath Absolute path of the file the rendered source will be written to.
@@ -51,17 +37,13 @@ export class TypeScriptTestObjectGenerator extends BaseTypeScriptCodeGenerator {
    *   default-value emitter introspects them.
    * @param modelClassSchemas The output of the model-class generator, used to look up the class / enum name and the
    *   file each model-class symbol lives in.
-   * @param options Options.
    */
   constructor(
     outputPath: string,
     readonly schemas: Record<string, Schema>,
     readonly modelClassSchemas: GeneratedSchemas,
-    readonly options: TypeScriptTestObjectGeneratorOptions = {},
   ) {
     super(outputPath);
-    this.constraintSuffix =
-      options.constraintSuffix ?? DEFAULT_CONSTRAINT_SUFFIX;
   }
 
   /**
@@ -107,7 +89,7 @@ export class TypeScriptTestObjectGenerator extends BaseTypeScriptCodeGenerator {
     const constraintForPath = getConstraintBasePath(schema);
     const isConstraint = constraintForPath !== undefined;
     const modelClass = findModelClass(this.modelClassSchemas, schema.path);
-    const functionName = `make${this.factoryNameFor(schema)}`;
+    const functionName = `make${modelClass.name}`;
 
     let instantiationClassName: string;
     if (constraintForPath !== undefined) {
@@ -255,7 +237,7 @@ export class TypeScriptTestObjectGenerator extends BaseTypeScriptCodeGenerator {
           return `${modelClass.name}.${caseName}`;
         }
         if (target?.kind === 'object') {
-          return `make${this.factoryNameFor(target)}(${serialized ?? ''})`;
+          return `make${findModelClass(this.modelClassSchemas, target.path).name}(${serialized ?? ''})`;
         }
         if (target?.kind === 'union') {
           const firstType = target.types[0];
@@ -304,15 +286,5 @@ export class TypeScriptTestObjectGenerator extends BaseTypeScriptCodeGenerator {
         return 'randomUUID()';
       }
     }
-  }
-
-  /**
-   * Returns the PascalCase factory base name for the given object schema. Constraint schemas have their suffix
-   * stripped so a `FooConstraint` schema becomes `makeFoo`.
-   */
-  private factoryNameFor(schema: ObjectSchema): string {
-    return getConstraintBasePath(schema) !== undefined
-      ? stripConstraintSuffix(schema.name, this.constraintSuffix)
-      : schema.name;
   }
 }

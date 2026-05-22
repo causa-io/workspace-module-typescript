@@ -8,6 +8,7 @@ import {
 import { loadSchemas } from '@causa/workspace-core/jsonschema';
 import { mkdir, readFile } from 'fs/promises';
 import { basename, join } from 'path';
+import { assignSchemaNames } from '../../code-generation/base.js';
 import {
   makeParametersSchemasForSpecification,
   parseOpenApiSpec,
@@ -135,24 +136,28 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
    * the {@link GeneratedSchemas} the controller renderer relies on. Decorator computation is skipped for paths in
    * `existingSchemas` since those classes are imported, not emitted.
    *
-   * @param schemas The parameter schemas plus any external schemas reachable from their `$ref`s.
+   * @param rawSchemas The parameter schemas plus any external schemas reachable from their `$ref`s.
    * @param modelFilePath The file path to generate the classes at.
    * @param existingSchemas Schemas already emitted by a previous generator that should be imported instead of
    *   re-emitted. Passed straight to {@link TypeScriptModelClassGenerator}.
    * @returns The generated schemas, keyed by the synthetic parameter schema paths.
    */
   private async generateParameterSchemas(
-    schemas: Record<string, Schema>,
+    rawSchemas: Record<string, Schema>,
     modelFilePath: string,
     existingSchemas: GeneratedSchemas,
   ): Promise<GeneratedSchemas> {
-    if (Object.keys(schemas).length === 0) {
+    if (Object.keys(rawSchemas).length === 0) {
       return {};
     }
 
     const constraintSuffix = this._context
       .asConfiguration<TypeScriptModelConfiguration>()
       .get('model.constraintSuffix');
+    const schemas = assignSchemaNames(rawSchemas, {
+      constraintSuffix,
+      existingSchemas,
+    });
 
     const decorators: Record<string, ModelClassSchemaDecorators> = {};
     for (const schema of Object.values(schemas)) {
