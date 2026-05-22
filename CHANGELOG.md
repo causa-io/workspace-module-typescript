@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Features:
+
+- Support a `oneOf` of constraint refs as the `data` property of an entity mutated event. The generated expectation emits one matcher per variant inside `expect.toBeOneOf([...])`.
+
+Fixes:
+
+- Deduplicate PascalCased schema names so colliding identifiers (e.g. two schemas resolving to the same class name) no longer produce invalid TypeScript output. Names assigned to schemas are also passed to decorator providers, so decorators referencing class names (e.g. `@Type(() => Foo)`) use the final identifier.
+- Sort decorators by source before emitting them, ensuring stable output regardless of provider registration order.
+
 ## v0.23.0-beta.2 (2026-05-21)
 
 Breaking changes:
