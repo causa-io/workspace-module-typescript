@@ -1062,4 +1062,175 @@ describe('TypeScriptTestExpectationGenerator', () => {
       },
     });
   });
+
+  it('should generate a multi-variant entity mutated expectation when data is a union of constraints', async () => {
+    const ENTITY_PATH = `${schemaUri}#/$defs/Entity`;
+    const VARIANT_A_PATH = `${schemaUri}#/$defs/EntityVariantAConstraint`;
+    const VARIANT_B_PATH = `${schemaUri}#/$defs/EntityVariantBConstraint`;
+    const UNION_PATH = `${schemaUri}#/$defs/EntityVariantUnion`;
+    const MUTATION_PATH = `${schemaUri}#/$defs/EntityMutatedEventConstraint`;
+
+    const schemas: Record<string, Schema> = {
+      [schemaUri]: {
+        kind: 'object',
+        name: 'EntityEvent',
+        path: schemaUri,
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'name',
+            type: { kind: 'const', type: 'string', value: 'entityMutated' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+          {
+            name: 'data',
+            type: { kind: 'ref', ref: ENTITY_PATH },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+      [ENTITY_PATH]: {
+        kind: 'object',
+        name: 'Entity',
+        path: ENTITY_PATH,
+        extensions: {},
+        databases: [],
+        properties: [
+          {
+            name: 'id',
+            type: { kind: 'primitive', type: 'uuid' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+          {
+            name: 'state',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+      [VARIANT_A_PATH]: {
+        kind: 'object',
+        name: 'EntityVariantAConstraint',
+        path: VARIANT_A_PATH,
+        extensions: { constraintFor: ENTITY_PATH },
+        databases: [],
+        properties: [
+          {
+            name: 'state',
+            type: { kind: 'const', type: 'string', value: 'a' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+      [VARIANT_B_PATH]: {
+        kind: 'object',
+        name: 'EntityVariantBConstraint',
+        path: VARIANT_B_PATH,
+        extensions: { constraintFor: ENTITY_PATH },
+        databases: [],
+        properties: [
+          {
+            name: 'state',
+            type: { kind: 'const', type: 'string', value: 'b' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+      [UNION_PATH]: {
+        kind: 'union',
+        name: 'EntityVariantUnion',
+        path: UNION_PATH,
+        extensions: {},
+        types: [
+          { kind: 'ref', ref: VARIANT_A_PATH },
+          { kind: 'ref', ref: VARIANT_B_PATH },
+        ],
+      },
+      [MUTATION_PATH]: {
+        kind: 'object',
+        name: 'EntityMutatedEventConstraint',
+        path: MUTATION_PATH,
+        extensions: {
+          constraintFor: schemaUri,
+          entityMutationFrom: [ENTITY_PATH],
+          entityPropertyChanges: ['state'],
+        },
+        databases: [],
+        properties: [
+          {
+            name: 'data',
+            type: { kind: 'ref', ref: UNION_PATH },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+    };
+    const modelClassSchemas: GeneratedSchemas = {
+      [schemaUri]: {
+        file: join(tmpDir, 'models/event.ts'),
+        name: 'EntityEvent',
+      },
+      [ENTITY_PATH]: { file: join(tmpDir, 'models/event.ts'), name: 'Entity' },
+      [VARIANT_A_PATH]: {
+        file: join(tmpDir, 'models/event.ts'),
+        name: 'EntityVariantA',
+      },
+      [VARIANT_B_PATH]: {
+        file: join(tmpDir, 'models/event.ts'),
+        name: 'EntityVariantB',
+      },
+      [UNION_PATH]: {
+        file: join(tmpDir, 'models/event.ts'),
+        name: 'EntityVariantUnion',
+      },
+      [MUTATION_PATH]: {
+        file: join(tmpDir, 'models/event.ts'),
+        name: 'EntityMutatedEvent',
+      },
+    };
+    const eventTopics: EventTopicDefinition[] = [
+      { id: 'entity-events', schemaFilePath: schemaUri, formatParts: {} },
+    ];
+
+    const { source } = await generate(
+      schemas,
+      modelClassSchemas,
+      eventTopics,
+      {},
+    );
+
+    expectToMatchRegexParts(source, [
+      'export async function expectEntityMutatedEvent\\(',
+      'fixture: AppFixture,',
+      'before: Partial<Entity>,',
+      'updates: Partial<EntityVariantA \\| EntityVariantB> = \\{\\},',
+      'expectedEntity: expect\\.toBeOneOf\\(\\[',
+      // First variant block.
+      'id: expect\\.any\\(String\\),',
+      '\\.\\.\\.before,',
+      'state: "a",',
+      '\\.\\.\\.updates,',
+      // Second variant block.
+      'id: expect\\.any\\(String\\),',
+      '\\.\\.\\.before,',
+      'state: "b",',
+      '\\.\\.\\.updates,',
+      '\\]\\),',
+    ]);
+  });
 });
