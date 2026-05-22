@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.23.0-beta.3 (2026-05-22)
+
 Features:
 
 - Support a `oneOf` of constraint refs as the `data` property of an entity mutated event. The generated expectation emits one matcher per variant inside `expect.toBeOneOf([...])`.
