@@ -12,7 +12,6 @@ import type {
 import micromatch from 'micromatch';
 import {
   BaseTypeScriptCodeGenerator,
-  DEFAULT_CONSTRAINT_SUFFIX,
   enumCaseNames,
   findEnumCaseName,
   findModelClass,
@@ -20,14 +19,13 @@ import {
   getConstraintBasePath,
   propertyKey,
   resolveEnumForObjectProperty,
-  stripConstraintSuffix,
 } from '../base.js';
 
 /**
  * Options for {@link TypeScriptTestExpectationGenerator}.
  */
 export type TypeScriptTestExpectationGeneratorOptions = Partial<
-  Pick<TypeScriptTestExpectationGenerator, 'constraintSuffix' | 'entitiesGlobs'>
+  Pick<TypeScriptTestExpectationGenerator, 'entitiesGlobs'>
 >;
 
 /**
@@ -43,11 +41,6 @@ export type TypeScriptTestExpectationGeneratorOptions = Partial<
  *    schemas) `expect<EntityName>NotToExist`.
  */
 export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenerator {
-  /**
-   * The suffix used to identify constraint classes. Defaults to `Constraint`.
-   */
-  readonly constraintSuffix: string;
-
   /**
    * Absolute globs describing which schemas should generate entity expectations. When omitted, every schema not
    * matching a more specific case generates entity expectations.
@@ -73,8 +66,6 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
     readonly options: TypeScriptTestExpectationGeneratorOptions = {},
   ) {
     super(outputPath);
-    this.constraintSuffix =
-      options.constraintSuffix ?? DEFAULT_CONSTRAINT_SUFFIX;
     this.entitiesGlobs = options.entitiesGlobs;
   }
 
@@ -255,7 +246,7 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
     eventTopic: EventTopicDefinition,
     blocks: string[],
   ): string[] {
-    const dataObject = this.eventDataObject(schema);
+    const [dataObject] = this.eventDataObjects(schema);
     const entityClass = findModelClass(this.modelClassSchemas, dataObject.path);
     this.addImports({ [entityClass.file]: [entityClass.name] });
     this.addImports({
@@ -304,28 +295,24 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
       );
     }
 
-    const entityObject = this.eventDataObject(baseEvent);
-    const constrainedEntityObject = this.eventDataObject(schema, baseEvent);
-
+    const [entityObject] = this.eventDataObjects(baseEvent);
     const entityClass = findModelClass(
       this.modelClassSchemas,
       entityObject.path,
     );
-    const constrainedEntityClass = findModelClass(
-      this.modelClassSchemas,
-      constrainedEntityObject.path,
-    );
-    const isConstrainedEntity =
-      getConstraintBasePath(constrainedEntityObject) !== undefined;
-
-    this.addImports({
-      [constrainedEntityClass.file]: [
-        isConstrainedEntity
-          ? `type ${constrainedEntityClass.name}`
-          : constrainedEntityClass.name,
-      ],
-    });
     this.addImports({ [entityClass.file]: [entityClass.name] });
+
+    const variants = this.eventDataObjects(schema, baseEvent);
+    const variantClasses = variants.map((v) => {
+      const isConstraint = getConstraintBasePath(v) !== undefined;
+      const variantClass = findModelClass(this.modelClassSchemas, v.path);
+      this.addImports({
+        [variantClass.file]: [
+          isConstraint ? `type ${variantClass.name}` : variantClass.name,
+        ],
+      });
+      return variantClass;
+    });
 
     const eventNameProperty =
       schema.properties.find((p) => p.name === 'name') ??
@@ -360,14 +347,14 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
     const functionName = `expect${this.functionBaseName(schema)}`;
     const eventNameMatcher = `expect.toBeOneOf(${JSON.stringify(eventNames)})`;
     const entityMatchers = this.emitExpectedEntityMatchers(
-      constrainedEntityObject,
+      variants,
       schema.extensions.entityPropertyChanges as string[] | '*' | undefined,
     );
 
     blocks.push(`export async function ${functionName}(
   fixture: AppFixture,
   before: Partial<${entityClass.name}>,
-  updates: Partial<${constrainedEntityClass.name}> = {},
+  updates: Partial<${variantClasses.map((c) => c.name).join(' | ')}> = {},
   tests: {
     matchesHttpResponse?: object;
     eventAttributes?: EventAttributes;
@@ -376,9 +363,7 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
   return await fixture.get(VersionedEntityFixture).expectMutated(
     { type: ${entityClass.name}, entity: before },
     {
-      expectedEntity: {
-        ${entityMatchers}
-      },
+      expectedEntity: ${entityMatchers},
       expectedEvent: {
         topic: ${JSON.stringify(eventTopic.id)},
         name: ${eventNameMatcher},
@@ -393,49 +378,82 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
   }
 
   /**
-   * Returns the source for the `expectedEntity` block of an entity mutation expectation, interleaving `before` and
-   * `updates` spreads with the property matchers as dictated by `entityPropertyChanges`.
+   * Returns the source for the `expectedEntity` value of an entity mutation expectation. For a single variant the
+   * returned source is a `{ ... }` object literal interleaving `before` and `updates` spreads with the property
+   * matchers as dictated by `entityPropertyChanges`. For multiple variants (when the `data` property is a `oneOf` of
+   * constraint refs) the source is an `expect.toBeOneOf([ { ... }, ... ])` matcher, one object per variant.
    */
   private emitExpectedEntityMatchers(
-    entityObject: ObjectSchema,
+    variants: ObjectSchema[],
     changes: string[] | '*' | undefined,
   ): string {
-    if (changes === '*') {
-      return `${this.emitPropertyMatchers(entityObject)}\n...updates,`;
+    const buildBody = (variant: ObjectSchema): string => {
+      if (changes === '*') {
+        return `{ ${this.emitPropertyMatchers(variant)}\n...updates }`;
+      }
+
+      const set = new Set(changes ?? []);
+      return `{
+${this.emitPropertyMatchers(variant, (n) => !set.has(n))}
+...before,
+${this.emitPropertyMatchers(variant, (n) => set.has(n))}
+...updates
+}`;
+    };
+
+    if (variants.length === 1) {
+      return buildBody(variants[0]);
     }
 
-    const set = new Set(changes ?? []);
-    return `${this.emitPropertyMatchers(entityObject, (n) => !set.has(n))}
-...before,
-${this.emitPropertyMatchers(entityObject, (n) => set.has(n))}
-...updates,`;
+    return `expect.toBeOneOf([
+      ${variants.map((v) => buildBody(v)).join(',\n')}
+    ])`;
   }
 
   /**
-   * Returns the object schema reached by the `data` property of the given event object schema, falling back to the
-   * `baseSchema`'s `data` property when the constraint omits it.
+   * Returns the object schemas reached by the `data` property of the given event object schema, falling back to the
+   * `baseSchema`'s `data` property when the constraint omits it. Always returns at least one variant. When the `data`
+   * property is a single ref the array has one element; when it is a union (directly or by reference) every member
+   * must resolve to an object schema and is included in the returned array.
    */
-  private eventDataObject(
+  private eventDataObjects(
     schema: ObjectSchema,
     baseSchema?: ObjectSchema,
-  ): ObjectSchema {
+  ): ObjectSchema[] {
     const dataProperty =
       schema.properties.find((p) => p.name === 'data') ??
       baseSchema?.properties.find((p) => p.name === 'data');
-    if (dataProperty?.type.kind !== 'ref') {
+    if (!dataProperty) {
       throw new Error(
         `Entity event '${schema.name}' must have a 'data' object property.`,
       );
     }
 
-    const target = this.schemas[dataProperty.type.ref];
-    if (target?.kind !== 'object') {
+    if (dataProperty.type.kind !== 'ref') {
       throw new Error(
-        `Entity event '${schema.name}' 'data' property must reference an object schema.`,
+        `Entity event '${schema.name}' must have a 'data' object property.`,
       );
     }
+    const refTarget = this.schemas[dataProperty.type.ref];
+    const memberTypes: PropertyType[] =
+      refTarget?.kind === 'union' ? refTarget.types : [dataProperty.type];
 
-    return target;
+    const variants: ObjectSchema[] = [];
+    for (const member of memberTypes) {
+      if (member.kind !== 'ref') {
+        throw new Error(
+          `Entity event '${schema.name}' 'data' property must reference an object schema.`,
+        );
+      }
+      const target = this.schemas[member.ref];
+      if (target?.kind !== 'object') {
+        throw new Error(
+          `Entity event '${schema.name}' 'data' property must reference an object schema.`,
+        );
+      }
+      variants.push(target);
+    }
+    return variants;
   }
 
   /**
@@ -580,12 +598,11 @@ ${this.emitPropertyMatchers(entityObject, (n) => set.has(n))}
   }
 
   /**
-   * Returns the PascalCase base name used to build expectation function names (e.g. `expect<X>`). Constraint
-   * schemas have their suffix stripped so a `FooConstraint` becomes `expectFoo`.
+   * Returns the base name used to build expectation function names (e.g. `expect<X>`). Mirrors the corresponding
+   * model-class output name, so a `FooConstraint` schema (whose model-class output is the alias `Foo`) becomes
+   * `expectFoo`.
    */
   private functionBaseName(schema: ObjectSchema): string {
-    return getConstraintBasePath(schema) !== undefined
-      ? stripConstraintSuffix(schema.name, this.constraintSuffix)
-      : schema.name;
+    return findModelClass(this.modelClassSchemas, schema.path).name;
   }
 }

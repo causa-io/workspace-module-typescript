@@ -5,7 +5,6 @@ import {
 } from '@causa/workspace-core';
 import { resolve } from 'path';
 import { TypeScriptTestExpectationGenerator } from '../../code-generation/index.js';
-import type { TypeScriptModelConfiguration } from '../../configurations/index.js';
 import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import {
   parseInputSchemas,
@@ -53,16 +52,13 @@ export class ModelRunCodeGeneratorForTypeScriptTestExpectation extends ModelRunC
     const entitiesGlobs = this.configuration.entitiesGlobs?.map((g) =>
       resolve(projectPath, g),
     );
-    const constraintSuffix = this._context
-      .asConfiguration<TypeScriptModelConfiguration>()
-      .get('model.constraintSuffix');
 
     const generator = new TypeScriptTestExpectationGenerator(
       outputPath,
       schemas,
       modelClassSchemas,
       eventTopics,
-      { entitiesGlobs, constraintSuffix },
+      { entitiesGlobs },
     );
     await generator.generate();
 

@@ -270,7 +270,7 @@ describe('TypeScriptTestObjectGenerator', () => {
       'arrayOfEnums: \\[MySpecialEnum.Second, MySpecialEnum.Third\\],',
       'arrayProp: \\[\\],',
       'boolProp: false,',
-      'classProp: makeChildClass\\(\\),',
+      'classProp: makeOtherName\\(\\),',
       'constProp: "🪨",',
       'dateProp: new Date\\(\\),',
       'dateTimeProp: new Date\\(\\),',
@@ -291,7 +291,7 @@ describe('TypeScriptTestObjectGenerator', () => {
       '}\\);',
     ]);
     expectToMatchRegexParts(source, [
-      'export function makeChildClass\\(data: Partial<OtherName> = {}\\): OtherName \\{',
+      'export function makeOtherName\\(data: Partial<OtherName> = {}\\): OtherName \\{',
       'return new OtherName\\({',
       'childNumber: 0,',
       'childString: "string",',
@@ -303,7 +303,7 @@ describe('TypeScriptTestObjectGenerator', () => {
     expect(source).not.toContain('🙈');
     expect(generatedSchemas).toEqual({
       [TEST_PATH]: { name: 'makeTestClass', file: outputFile },
-      [CHILD_PATH]: { name: 'makeChildClass', file: outputFile },
+      [CHILD_PATH]: { name: 'makeOtherName', file: outputFile },
     });
   });
 
