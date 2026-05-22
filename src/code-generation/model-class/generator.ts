@@ -278,7 +278,7 @@ export class TypeScriptModelClassGenerator extends BaseTypeScriptCodeGenerator {
     for (const decorator of [
       ...extClassDecorators,
       ...(schemaDecorators?.class ?? []),
-    ]) {
+    ].toSorted((a, b) => a.source.localeCompare(b.source))) {
       this.addImports(decorator.imports);
       lines.push(decorator.source);
     }
@@ -311,13 +311,11 @@ export class TypeScriptModelClassGenerator extends BaseTypeScriptCodeGenerator {
 
     const extDecorators = (property.extensions.tsDecorators ??
       []) as TypeScriptDecorator[];
-    for (const decorator of extDecorators) {
-      this.addImports(decorator.imports);
-      lines.push(decorator.source);
-    }
     const propertyDecorators =
       schemaDecorators?.properties[property.name] ?? [];
-    for (const decorator of propertyDecorators) {
+    for (const decorator of [...extDecorators, ...propertyDecorators].toSorted(
+      (a, b) => a.source.localeCompare(b.source),
+    )) {
       this.addImports(decorator.imports);
       lines.push(decorator.source);
     }
