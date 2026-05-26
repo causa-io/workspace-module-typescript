@@ -12,6 +12,7 @@ const SCHEMA: ObjectSchema = {
   path: '/test.json',
   extensions: {},
   databases: [],
+  additionalProperties: false,
   properties: [],
 };
 
@@ -142,6 +143,7 @@ describe('makeClassValidatorDecorators', () => {
         path: objectPath,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
     };

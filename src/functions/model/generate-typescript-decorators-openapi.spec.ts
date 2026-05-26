@@ -12,6 +12,7 @@ const SCHEMA: ObjectSchema = {
   path: '/test.json',
   extensions: { tsOpenApi: true },
   databases: [],
+  additionalProperties: false,
   properties: [],
 };
 

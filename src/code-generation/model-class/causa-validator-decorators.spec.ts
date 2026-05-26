@@ -7,6 +7,7 @@ const SCHEMA: ObjectSchema = {
   path: '/test.json',
   extensions: {},
   databases: [],
+  additionalProperties: false,
   properties: [],
 };
 

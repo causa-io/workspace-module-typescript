@@ -13,6 +13,7 @@ function objectSchema(overrides: Partial<ObjectSchema> = {}): ObjectSchema {
     path: '/test.json',
     extensions: { tsOpenApi: true },
     databases: [],
+    additionalProperties: false,
     properties: [],
     ...overrides,
   };
@@ -56,6 +57,7 @@ describe('makeOpenApiDecorators', () => {
         path: refPath,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
     };

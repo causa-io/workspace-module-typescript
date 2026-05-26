@@ -99,6 +99,7 @@ describe('ModelRunCodeGeneratorForTypeScriptModelClass', () => {
         description: 'A person in the system',
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'name',
@@ -139,6 +140,7 @@ describe('ModelRunCodeGeneratorForTypeScriptModelClass', () => {
         path: addressPath,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'street',

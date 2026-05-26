@@ -20,6 +20,7 @@ describe('assignSchemaNames', () => {
         path: PATH_A,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
       [PATH_B]: {
@@ -28,6 +29,7 @@ describe('assignSchemaNames', () => {
         path: PATH_B,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
       [FOO_PATH]: {
@@ -36,6 +38,7 @@ describe('assignSchemaNames', () => {
         path: FOO_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
       [FOO_CONSTRAINT_PATH]: {
@@ -44,6 +47,7 @@ describe('assignSchemaNames', () => {
         path: FOO_CONSTRAINT_PATH,
         extensions: { constraintFor: FOO_PATH },
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
       [ENUM_C1]: {
@@ -108,6 +112,7 @@ describe('assignSchemaNames', () => {
         path: NEW_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
     };
@@ -132,6 +137,7 @@ describe('assignSchemaNames', () => {
         path: SUFFIX_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
       [SCHEMA_PATH]: {
@@ -140,6 +146,7 @@ describe('assignSchemaNames', () => {
         path: SCHEMA_PATH,
         extensions: { constraintFor: SUFFIX_PATH },
         databases: [],
+        additionalProperties: false,
         properties: [],
       },
     };

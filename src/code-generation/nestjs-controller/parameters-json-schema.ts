@@ -130,6 +130,7 @@ function registerLocationSchema(
     description: `The ${location} parameters for the \`${operation.operationId}\` operation.`,
     extensions: {},
     databases: [],
+    additionalProperties: false,
     properties: params.map((p) => ({
       name: p.name,
       type: propertyTypeForSchema(p.schema, filePath, result),

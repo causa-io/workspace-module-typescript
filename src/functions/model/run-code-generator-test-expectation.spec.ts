@@ -104,6 +104,7 @@ describe('ModelRunCodeGeneratorForTypeScriptTestExpectation', () => {
         path: schemaFile,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',

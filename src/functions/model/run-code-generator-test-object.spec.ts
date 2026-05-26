@@ -105,6 +105,7 @@ describe('ModelRunCodeGeneratorForTypeScriptTestObject', () => {
         path: schemaFile,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'name',
@@ -174,6 +175,7 @@ describe('ModelRunCodeGeneratorForTypeScriptTestObject', () => {
         path: addressPath,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'street',
