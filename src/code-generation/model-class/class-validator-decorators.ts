@@ -1,4 +1,5 @@
 import type {
+  ConstPropertyType,
   EnumSchema,
   ObjectSchema,
   Property,
@@ -54,6 +55,23 @@ const KIND_TO_DECORATORS: Record<string, DecoratorDefinition[]> = {
     },
   ],
   datetime: [{ name: 'IsDate' }],
+  null: [
+    {
+      name: 'Equals',
+      source: (_, opts) => appendCall('@Equals', 'null', opts),
+    },
+  ],
+  const: [
+    {
+      name: 'Equals',
+      source: (t, opts) =>
+        appendCall(
+          '@Equals',
+          JSON.stringify((t as ConstPropertyType).value),
+          opts,
+        ),
+    },
+  ],
   enum: [
     {
       name: 'IsIn',
@@ -66,6 +84,9 @@ const KIND_TO_DECORATORS: Record<string, DecoratorDefinition[]> = {
     { name: 'ValidateNested', source: () => '@ValidateNested()' },
   ],
   map: [{ name: 'IsObject' }],
+  // Nested arrays: combined with the outer `@IsArray()`, this `@IsArray({ each: true })` checks that every item of
+  // the outer array is itself an array. Inner-item types are not validated.
+  array: [{ name: 'IsArray' }],
 };
 
 /**
@@ -91,42 +112,43 @@ export function makeClassValidatorDecorators(
   }
 
   const target = { schema, property };
-
-  if (property.type.kind === 'null') {
-    const decorators: TypeScriptDecorator[] = [];
-    addDecoratorToList(
-      decorators,
-      target,
-      'Equals',
-      CLASS_VALIDATOR_MODULE,
-      '@Equals(null)',
-    );
-    return decorators;
-  }
-
   const decorators: TypeScriptDecorator[] = [];
+  buildValidators(decorators, target, schemas);
 
-  if (property.type.kind === 'const') {
+  // Ensure the property carries at least one `class-validator` decorator so it isn't rejected under whitelist
+  // validation. Only applied to required, non-nullable properties, otherwise the Causa `@IsNullable` / `@AllowMissing`
+  // decorators already cover the property and `@Allow` would override their behavior.
+  if (decorators.length === 0 && property.required && !property.nullable) {
     addDecoratorToList(
       decorators,
       target,
-      'Equals',
+      'Allow',
       CLASS_VALIDATOR_MODULE,
-      appendCall('@Equals', JSON.stringify(property.type.value)),
+      '@Allow()',
     );
-    return decorators;
   }
 
+  return decorators;
+}
+
+/**
+ * Populates {@link decorators} with the `class-validator` / `class-transformer` decorators that apply to the given
+ * property's type. Returns early without throwing when the type cannot be mapped to any validator, leaving `decorators`
+ * partially populated.
+ */
+function buildValidators(
+  decorators: TypeScriptDecorator[],
+  target: { schema: ObjectSchema; property: Property },
+  schemas: Record<string, Schema>,
+): void {
+  const { property } = target;
   const isArray = property.type.kind === 'array';
   let singleType: PropertyType | Schema =
     property.type.kind === 'array' ? property.type.items : property.type;
-  if (singleType.kind === 'null') {
-    return decorators;
-  }
   if (singleType.kind === 'ref') {
     const resolved = schemas[singleType.ref];
     if (!resolved) {
-      return decorators;
+      return;
     }
     singleType = resolved;
   }
@@ -183,8 +205,6 @@ export function makeClassValidatorDecorators(
       `@Type(() => ${typeName})`,
     );
   }
-
-  return decorators;
 }
 
 /**

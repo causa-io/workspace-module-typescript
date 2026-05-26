@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Ensure every generated class property carries at least one `class-validator` decorator, so properties are not rejected under `whitelist` validation. Required, non-nullable properties without a matching validator fall back to `@Allow()`.
+
 ## v0.23.0-beta.3 (2026-05-22)
 
 Features:
