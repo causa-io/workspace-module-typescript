@@ -191,4 +191,75 @@ describe('makeClassValidatorDecorators', () => {
       '@IsUUID(undefined, { each: true })',
     ]);
   });
+
+  it('should add @IsArray() and @IsArray({ each: true }) for nested arrays', () => {
+    const property = makeProperty({
+      kind: 'array',
+      items: {
+        kind: 'array',
+        items: { kind: 'primitive', type: 'string' },
+        itemNullable: false,
+      },
+      itemNullable: false,
+    });
+
+    const actual = makeClassValidatorDecorators(SCHEMA, property, {}).map(
+      (d) => d.source,
+    );
+
+    expect(actual).toEqual(['@IsArray()', '@IsArray({ each: true })']);
+  });
+
+  it('should add @IsArray and @Equals(null, { each: true }) for arrays of null', () => {
+    const property = makeProperty({
+      kind: 'array',
+      items: { kind: 'null' },
+      itemNullable: false,
+    });
+
+    const actual = makeClassValidatorDecorators(SCHEMA, property, {}).map(
+      (d) => d.source,
+    );
+
+    expect(actual).toEqual(['@IsArray()', '@Equals(null, { each: true })']);
+  });
+
+  it('should add @Allow() fallback when no validator applies, only for required and non-nullable properties', () => {
+    // A ref to a union schema has no entry in the validator map, so the validators list ends up empty.
+    const UNION_PATH = '/test.json#/$defs/MyUnion';
+    const type: PropertyType = { kind: 'ref', ref: UNION_PATH };
+    const schemas: Record<string, Schema> = {
+      [UNION_PATH]: {
+        kind: 'union',
+        name: 'MyUnion',
+        path: UNION_PATH,
+        extensions: {},
+        types: [
+          { kind: 'primitive', type: 'string' },
+          { kind: 'primitive', type: 'integer' },
+        ],
+      },
+    };
+
+    const requiredNonNullable = makeClassValidatorDecorators(
+      SCHEMA,
+      makeProperty(type, { required: true, nullable: false }),
+      schemas,
+    ).map((d) => d.source);
+    expect(requiredNonNullable).toEqual(['@Allow()']);
+
+    const optional = makeClassValidatorDecorators(
+      SCHEMA,
+      makeProperty(type, { required: false, nullable: false }),
+      schemas,
+    );
+    expect(optional).toBeEmpty();
+
+    const nullable = makeClassValidatorDecorators(
+      SCHEMA,
+      makeProperty(type, { required: true, nullable: true }),
+      schemas,
+    );
+    expect(nullable).toBeEmpty();
+  });
 });
