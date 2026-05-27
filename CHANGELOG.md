@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.23.0-beta.4 (2026-05-27)
+
 Features:
 
 - Emit a TypeScript index signature on generated model classes when the source `ObjectSchema` declares `additionalProperties`.
