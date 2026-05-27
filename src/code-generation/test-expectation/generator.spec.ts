@@ -59,6 +59,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: schemaUri,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',
@@ -258,6 +259,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: schemaUri,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'name',
@@ -288,6 +290,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: CONSTRAINT_PATH,
         extensions: { constraintFor: schemaUri },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'age',
@@ -351,6 +354,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: schemaUri,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',
@@ -419,6 +423,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: schemaUri,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',
@@ -449,6 +454,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: NESTED_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'field1',
@@ -538,6 +544,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: schemaUri,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',
@@ -575,6 +582,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: ENTITY_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'prop1',
@@ -669,6 +677,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: schemaUri,
         extensions: { entityEvent: true },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',
@@ -706,6 +715,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: ENTITY_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'prop1',
@@ -801,6 +811,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: schemaUri,
         extensions: { entityEvent: true },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',
@@ -838,6 +849,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: ENTITY_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'prop1',
@@ -869,6 +881,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: NOT_NULL_PATH,
         extensions: { constraintFor: ENTITY_PATH },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'prop2',
@@ -889,6 +902,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
           entityPropertyChanges: '*',
         },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'name',
@@ -909,6 +923,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
           entityPropertyChanges: ['prop2'],
         },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'name',
@@ -1077,6 +1092,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: schemaUri,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'name',
@@ -1100,6 +1116,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: ENTITY_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',
@@ -1123,6 +1140,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: VARIANT_A_PATH,
         extensions: { constraintFor: ENTITY_PATH },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'state',
@@ -1139,6 +1157,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
         path: VARIANT_B_PATH,
         extensions: { constraintFor: ENTITY_PATH },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'state',
@@ -1169,6 +1188,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
           entityPropertyChanges: ['state'],
         },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'data',

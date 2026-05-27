@@ -293,6 +293,16 @@ export class TypeScriptModelClassGenerator extends BaseTypeScriptCodeGenerator {
       lines.push(...this.emitProperty(schema, property, schemaDecorators));
     }
 
+    const { additionalProperties } = schema;
+    if (additionalProperties !== false) {
+      const valueType =
+        additionalProperties === true
+          ? 'any'
+          : `${this.sourceForPropertyType(additionalProperties)} | any`;
+      lines.push('');
+      lines.push(`[key: string]: ${valueType};`);
+    }
+
     lines.push(`}`);
 
     return lines.join('\n');

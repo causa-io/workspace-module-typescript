@@ -97,6 +97,7 @@ describe('makeParametersSchemasForSpecification', () => {
         description: 'The query parameters for the `carList` operation.',
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'limit',
@@ -115,6 +116,7 @@ describe('makeParametersSchemasForSpecification', () => {
         description: 'The path parameters for the `carGet` operation.',
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'id',
@@ -133,6 +135,7 @@ describe('makeParametersSchemasForSpecification', () => {
         description: 'The query parameters for the `carGet` operation.',
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'updatedAt',

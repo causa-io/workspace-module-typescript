@@ -32,6 +32,7 @@ const SCHEMAS: Record<string, Schema> = {
       ],
     },
     databases: [],
+    additionalProperties: false,
     properties: [
       {
         name: 'myProperty',
@@ -163,6 +164,7 @@ const SCHEMAS: Record<string, Schema> = {
     path: MY_CHILD_CLASS_PATH,
     extensions: {},
     databases: [],
+    additionalProperties: false,
     properties: [
       {
         name: 'myChildProperty',
@@ -204,6 +206,7 @@ const SCHEMAS: Record<string, Schema> = {
     description: '🗜️',
     extensions: { constraintFor: ROOT },
     databases: [],
+    additionalProperties: false,
     properties: [
       {
         name: 'nullableProperty',
@@ -365,6 +368,7 @@ describe('TypeScriptModelClassGenerator', () => {
         path: ROOT,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'dummyRefToRule',
@@ -382,6 +386,7 @@ describe('TypeScriptModelClassGenerator', () => {
         description: '🗜️',
         extensions: { constraintFor: ROOT },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'nullableProperty',
@@ -415,6 +420,123 @@ describe('TypeScriptModelClassGenerator', () => {
     expect(source).toContain('export class MyClass');
   });
 
+  it('should not emit an index signature when additionalProperties is false', async () => {
+    const schemas: Record<string, Schema> = {
+      [ROOT]: {
+        kind: 'object',
+        name: 'StrictClass',
+        path: ROOT,
+        extensions: {},
+        databases: [],
+        additionalProperties: false,
+        properties: [
+          {
+            name: 'declared',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+    };
+
+    const { source } = await generate(schemas);
+
+    expect(source).toContain('readonly declared!: string;');
+    expect(source).not.toContain('[key: string]');
+  });
+
+  it('should emit an `any` index signature when additionalProperties is true', async () => {
+    const schemas: Record<string, Schema> = {
+      [ROOT]: {
+        kind: 'object',
+        name: 'OpenClass',
+        path: ROOT,
+        extensions: {},
+        databases: [],
+        additionalProperties: true,
+        properties: [
+          {
+            name: 'declared',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+    };
+
+    const { source } = await generate(schemas);
+
+    expect(source).toContain('readonly declared!: string;');
+    expect(source).toContain('[key: string]: any;');
+  });
+
+  it('should emit a typed index signature when additionalProperties is a property type', async () => {
+    const schemas: Record<string, Schema> = {
+      [ROOT]: {
+        kind: 'object',
+        name: 'TypedExtrasClass',
+        path: ROOT,
+        extensions: {},
+        databases: [],
+        additionalProperties: { kind: 'primitive', type: 'integer' },
+        properties: [
+          {
+            name: 'declared',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+    };
+
+    const { source } = await generate(schemas);
+
+    expect(source).toContain('readonly declared!: string;');
+    expect(source).toContain('[key: string]: number | any;');
+  });
+
+  it('should emit a typed index signature referencing another generated class', async () => {
+    const childPath = `${ROOT}#/$defs/Child`;
+    const schemas: Record<string, Schema> = {
+      [ROOT]: {
+        kind: 'object',
+        name: 'Parent',
+        path: ROOT,
+        extensions: {},
+        databases: [],
+        additionalProperties: { kind: 'ref', ref: childPath },
+        properties: [],
+      },
+      [childPath]: {
+        kind: 'object',
+        name: 'Child',
+        path: childPath,
+        extensions: {},
+        databases: [],
+        additionalProperties: false,
+        properties: [
+          {
+            name: 'value',
+            type: { kind: 'primitive', type: 'string' },
+            nullable: false,
+            required: true,
+            extensions: {},
+          },
+        ],
+      },
+    };
+
+    const { source } = await generate(schemas);
+
+    expect(source).toContain('[key: string]: Child | any;');
+  });
+
   it('should not re-emit schemas listed in existingSchemas and import them instead', async () => {
     const externalEnumPath = join(tmpDir, 'external/state.yaml#/$defs/State');
     const externalFile = join(tmpDir, 'external/generated.ts');
@@ -434,6 +556,7 @@ describe('TypeScriptModelClassGenerator', () => {
         path: ownerPath,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'state',

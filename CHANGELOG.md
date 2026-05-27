@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Emit a TypeScript index signature on generated model classes when the source `ObjectSchema` declares `additionalProperties`.
+
 Fixes:
 
 - Ensure every generated class property carries at least one `class-validator` decorator, so properties are not rejected under `whitelist` validation. Required, non-nullable properties without a matching validator fall back to `@Allow()`.

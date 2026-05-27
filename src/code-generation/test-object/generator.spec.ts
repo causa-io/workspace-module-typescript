@@ -49,6 +49,7 @@ describe('TypeScriptTestObjectGenerator', () => {
         description: '🙈',
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'stringProp',
@@ -227,6 +228,7 @@ describe('TypeScriptTestObjectGenerator', () => {
         path: CHILD_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'childString',
@@ -317,6 +319,7 @@ describe('TypeScriptTestObjectGenerator', () => {
         path: TEST_PATH,
         extensions: {},
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'name',
@@ -361,6 +364,7 @@ describe('TypeScriptTestObjectGenerator', () => {
         path: CONSTRAINT_PATH,
         extensions: { constraintFor: TEST_PATH },
         databases: [],
+        additionalProperties: false,
         properties: [
           {
             name: 'age',
