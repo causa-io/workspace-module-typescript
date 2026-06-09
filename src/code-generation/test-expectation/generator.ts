@@ -348,7 +348,7 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
     const eventNameMatcher = `expect.toBeOneOf(${JSON.stringify(eventNames)})`;
     const entityMatchers = this.emitExpectedEntityMatchers(
       variants,
-      schema.extensions.entityPropertyChanges as string[] | '*' | undefined,
+      schema.extensions.entityPropertyChanges,
     );
 
     blocks.push(`export async function ${functionName}(
