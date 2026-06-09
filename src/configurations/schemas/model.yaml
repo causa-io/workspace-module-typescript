@@ -5,6 +5,7 @@ type: object
 description: Configuration for model code generators provided by the TypeScript module.
 properties:
   model:
+    title: TypeScriptModel
     type: object
     properties:
       constraintSuffix:
@@ -17,8 +18,11 @@ properties:
       codeGenerators:
         type: array
         items:
+          title: CodeGenerator
           anyOf:
-            - type: object
+            - title: CustomCodeGenerator
+              type: object
+              description: Configuration for a custom code generator.
               properties:
                 generator:
                   type: string
