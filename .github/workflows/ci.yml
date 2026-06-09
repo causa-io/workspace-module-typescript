@@ -32,6 +32,9 @@ jobs:
             .causa/node_modules
           key: ${{ runner.os }}-${{ hashFiles('causa.yaml') }}
 
+      - name: 🐛 Flatten Causa dependencies
+        run: cs init || cd .causa && npm dedup
+
       - name: 🎉 Initialize
         run: cs init
 
@@ -76,6 +79,9 @@ jobs:
             .causa/package*
             .causa/node_modules
           key: ${{ runner.os }}-${{ hashFiles('causa.yaml') }}
+
+      - name: 🐛 Flatten Causa dependencies
+        run: cs init || cd .causa && npm dedup
 
       - name: 🎉 Initialize
         run: cs init
