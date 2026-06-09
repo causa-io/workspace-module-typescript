@@ -5,9 +5,11 @@ type: object
 description: Refinement of the project configuration with known JavaScript and TypeScript languages.
 properties:
   project:
+    title: TypeScriptProject
     type: object
     properties:
       language:
+        title: Language
         anyOf:
           - type: string
 

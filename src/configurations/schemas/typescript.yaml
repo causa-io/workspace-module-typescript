@@ -101,6 +101,7 @@ properties:
                   The target version for specific packages when updating dependencies.
                   Keys are package names, values are target versions.
                 additionalProperties:
+                  title: JavaScriptDependenciesUpdatePackageTarget
                   type: string
                   enum:
                     - latest
@@ -143,4 +144,6 @@ properties:
 
 $defs:
   _TemplateString:
-    type: string
+    title: TemplateString
+    oneOf:
+      - type: string
