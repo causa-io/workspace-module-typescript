@@ -206,6 +206,7 @@ describe('TypeScriptTestObjectGenerator', () => {
       },
       [UNION_PATH]: {
         kind: 'union',
+        combiner: 'oneOf',
         name: 'MyUnion',
         path: UNION_PATH,
         extensions: {},

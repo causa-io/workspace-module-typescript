@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v1.0.0 (2026-06-09)
+
+This release includes all the changes from the `v0.23.0-beta.*` version.
+
 ## v0.23.0-beta.4 (2026-05-27)
 
 Features:

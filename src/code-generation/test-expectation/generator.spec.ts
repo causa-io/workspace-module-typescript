@@ -474,6 +474,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
       },
       [UNION_PATH]: {
         kind: 'union',
+        combiner: 'oneOf',
         name: 'UnionProp',
         path: UNION_PATH,
         extensions: {},
@@ -1170,6 +1171,7 @@ describe('TypeScriptTestExpectationGenerator', () => {
       },
       [UNION_PATH]: {
         kind: 'union',
+        combiner: 'oneOf',
         name: 'EntityVariantUnion',
         path: UNION_PATH,
         extensions: {},

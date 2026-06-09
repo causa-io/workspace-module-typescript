@@ -2,7 +2,7 @@ import {
   ProjectBuildArtefact,
   type ServerlessFunctionsConfiguration,
 } from '@causa/workspace-core';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { createWriteStream } from 'fs';
 import { mkdir } from 'fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -81,7 +81,7 @@ export class ProjectBuildArtefactForTypeScriptServerlessFunctions extends Projec
     globPatterns: string[],
   ): Promise<void> {
     await mkdir(dirname(archivePath), { recursive: true });
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
     const output = createWriteStream(archivePath);
 
     return new Promise((resolve, reject) => {
