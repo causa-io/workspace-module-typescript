@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.0.1 (2026-06-10)
+
 Fixes:
 
 - Alias all external-package imports in generated TypeScript code under a module-qualified name (e.g. `IsArray as _ClassValidatorIsArray`), so generated symbols can no longer clash with schema names or with identically-named symbols from other external modules.
