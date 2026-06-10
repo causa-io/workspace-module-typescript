@@ -1,6 +1,8 @@
 import type { GeneratedSchema, GeneratedSchemas } from '@causa/workspace-core';
 import { dirname, resolve } from 'path';
 import {
+  externalImportSpec,
+  externalSymbolAlias,
   formatAndWriteTypeScript,
   LEADING_COMMENT,
   mergeImports,
@@ -184,10 +186,10 @@ function addNestJsImport(
   symbol: string,
   isType = false,
 ): string {
-  const prefixed = `_${symbol}`;
-  const importSpec = `${isType ? 'type ' : ''}${symbol} as ${prefixed}`;
-  mergeImports(imports, { '@nestjs/common': [importSpec] });
-  return prefixed;
+  mergeImports(imports, {
+    ['@nestjs/common']: [externalImportSpec('@nestjs/common', symbol, isType)],
+  });
+  return externalSymbolAlias('@nestjs/common', symbol);
 }
 
 /**

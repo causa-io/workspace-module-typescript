@@ -55,16 +55,22 @@ describe('makeClassValidatorDecorators', () => {
       (d) => d.source,
     );
 
-    expect(actual).toEqual(['@Equals(null)']);
+    expect(actual).toEqual(['@_ClassValidatorEquals(null)']);
   });
 
   it.each<[PropertyType, string]>([
     [
       { kind: 'const', type: 'string', value: 'fixedValue' },
-      '@Equals("fixedValue")',
+      '@_ClassValidatorEquals("fixedValue")',
     ],
-    [{ kind: 'const', type: 'boolean', value: true }, '@Equals(true)'],
-    [{ kind: 'const', type: 'integer', value: 42 }, '@Equals(42)'],
+    [
+      { kind: 'const', type: 'boolean', value: true },
+      '@_ClassValidatorEquals(true)',
+    ],
+    [
+      { kind: 'const', type: 'integer', value: 42 },
+      '@_ClassValidatorEquals(42)',
+    ],
   ])('should add @Equals for const properties (%j)', (type, expected) => {
     const property = makeProperty(type);
 
@@ -76,10 +82,10 @@ describe('makeClassValidatorDecorators', () => {
   });
 
   it.each<[PropertyType, string]>([
-    [{ kind: 'primitive', type: 'string' }, '@IsString()'],
-    [{ kind: 'primitive', type: 'integer' }, '@IsInt()'],
-    [{ kind: 'primitive', type: 'number' }, '@IsNumber()'],
-    [{ kind: 'primitive', type: 'boolean' }, '@IsBoolean()'],
+    [{ kind: 'primitive', type: 'string' }, '@_ClassValidatorIsString()'],
+    [{ kind: 'primitive', type: 'integer' }, '@_ClassValidatorIsInt()'],
+    [{ kind: 'primitive', type: 'number' }, '@_ClassValidatorIsNumber()'],
+    [{ kind: 'primitive', type: 'boolean' }, '@_ClassValidatorIsBoolean()'],
   ])(
     'should add the corresponding decorator for primitive %j',
     (type, expected) => {
@@ -100,7 +106,7 @@ describe('makeClassValidatorDecorators', () => {
       (d) => d.source,
     );
 
-    expect(actual).toEqual(['@IsUUID(undefined)']);
+    expect(actual).toEqual(['@_ClassValidatorIsUuid(undefined)']);
   });
 
   it('should add @IsDate and @Type(() => Date) for datetime', () => {
@@ -110,7 +116,10 @@ describe('makeClassValidatorDecorators', () => {
       (d) => d.source,
     );
 
-    expect(actual).toIncludeSameMembers(['@IsDate()', '@Type(() => Date)']);
+    expect(actual).toIncludeSameMembers([
+      '@_ClassValidatorIsDate()',
+      '@_ClassTransformerType(() => Date)',
+    ]);
   });
 
   it('should resolve refs to enums and add @IsIn with the enum values', () => {
@@ -131,7 +140,7 @@ describe('makeClassValidatorDecorators', () => {
       (d) => d.source,
     );
 
-    expect(actual).toEqual(['@IsIn(["a","b","c"])']);
+    expect(actual).toEqual(['@_ClassValidatorIsIn(["a","b","c"])']);
   });
 
   it('should add nested-object decorators when the ref resolves to an object', () => {
@@ -157,10 +166,10 @@ describe('makeClassValidatorDecorators', () => {
     );
 
     expect(actual).toEqual([
-      '@IsObject()',
-      '@ValidateNested()',
-      '@IsDefined()',
-      '@Type(() => MyClass)',
+      '@_ClassValidatorIsObject()',
+      '@_ClassValidatorValidateNested()',
+      '@_ClassValidatorIsDefined()',
+      '@_ClassTransformerType(() => MyClass)',
     ]);
   });
 
@@ -174,7 +183,7 @@ describe('makeClassValidatorDecorators', () => {
       (d) => d.source,
     );
 
-    expect(actual).toEqual(['@IsObject()']);
+    expect(actual).toEqual(['@_ClassValidatorIsObject()']);
   });
 
   it('should add @IsArray and the array variant of the item validator', () => {
@@ -189,8 +198,8 @@ describe('makeClassValidatorDecorators', () => {
     );
 
     expect(actual).toEqual([
-      '@IsArray()',
-      '@IsUUID(undefined, { each: true })',
+      '@_ClassValidatorIsArray()',
+      '@_ClassValidatorIsUuid(undefined, { each: true })',
     ]);
   });
 
@@ -209,7 +218,10 @@ describe('makeClassValidatorDecorators', () => {
       (d) => d.source,
     );
 
-    expect(actual).toEqual(['@IsArray()', '@IsArray({ each: true })']);
+    expect(actual).toEqual([
+      '@_ClassValidatorIsArray()',
+      '@_ClassValidatorIsArray({ each: true })',
+    ]);
   });
 
   it('should add @IsArray and @Equals(null, { each: true }) for arrays of null', () => {
@@ -223,7 +235,10 @@ describe('makeClassValidatorDecorators', () => {
       (d) => d.source,
     );
 
-    expect(actual).toEqual(['@IsArray()', '@Equals(null, { each: true })']);
+    expect(actual).toEqual([
+      '@_ClassValidatorIsArray()',
+      '@_ClassValidatorEquals(null, { each: true })',
+    ]);
   });
 
   it('should add @Allow() fallback when no validator applies, only for required and non-nullable properties', () => {
@@ -249,7 +264,7 @@ describe('makeClassValidatorDecorators', () => {
       makeProperty(type, { required: true, nullable: false }),
       schemas,
     ).map((d) => d.source);
-    expect(requiredNonNullable).toEqual(['@Allow()']);
+    expect(requiredNonNullable).toEqual(['@_ClassValidatorAllow()']);
 
     const optional = makeClassValidatorDecorators(
       SCHEMA,

@@ -310,6 +310,38 @@ export function topologicalSort(
 }
 
 /**
+ * Returns the local alias under which a symbol imported from an external module is exposed in generated code.
+ *
+ * @param module The external module specifier (e.g. `@causa/runtime`).
+ * @param symbol The exported symbol to import.
+ * @returns The local alias (e.g. `_CausaRuntimeIsNullable`).
+ */
+export function externalSymbolAlias(module: string, symbol: string): string {
+  const segments = module.replace(/^@/, '').split('/');
+  const base = module.startsWith('@')
+    ? segments.slice(0, 2).join('-')
+    : segments[0];
+  return `_${pascalCase(`${base}-${symbol}`)}`;
+}
+
+/**
+ * Returns the import specifier (the text inside the `import { ... }` braces) that binds an external `symbol` to its
+ * {@link externalSymbolAlias}.
+ *
+ * @param module The external module specifier (e.g. `@causa/runtime`).
+ * @param symbol The exported symbol to import.
+ * @param isType Whether to emit a type-only import.
+ * @returns The import specifier text (e.g. `type IsNullable as _CausaRuntimeIsNullable`).
+ */
+export function externalImportSpec(
+  module: string,
+  symbol: string,
+  isType = false,
+): string {
+  return `${isType ? 'type ' : ''}${symbol} as ${externalSymbolAlias(module, symbol)}`;
+}
+
+/**
  * Merges the given symbol additions into `target` in place. Keys are module specifiers or absolute file paths.
  */
 export function mergeImports(
@@ -424,6 +456,32 @@ export abstract class BaseTypeScriptCodeGenerator {
    */
   protected addImports(imports: Record<string, string[]>): void {
     mergeImports(this.imports, imports);
+  }
+
+  /**
+   * Records an aliased import for `symbol` from the external module `module` and returns the local alias to reference
+   * it by in generated code. Use this for every symbol pulled from a package so it cannot clash with schema names or
+   * with symbols from other external modules.
+   *
+   * @param module The external module specifier (e.g. `@causa/runtime`).
+   * @param symbol The exported symbol to import.
+   * @param options Additional options.
+   * @returns The alias to use in generated source.
+   */
+  protected importExternal(
+    module: string,
+    symbol: string,
+    options: {
+      /**
+       * Whether to emit a type-only import.
+       */
+      type?: boolean;
+    } = {},
+  ): string {
+    this.addImports({
+      [module]: [externalImportSpec(module, symbol, options.type)],
+    });
+    return externalSymbolAlias(module, symbol);
   }
 
   /**

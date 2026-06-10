@@ -33,9 +33,18 @@ describe('makePrimitiveTypeTransformerDecorators', () => {
   });
 
   it.each<[PropertyType, string]>([
-    [{ kind: 'primitive', type: 'integer' }, '@Type(() => Number)'],
-    [{ kind: 'primitive', type: 'number' }, '@Type(() => Number)'],
-    [{ kind: 'primitive', type: 'boolean' }, '@Type(() => Boolean)'],
+    [
+      { kind: 'primitive', type: 'integer' },
+      '@_ClassTransformerType(() => Number)',
+    ],
+    [
+      { kind: 'primitive', type: 'number' },
+      '@_ClassTransformerType(() => Number)',
+    ],
+    [
+      { kind: 'primitive', type: 'boolean' },
+      '@_ClassTransformerType(() => Boolean)',
+    ],
   ])(
     'should add the constructor-based @Type for primitive %j',
     (type, expected) => {
@@ -73,7 +82,7 @@ describe('makePrimitiveTypeTransformerDecorators', () => {
       (d) => d.source,
     );
 
-    expect(actual).toEqual(['@Type(() => Number)']);
+    expect(actual).toEqual(['@_ClassTransformerType(() => Number)']);
   });
 
   it.each<PropertyType>([

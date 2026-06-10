@@ -1,8 +1,13 @@
 import type { ObjectSchema, Property } from '@causa/workspace-core';
+import { externalImportSpec, externalSymbolAlias } from '../base.js';
 import type { TypeScriptDecorator } from './generator.js';
 
 /**
  * Adds a decorator to the given list, respecting the `tsExcludedDecorators` extension on the class and property.
+ *
+ * When `source` is a function, the decorator's own symbol is imported from `modulePath` under a module-qualified alias
+ * (see {@link externalSymbolAlias}), and the alias is passed to `source`. When `source` is a string, the symbol is
+ * imported under its bare name.
  *
  * @param decorators The list of decorators to append to.
  * @param target The class or property context the decorator is being generated for.
@@ -16,7 +21,7 @@ export function addDecoratorToList(
   target: { schema: ObjectSchema; property?: Property },
   name: string,
   modulePath: string,
-  source: string,
+  source: string | ((alias: string) => string),
   options: { imports?: Record<string, string[]> } = {},
 ): void {
   const classExcluded = (target.schema.extensions.tsExcludedDecorators ??
@@ -37,13 +42,18 @@ export function addDecoratorToList(
   for (const [path, symbols] of Object.entries(options.imports ?? {})) {
     imports[path] = [...symbols];
   }
+  const useAlias = typeof source === 'function';
+  const spec = useAlias ? externalImportSpec(modulePath, name) : name;
   if (imports[modulePath]) {
-    if (!imports[modulePath].includes(name)) {
-      imports[modulePath].push(name);
+    if (!imports[modulePath].includes(spec)) {
+      imports[modulePath].push(spec);
     }
   } else {
-    imports[modulePath] = [name];
+    imports[modulePath] = [spec];
   }
 
-  decorators.push({ source, imports });
+  decorators.push({
+    source: useAlias ? source(externalSymbolAlias(modulePath, name)) : source,
+    imports,
+  });
 }
