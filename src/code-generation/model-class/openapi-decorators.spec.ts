@@ -69,8 +69,13 @@ describe('makeOpenApiDecorators', () => {
 
     expect(actual).toEqual([
       {
-        source: '@ApiExtraModels(MyClass)',
-        imports: { '@nestjs/swagger': ['getSchemaPath', 'ApiExtraModels'] },
+        source: '@_NestjsSwaggerApiExtraModels(MyClass)',
+        imports: {
+          '@nestjs/swagger': [
+            'getSchemaPath as _NestjsSwaggerGetSchemaPath',
+            'ApiExtraModels as _NestjsSwaggerApiExtraModels',
+          ],
+        },
       },
     ]);
   });
@@ -98,7 +103,7 @@ describe('makeOpenApiDecorators', () => {
         (d) => d.source,
       );
 
-      expect(actual).toEqual([`@ApiProperty({ ${expected} })`]);
+      expect(actual).toEqual([`@_NestjsSwaggerApiProperty({ ${expected} })`]);
     },
   );
 
@@ -113,7 +118,7 @@ describe('makeOpenApiDecorators', () => {
     );
 
     expect(actual).toEqual([
-      '@ApiProperty({ description: "A description", required: false, type: "string" })',
+      '@_NestjsSwaggerApiProperty({ description: "A description", required: false, type: "string" })',
     ]);
   });
 
@@ -128,7 +133,7 @@ describe('makeOpenApiDecorators', () => {
     );
 
     expect(actual).toEqual([
-      '@ApiProperty({ required: false, oneOf: [{ type: "string" }, { type: "null" }] })',
+      '@_NestjsSwaggerApiProperty({ required: false, oneOf: [{ type: "string" }, { type: "null" }] })',
     ]);
   });
 
@@ -144,7 +149,7 @@ describe('makeOpenApiDecorators', () => {
     );
 
     expect(actual).toEqual([
-      '@ApiProperty({ required: false, type: "array", items: { type: "string" } })',
+      '@_NestjsSwaggerApiProperty({ required: false, type: "array", items: { type: "string" } })',
     ]);
   });
 
@@ -167,7 +172,7 @@ describe('makeOpenApiDecorators', () => {
     );
 
     expect(actual).toEqual([
-      '@ApiProperty({ required: false, type: "string", enum: ["a","b"] })',
+      '@_NestjsSwaggerApiProperty({ required: false, type: "string", enum: ["a","b"] })',
     ]);
   });
 
@@ -182,7 +187,7 @@ describe('makeOpenApiDecorators', () => {
     );
 
     expect(actual).toEqual([
-      '@ApiProperty({ selfRequired: false, type: "object", additionalProperties: { type: "string" } })',
+      '@_NestjsSwaggerApiProperty({ selfRequired: false, type: "object", additionalProperties: { type: "string" } })',
     ]);
   });
 });

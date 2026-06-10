@@ -32,7 +32,7 @@ export function makeCausaValidatorDecorators(
       target,
       'IsNullable',
       CAUSA_MODULE,
-      '@IsNullable()',
+      (alias) => `@${alias}()`,
     );
   }
 
@@ -42,7 +42,7 @@ export function makeCausaValidatorDecorators(
       target,
       'AllowMissing',
       CAUSA_MODULE,
-      '@AllowMissing()',
+      (alias) => `@${alias}()`,
     );
   }
 

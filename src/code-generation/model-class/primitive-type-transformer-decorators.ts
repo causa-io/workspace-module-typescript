@@ -51,7 +51,7 @@ export function makePrimitiveTypeTransformerDecorators(
     { schema, property },
     'Type',
     CLASS_TRANSFORMER_MODULE,
-    `@Type(() => ${constructor})`,
+    (alias) => `@${alias}(() => ${constructor})`,
   );
   return decorators;
 }

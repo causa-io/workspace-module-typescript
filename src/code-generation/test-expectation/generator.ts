@@ -165,17 +165,23 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
       this.addImports({ [base.file]: [base.name] });
     }
 
-    this.addImports({
-      '@causa/runtime': [
-        'type Transaction',
-        'type TransactionRunner',
-        'type ReadOnlyStateTransaction',
-      ],
+    const transaction = this.importExternal('@causa/runtime', 'Transaction', {
+      type: true,
     });
+    const transactionRunner = this.importExternal(
+      '@causa/runtime',
+      'TransactionRunner',
+      { type: true },
+    );
+    const readOnlyStateTransaction = this.importExternal(
+      '@causa/runtime',
+      'ReadOnlyStateTransaction',
+      { type: true },
+    );
 
     const existFunctionName = `expect${this.functionBaseName(schema)}`;
     blocks.push(`export async function ${existFunctionName}(
-  runner: TransactionRunner<Transaction, ReadOnlyStateTransaction>,
+  runner: ${transactionRunner}<${transaction}, ${readOnlyStateTransaction}>,
   expected: Partial<${expectationModelClass.name}>,
 ): Promise<${expectationModelClass.name}> {
   const actual = await runner.run({ readOnly: true }, (t) => t.get(${entityClassName}, expected));
@@ -191,7 +197,7 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
     if (!isConstraint) {
       const notExistName = `${existFunctionName}NotToExist`;
       blocks.push(`export async function ${notExistName}(
-  runner: TransactionRunner<Transaction, ReadOnlyStateTransaction>,
+  runner: ${transactionRunner}<${transaction}, ${readOnlyStateTransaction}>,
   key: Partial<${expectationModelClass.name}>,
 ): Promise<void> {
   const actual = await runner.run({ readOnly: true }, (t) => t.get(${entityClassName}, key));
@@ -213,15 +219,17 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
   ): string[] {
     const eventClass = findModelClass(this.modelClassSchemas, schema.path);
     this.addImports({ [eventClass.file]: [eventClass.name] });
-    this.addImports({
-      '@causa/runtime/nestjs/testing': ['type EventFixture'],
-    });
+    const eventFixtureType = this.importExternal(
+      '@causa/runtime/nestjs/testing',
+      'EventFixture',
+      { type: true },
+    );
 
     const expectName = `expect${this.functionBaseName(schema)}`;
     const expectNoName = `expectNo${this.functionBaseName(schema)}`;
 
     blocks.push(`export async function ${expectName}(
-  eventFixture: EventFixture,
+  eventFixture: ${eventFixtureType},
   expected: Partial<${eventClass.name}> = {},
 ): Promise<void> {
   await eventFixture.expectEvent(${JSON.stringify(eventTopic.id)}, {
@@ -230,7 +238,7 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
   });
 }`);
     blocks.push(`export async function ${expectNoName}(
-  eventFixture: EventFixture,
+  eventFixture: ${eventFixtureType},
 ): Promise<void> {
   await eventFixture.expectNoEvent(${JSON.stringify(eventTopic.id)});
 }`);
@@ -249,18 +257,23 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
     const [dataObject] = this.eventDataObjects(schema);
     const entityClass = findModelClass(this.modelClassSchemas, dataObject.path);
     this.addImports({ [entityClass.file]: [entityClass.name] });
-    this.addImports({
-      '@causa/runtime/testing': ['VersionedEntityFixture'],
-      '@causa/runtime/nestjs/testing': ['type AppFixture'],
-    });
+    const versionedEntityFixture = this.importExternal(
+      '@causa/runtime/testing',
+      'VersionedEntityFixture',
+    );
+    const appFixture = this.importExternal(
+      '@causa/runtime/nestjs/testing',
+      'AppFixture',
+      { type: true },
+    );
 
     const functionName = `expect${this.functionBaseName(dataObject)}NotMutated`;
     blocks.push(`export async function ${functionName}(
-  fixture: AppFixture,
+  fixture: ${appFixture},
   entity: ${entityClass.name},
   tests: { expectNoEvent?: boolean } = {},
 ): Promise<void> {
-  await fixture.get(VersionedEntityFixture).expectNoMutation(entity, {
+  await fixture.get(${versionedEntityFixture}).expectNoMutation(entity, {
     expectNoEventInTopic: tests.expectNoEvent ? ${JSON.stringify(eventTopic.id)} : undefined,
   });
 }`);
@@ -337,12 +350,21 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
       );
     }
 
-    this.addImports({
-      'jest-extended': [],
-      '@causa/runtime': ['type EventAttributes'],
-      '@causa/runtime/testing': ['VersionedEntityFixture'],
-      '@causa/runtime/nestjs/testing': ['type AppFixture'],
-    });
+    this.addImports({ 'jest-extended': [] });
+    const eventAttributes = this.importExternal(
+      '@causa/runtime',
+      'EventAttributes',
+      { type: true },
+    );
+    const versionedEntityFixture = this.importExternal(
+      '@causa/runtime/testing',
+      'VersionedEntityFixture',
+    );
+    const appFixture = this.importExternal(
+      '@causa/runtime/nestjs/testing',
+      'AppFixture',
+      { type: true },
+    );
 
     const functionName = `expect${this.functionBaseName(schema)}`;
     const eventNameMatcher = `expect.toBeOneOf(${JSON.stringify(eventNames)})`;
@@ -352,15 +374,15 @@ export class TypeScriptTestExpectationGenerator extends BaseTypeScriptCodeGenera
     );
 
     blocks.push(`export async function ${functionName}(
-  fixture: AppFixture,
+  fixture: ${appFixture},
   before: Partial<${entityClass.name}>,
   updates: Partial<${variantClasses.map((c) => c.name).join(' | ')}> = {},
   tests: {
     matchesHttpResponse?: object;
-    eventAttributes?: EventAttributes;
+    eventAttributes?: ${eventAttributes};
   } = {},
 ): Promise<${entityClass.name}> {
-  return await fixture.get(VersionedEntityFixture).expectMutated(
+  return await fixture.get(${versionedEntityFixture}).expectMutated(
     { type: ${entityClass.name}, entity: before },
     {
       expectedEntity: ${entityMatchers},

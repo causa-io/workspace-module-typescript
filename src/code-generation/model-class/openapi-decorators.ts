@@ -6,6 +6,7 @@ import type {
   PropertyType,
   Schema,
 } from '@causa/workspace-core';
+import { externalImportSpec, externalSymbolAlias } from '../base.js';
 import type { TypeScriptDecorator } from './generator.js';
 import { addDecoratorToList } from './utilities.js';
 
@@ -68,14 +69,19 @@ function classDecorators(
   }
 
   const decorators: TypeScriptDecorator[] = [];
-  const source = `@ApiExtraModels(${[...refs].join(', ')})`;
   addDecoratorToList(
     decorators,
     { schema },
     'ApiExtraModels',
     NESTJS_SWAGGER_MODULE,
-    source,
-    { imports: { [NESTJS_SWAGGER_MODULE]: ['getSchemaPath'] } },
+    (alias) => `@${alias}(${[...refs].join(', ')})`,
+    {
+      imports: {
+        [NESTJS_SWAGGER_MODULE]: [
+          externalImportSpec(NESTJS_SWAGGER_MODULE, 'getSchemaPath'),
+        ],
+      },
+    },
   );
   return decorators;
 }
@@ -114,7 +120,7 @@ function propertyDecorators(
     target,
     'ApiProperty',
     NESTJS_SWAGGER_MODULE,
-    `@ApiProperty({ ${fields.join(', ')} })`,
+    (alias) => `@${alias}({ ${fields.join(', ')} })`,
   );
   return decorators;
 }
@@ -168,7 +174,13 @@ function typeToDecoratorOptions(
     const kind = resolved?.kind ?? innerType.kind;
     if (kind === 'object') {
       if (isArrayItem || nullable) {
-        fields.push(`$ref: getSchemaPath(${(resolved as ObjectSchema).name})`);
+        const getSchemaPath = externalSymbolAlias(
+          NESTJS_SWAGGER_MODULE,
+          'getSchemaPath',
+        );
+        fields.push(
+          `$ref: ${getSchemaPath}(${(resolved as ObjectSchema).name})`,
+        );
       }
     } else if (kind === 'enum') {
       const e = resolved as EnumSchema;

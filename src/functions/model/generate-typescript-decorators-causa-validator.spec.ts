@@ -84,12 +84,16 @@ describe('ModelGenerateTypeScriptDecoratorsForCausaValidator', () => {
 
     expect(result).toEqual([
       {
-        source: '@IsNullable()',
-        imports: { '@causa/runtime': ['IsNullable'] },
+        source: '@_CausaRuntimeIsNullable()',
+        imports: {
+          '@causa/runtime': ['IsNullable as _CausaRuntimeIsNullable'],
+        },
       },
       {
-        source: '@AllowMissing()',
-        imports: { '@causa/runtime': ['AllowMissing'] },
+        source: '@_CausaRuntimeAllowMissing()',
+        imports: {
+          '@causa/runtime': ['AllowMissing as _CausaRuntimeAllowMissing'],
+        },
       },
     ]);
   });

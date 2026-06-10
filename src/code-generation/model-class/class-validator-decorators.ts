@@ -33,7 +33,11 @@ type DecoratorDefinition = {
   /**
    * The source generator for the decorator.
    */
-  source?: (singleType: PropertyType | Schema, arrayOptions: string) => string;
+  source?: (
+    singleType: PropertyType | Schema,
+    arrayOptions: string,
+    alias: string,
+  ) => string;
 };
 
 /**
@@ -51,22 +55,22 @@ const KIND_TO_DECORATORS: Record<string, DecoratorDefinition[]> = {
     {
       name: 'IsUUID',
       // The first argument is the UUID version, which is not specified in the schema.
-      source: (_, opts) => appendCall('@IsUUID', 'undefined', opts),
+      source: (_, opts, alias) => appendCall(`@${alias}`, 'undefined', opts),
     },
   ],
   datetime: [{ name: 'IsDate' }],
   null: [
     {
       name: 'Equals',
-      source: (_, opts) => appendCall('@Equals', 'null', opts),
+      source: (_, opts, alias) => appendCall(`@${alias}`, 'null', opts),
     },
   ],
   const: [
     {
       name: 'Equals',
-      source: (t, opts) =>
+      source: (t, opts, alias) =>
         appendCall(
-          '@Equals',
+          `@${alias}`,
           JSON.stringify((t as ConstPropertyType).value),
           opts,
         ),
@@ -75,13 +79,13 @@ const KIND_TO_DECORATORS: Record<string, DecoratorDefinition[]> = {
   enum: [
     {
       name: 'IsIn',
-      source: (t, opts) =>
-        appendCall('@IsIn', JSON.stringify((t as EnumSchema).values), opts),
+      source: (t, opts, alias) =>
+        appendCall(`@${alias}`, JSON.stringify((t as EnumSchema).values), opts),
     },
   ],
   object: [
     { name: 'IsObject' },
-    { name: 'ValidateNested', source: () => '@ValidateNested()' },
+    { name: 'ValidateNested', source: (_, __, alias) => `@${alias}()` },
   ],
   map: [{ name: 'IsObject' }],
   // Nested arrays: combined with the outer `@IsArray()`, this `@IsArray({ each: true })` checks that every item of
@@ -124,7 +128,7 @@ export function makeClassValidatorDecorators(
       target,
       'Allow',
       CLASS_VALIDATOR_MODULE,
-      '@Allow()',
+      (alias) => `@${alias}()`,
     );
   }
 
@@ -161,7 +165,7 @@ function buildValidators(
       target,
       'IsArray',
       CLASS_VALIDATOR_MODULE,
-      '@IsArray()',
+      (alias) => `@${alias}()`,
     );
   }
 
@@ -174,8 +178,9 @@ function buildValidators(
       target,
       name,
       CLASS_VALIDATOR_MODULE,
-      source?.(singleType, arrayOptions) ??
-        appendCall(`@${name}`, arrayOptions),
+      (alias) =>
+        source?.(singleType, arrayOptions, alias) ??
+        appendCall(`@${alias}`, arrayOptions),
     );
   }
 
@@ -188,7 +193,7 @@ function buildValidators(
         target,
         'IsDefined',
         CLASS_VALIDATOR_MODULE,
-        '@IsDefined()',
+        (alias) => `@${alias}()`,
       );
     }
     typeName = (singleType as ObjectSchema).name;
@@ -202,7 +207,7 @@ function buildValidators(
       target,
       'Type',
       CLASS_TRANSFORMER_MODULE,
-      `@Type(() => ${typeName})`,
+      (alias) => `@${alias}(() => ${typeName})`,
     );
   }
 }

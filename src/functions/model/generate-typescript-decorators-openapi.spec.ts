@@ -84,8 +84,11 @@ describe('ModelGenerateTypeScriptDecoratorsForOpenApi', () => {
 
     expect(result).toEqual([
       {
-        source: '@ApiProperty({ required: true, type: "string" })',
-        imports: { '@nestjs/swagger': ['ApiProperty'] },
+        source:
+          '@_NestjsSwaggerApiProperty({ required: true, type: "string" })',
+        imports: {
+          '@nestjs/swagger': ['ApiProperty as _NestjsSwaggerApiProperty'],
+        },
       },
     ]);
   });

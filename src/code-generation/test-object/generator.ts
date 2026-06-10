@@ -282,8 +282,8 @@ export class TypeScriptTestObjectGenerator extends BaseTypeScriptCodeGenerator {
         if (serialized !== undefined) {
           return serialized;
         }
-        this.addImports({ crypto: ['randomUUID'] });
-        return 'randomUUID()';
+        const randomUUID = this.importExternal('crypto', 'randomUUID');
+        return `${randomUUID}()`;
       }
     }
   }

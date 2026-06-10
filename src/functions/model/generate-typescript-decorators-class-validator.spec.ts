@@ -83,7 +83,10 @@ describe('ModelGenerateTypeScriptDecoratorsForClassValidator', () => {
     });
 
     expect(result).toEqual([
-      { source: '@IsString()', imports: { 'class-validator': ['IsString'] } },
+      {
+        source: '@_ClassValidatorIsString()',
+        imports: { 'class-validator': ['IsString as _ClassValidatorIsString'] },
+      },
     ]);
   });
 });
