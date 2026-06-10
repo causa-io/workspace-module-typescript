@@ -1,5 +1,15 @@
-import type { GeneratedSchema } from '@causa/workspace-core';
+import type {
+  GeneratedSchema,
+  ServiceContainerConfiguration,
+} from '@causa/workspace-core';
 import type { OpenAPIV3_1 } from '@scalar/openapi-types';
+
+/**
+ * A trigger defined in the `serviceContainer.triggers` configuration.
+ */
+export type ServiceContainerTrigger = NonNullable<
+  NonNullable<ServiceContainerConfiguration['serviceContainer']>['triggers']
+>[string];
 
 /**
  * The supported HTTP methods for NestJS controller generation.
