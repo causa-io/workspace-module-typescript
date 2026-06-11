@@ -198,7 +198,7 @@ function parseOperation(
   operation: OpenAPIV3_1.OperationObject,
   pathLevelParams: OpenAPIV3_1.ParameterObject[] = [],
 ): ParsedOperation {
-  const { operationId, summary, description } = operation;
+  const { operationId, summary, description, security } = operation;
   if (!operationId) {
     throw new Error(
       `Operation at path '${path}' and method '${method}' is missing an operationId.`,
@@ -224,6 +224,7 @@ function parseOperation(
   }
 
   const parameters = allParams.map((p) => parseParameter(p, operationId));
+  const isPublic = security?.length === 0;
 
   const requestBodyRef = parseRequestBodyRef(
     operation.requestBody,
@@ -244,6 +245,7 @@ function parseOperation(
     parameters,
     requestBodyRef,
     successResponse,
+    isPublic,
   };
 }
 

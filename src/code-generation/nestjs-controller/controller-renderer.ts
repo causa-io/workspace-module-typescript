@@ -1,12 +1,10 @@
 import type { GeneratedSchema, GeneratedSchemas } from '@causa/workspace-core';
 import { dirname, resolve } from 'path';
 import {
-  externalImportSpec,
-  externalSymbolAlias,
   formatAndWriteTypeScript,
   LEADING_COMMENT,
   mergeImports,
-  renderImports as renderImportsBlock,
+  renderImports,
 } from '../base.js';
 import { getParameterSchemaKey } from './parameters-json-schema.js';
 import type {
@@ -15,11 +13,12 @@ import type {
   ParsedApiSpecification,
   ParsedOperation,
 } from './types.js';
-
-/**
- * An import dictionary mapping file paths to sets of symbols.
- */
-type ImportDictionary = Record<string, Set<string>>;
+import {
+  addCausaNestJsImport,
+  addNestJsImport,
+  renderParamTypesMetadata,
+  type ImportDictionary,
+} from './utilities.js';
 
 /**
  * Maps HTTP methods to NestJS decorator names.
@@ -139,6 +138,7 @@ function buildMethodInfo(
     requestBodyRef,
     method: httpMethod,
     successResponse,
+    isPublic,
   } = operation;
   const { resourceName, basePath, filePath } = apiSpec;
 
@@ -170,26 +170,8 @@ function buildMethodInfo(
     returnTypeSchema,
     returnTypeDescription,
     description,
+    isPublic,
   };
-}
-
-/**
- * Adds a NestJS common import with underscore prefix to avoid clashes.
- *
- * @param imports The import dictionary.
- * @param symbol The symbol to import.
- * @param isType Whether to import as a type.
- * @returns The prefixed symbol name to use in code.
- */
-function addNestJsImport(
-  imports: ImportDictionary,
-  symbol: string,
-  isType = false,
-): string {
-  mergeImports(imports, {
-    ['@nestjs/common']: [externalImportSpec('@nestjs/common', symbol, isType)],
-  });
-  return externalSymbolAlias('@nestjs/common', symbol);
 }
 
 /**
@@ -318,10 +300,20 @@ function renderDecoratorFactory(
   for (const method of methods) {
     const { pathParamsSchema, queryParamsSchema, requestBodySchema } = method;
 
+    const paramTypes = [
+      pathParamsSchema,
+      queryParamsSchema,
+      requestBodySchema,
+    ].filter((schema) => !!schema);
+
+    lines.push(
+      '',
+      ...renderParamTypesMetadata(imports, method.name, paramTypes),
+    );
+
     const methodDecorator = HTTP_METHOD_DECORATORS[method.httpMethod];
     const methodSymbol = addNestJsImport(imports, methodDecorator);
     lines.push(
-      '',
       `    ${methodSymbol}('${toExpressPath(method.subPath)}')(`,
       `      constructor.prototype,`,
       `      '${method.name}',`,
@@ -341,6 +333,17 @@ function renderDecoratorFactory(
 
       lines.push(
         `    ${httpCodeSymbol}(${httpCodeArg})(`,
+        `      constructor.prototype,`,
+        `      '${method.name}',`,
+        `      Object.getOwnPropertyDescriptor(constructor.prototype, '${method.name}')!,`,
+        `    );`,
+      );
+    }
+
+    if (method.isPublic) {
+      const publicSymbol = addCausaNestJsImport(imports, 'Public');
+      lines.push(
+        `    ${publicSymbol}()(`,
         `      constructor.prototype,`,
         `      '${method.name}',`,
         `      Object.getOwnPropertyDescriptor(constructor.prototype, '${method.name}')!,`,
@@ -416,7 +419,7 @@ export function renderControllerFile(
     lines,
   );
 
-  const importsBlock = renderImportsBlock(imports, controllerFilePath);
+  const importsBlock = renderImports(imports, controllerFilePath);
   lines.unshift(importsBlock, '');
 
   return lines.join('\n');

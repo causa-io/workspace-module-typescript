@@ -1,18 +1,25 @@
 import {
+  EventTopicList,
   ModelParseCodeGeneratorInputs,
   ModelRunCodeGenerator,
   type GeneratedSchemas,
   type PropertyType,
   type Schema,
+  type ServiceContainerConfiguration,
 } from '@causa/workspace-core';
 import { loadSchemas } from '@causa/workspace-core/jsonschema';
-import { mkdir, readFile } from 'fs/promises';
+import { camelCase, kebabCase, pascalCase } from 'change-case';
+import { mkdir, readFile, rm } from 'fs/promises';
 import { basename, join } from 'path';
 import { assignSchemaNames } from '../../code-generation/base.js';
 import {
+  listHttpTriggers,
   makeParametersSchemasForSpecification,
   parseOpenApiSpec,
   writeControllerFile,
+  writeEventControllerFile,
+  type EventControllerMethod,
+  type HttpTrigger,
 } from '../../code-generation/index.js';
 import {
   makeCausaValidatorDecorators,
@@ -22,6 +29,7 @@ import {
   type ModelClassSchemaDecorators,
 } from '../../code-generation/model-class/index.js';
 import type { TypeScriptModelConfiguration } from '../../configurations/index.js';
+import { ModelGenerateTypeScriptTriggerDecorators } from '../../definitions/index.js';
 import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import {
   requirePreviousGeneratorOutput,
@@ -41,13 +49,17 @@ export const TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR =
  * This generator:
  * 1. Parses OpenAPI YAML specification files.
  * 2. Extracts path and query parameters and builds {@link Schema}s for them.
- * 3. Loads any external JSON Schema files referenced by parameter `$ref`s (following transitive refs) so the merged
+ * 3. Lists the `serviceContainer.triggers` calling an HTTP endpoint of the service.
+ * 4. Loads any external JSON Schema files referenced by parameter `$ref`s (following transitive refs) so the merged
  *    schema set carries enough information to render the parameter classes.
- * 4. Feeds those schemas through {@link TypeScriptModelClassGenerator} to produce `model.ts`. Schemas already emitted
+ * 5. Feeds those schemas through {@link TypeScriptModelClassGenerator} to produce `model.ts`. Schemas already emitted
  *    by the preceding `typescriptModelClass` generator are imported from its output file rather than re-emitted;
  *    transitive dependencies that were not previously emitted are written into `model.ts` alongside the parameter
  *    classes.
- * 5. Generates `*.api.controller.ts` files with TypeScript interfaces and decorator factories.
+ * 6. Generates `*.api.controller.ts` files with TypeScript interfaces and decorator factories.
+ * 7. Generates `*.events.controller.ts` files for HTTP triggers, grouped by endpoint base path, with methods decorated
+ *    using {@link ModelGenerateTypeScriptTriggerDecorators} implementations and typed using event topic schemas or
+ *    trigger DTOs.
  */
 export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRunCodeGenerator {
   async _call(): Promise<GeneratedSchemas> {
@@ -70,26 +82,33 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
     const { files } = await this._context.call(ModelParseCodeGeneratorInputs, {
       configuration,
     });
-    if (files.length === 0) {
-      this._context.logger.warn(
-        `No OpenAPI specification files found for generator '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}'.`,
-      );
-      return {};
-    }
-
     this._context.logger.debug(
       `Found ${files.length} OpenAPI specification file(s) to process.`,
     );
 
     const parsedSpecs = await Promise.all(files.map(parseOpenApiSpec));
     const specs = parsedSpecs.filter((spec) => spec.operations.length > 0);
-    if (specs.length === 0) {
+
+    const triggers =
+      this._context
+        .asConfiguration<ServiceContainerConfiguration>()
+        .get('serviceContainer.triggers', { unsafe: true }) ?? {};
+    const topics = await this._context.call(EventTopicList, {});
+    const triggerGroups = listHttpTriggers(
+      triggers,
+      this._context.getProjectPathOrThrow(),
+      modelClassSchemas,
+      topics,
+    );
+
+    if (specs.length === 0 && triggerGroups.size === 0) {
       this._context.logger.warn(
-        `No operations found in the OpenAPI specification files for generator '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}'.`,
+        `No OpenAPI operations nor HTTP triggers found for generator '${TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR}'.`,
       );
       return {};
     }
 
+    await rm(outputDir, { recursive: true, force: true });
     await mkdir(outputDir, { recursive: true });
 
     const parameterSchemas = specs.reduce(
@@ -119,6 +138,8 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
 
       this._context.logger.debug(`Generated '${controllerFileName}'.`);
     }
+
+    await this.generateEventControllers(triggerGroups, outputDir);
 
     return generatedParameterSchemas;
   }
@@ -227,6 +248,59 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
       'Failed to load one or more schema files referenced from OpenAPI parameters:',
     );
     return schemas;
+  }
+
+  /**
+   * Generates one event controller file per group of HTTP triggers sharing the same endpoint base path.
+   * Each trigger becomes a method, with additional decorators collected by dispatching
+   * {@link ModelGenerateTypeScriptTriggerDecorators} via `callAll`.
+   *
+   * @param groups The HTTP triggers to generate controllers for, indexed by the base path of their endpoint.
+   * @param outputDir The directory controller files are written to.
+   */
+  private async generateEventControllers(
+    groups: Map<string, HttpTrigger[]>,
+    outputDir: string,
+  ): Promise<void> {
+    for (const [basePath, triggers] of groups) {
+      const methods: EventControllerMethod[] = [];
+      for (const { name: rawName, trigger, subPath, eventSchema } of triggers) {
+        const name = camelCase(rawName);
+        if (methods.some((m) => m.name === name)) {
+          throw new Error(
+            `Duplicate method name '${name}' in the event controller for path '${basePath}'.`,
+          );
+        }
+
+        const description =
+          typeof trigger.description === 'string'
+            ? trigger.description
+            : undefined;
+
+        const decorators = (
+          await Promise.all(
+            this._context.callAll(ModelGenerateTypeScriptTriggerDecorators, {
+              generator: this.generator,
+              configuration: this.configuration,
+              name: name,
+              trigger,
+            }),
+          )
+        ).flat();
+
+        methods.push({ name, subPath, description, eventSchema, decorators });
+      }
+
+      const name = pascalCase(basePath);
+      const controllerFileName = `${kebabCase(basePath)}.events.controller.ts`;
+      const controllerFilePath = join(outputDir, controllerFileName);
+      await writeEventControllerFile(
+        { name, basePath, methods },
+        controllerFilePath,
+      );
+
+      this._context.logger.debug(`Generated '${controllerFileName}'.`);
+    }
   }
 }
 

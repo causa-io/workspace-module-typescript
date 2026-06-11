@@ -13,6 +13,7 @@ describe('makeParametersSchemasForSpecification', () => {
           operationId: 'carList',
           method: 'get',
           path: '/cars',
+          isPublic: false,
           parameters: [
             {
               name: 'limit',
@@ -26,6 +27,7 @@ describe('makeParametersSchemasForSpecification', () => {
           operationId: 'carGet',
           method: 'get',
           path: '/cars/{id}',
+          isPublic: false,
           parameters: [
             {
               name: 'id',

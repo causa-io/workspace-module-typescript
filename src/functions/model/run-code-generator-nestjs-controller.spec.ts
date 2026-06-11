@@ -1,5 +1,6 @@
 import type { BaseConfiguration } from '@causa/workspace';
 import {
+  EventTopicList,
   ModelParseCodeGeneratorInputs,
   ModelRunCodeGenerator,
 } from '@causa/workspace-core';
@@ -12,6 +13,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import 'jest-extended';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { ModelGenerateTypeScriptTriggerDecorators } from '../../definitions/index.js';
 import { TYPESCRIPT_MODEL_CLASS_GENERATOR } from './run-code-generator-model-class.js';
 import {
   ModelRunCodeGeneratorForTypeScriptNestjsController,
@@ -257,6 +259,9 @@ enum: [sedan, suv]
   it('should generate model.ts and controller files from OpenAPI spec', async () => {
     const specFile = join(tmpDir, 'api', 'car.api.yaml');
     await writeFile(specFile, OPENAPI_SPEC);
+    const staleFile = join(tmpDir, 'src/api/stale.controller.ts');
+    await mkdir(join(tmpDir, 'src/api'), { recursive: true });
+    await writeFile(staleFile, '// Leftover from a previous generation.');
 
     const { context, functionRegistry } = createContext({
       projectPath: tmpDir,
@@ -272,6 +277,7 @@ enum: [sedan, suv]
         files: [specFile],
       }),
     );
+    registerMockFunction(functionRegistry, EventTopicList, async () => []);
 
     const result = await context.call(ModelRunCodeGenerator, {
       ...baseArguments,
@@ -307,5 +313,120 @@ enum: [sedan, suv]
     const controllerContent = await readFile(controllerFile, 'utf-8');
     expect(controllerContent).toContain('export interface CarApiContract');
     expect(controllerContent).toContain('export function AsCarApiController()');
+
+    await expect(readFile(staleFile, 'utf-8')).rejects.toThrow('ENOENT');
+  });
+
+  it('should generate event controllers from service container triggers', async () => {
+    const triggers = {
+      handleCarForProcessing: {
+        type: 'event',
+        topic: 'my-domain.car-event.v1',
+        description: 'Handles car events for processing.',
+        endpoint: { type: 'http', path: '/cars/handleCarForProcessing' },
+      },
+      handleCarDeletion: {
+        type: 'task',
+        queue: 'car-deletion',
+        dto: 'dtos/delete-car.dto.yaml',
+        endpoint: { type: 'http', path: '/cars/handleCarDeletion' },
+      },
+      staleCarCleanup: {
+        type: 'cron',
+        schedule: '0 * * * *',
+        endpoint: { type: 'http', path: '/background-jobs/staleCarCleanup' },
+      },
+      noHttpEndpoint: { type: 'event', topic: 'my-domain.other-event.v1' },
+    };
+    const { context, functionRegistry } = createContext({
+      projectPath: tmpDir,
+      configuration: { ...baseConfiguration, serviceContainer: { triggers } },
+      functions: [ModelRunCodeGeneratorForTypeScriptNestjsController],
+    });
+    registerMockFunction(
+      functionRegistry,
+      ModelParseCodeGeneratorInputs,
+      async () => ({ includeEvents: false, globs: [], files: [] }),
+    );
+    registerMockFunction(functionRegistry, EventTopicList, async () => [
+      {
+        id: 'my-domain.car-event.v1',
+        schemaFilePath: join(tmpDir, 'events/car-event.yaml'),
+        formatParts: {},
+      },
+    ]);
+    const decoratorsMock = registerMockFunction(
+      functionRegistry,
+      ModelGenerateTypeScriptTriggerDecorators,
+      async (_, { trigger }) =>
+        (trigger as any).type === 'event'
+          ? []
+          : [
+              {
+                source: `@MyUseEventHandler('${(trigger as any).type}')`,
+                imports: { 'my-module': ['MyUseEventHandler'] },
+              },
+            ],
+    );
+
+    const result = await context.call(ModelRunCodeGenerator, {
+      ...baseArguments,
+      configuration: { output: 'src/api/' },
+      previousGeneratorsOutput: {
+        [TYPESCRIPT_MODEL_CLASS_GENERATOR]: {
+          [join(tmpDir, 'events/car-event.yaml')]: {
+            name: 'CarEvent',
+            file: join(tmpDir, 'src/model/generated.ts'),
+          },
+          [join(tmpDir, 'dtos/delete-car.dto.yaml')]: {
+            name: 'DeleteCarDto',
+            file: join(tmpDir, 'src/model/generated.ts'),
+          },
+        },
+      },
+    });
+
+    expect(result).toEqual({});
+    const carsContent = await readFile(
+      join(tmpDir, 'src/api/cars.events.controller.ts'),
+      'utf-8',
+    );
+    expect(carsContent).toContain('export interface CarsEventsContract');
+    expect(carsContent).toContain('export function AsCarsEventsController()');
+    expect(carsContent).toContain('Handles car events for processing.');
+    expect(carsContent).toMatch(
+      /handleCarForProcessing\(\s*event: CarEvent,\s*\.\.\.rest: any\[\]\s*\): Promise<void>;/,
+    );
+    expect(carsContent).toMatch(
+      /handleCarDeletion\(\s*event: DeleteCarDto,\s*\.\.\.rest: any\[\]\s*\): Promise<void>;/,
+    );
+    expect(carsContent).toContain(`from "../model/generated.js"`);
+    expect(carsContent).toMatch(/_NestjsCommonController\("cars"\)/);
+    expect(carsContent).toMatch(
+      /MyUseEventHandler\("task"\)\(\s*constructor\.prototype,\s*"handleCarDeletion"/,
+    );
+    expect(carsContent).not.toMatch(/MyUseEventHandler\("event"\)/);
+    expect(carsContent).toMatch(
+      /_CausaRuntimeEventBody\(\)\(\s*constructor\.prototype,\s*"handleCarForProcessing",\s*0,?\s*\)/,
+    );
+    const jobsContent = await readFile(
+      join(tmpDir, 'src/api/background-jobs.events.controller.ts'),
+      'utf-8',
+    );
+    expect(jobsContent).toContain(
+      'export interface BackgroundJobsEventsContract',
+    );
+    expect(jobsContent).toMatch(
+      /staleCarCleanup\(\s*event: object,\s*\.\.\.rest: any\[\]\s*\): Promise<void>;/,
+    );
+    expect(jobsContent).toMatch(/_NestjsCommonController\("background-jobs"\)/);
+    expect(jobsContent).toMatch(/MyUseEventHandler\("cron"\)/);
+    expect(decoratorsMock).toHaveBeenCalledTimes(3);
+    expect(decoratorsMock).toHaveBeenCalledWith(context, {
+      generator: TYPESCRIPT_NESTJS_CONTROLLER_GENERATOR,
+      configuration: { output: 'src/api/' },
+      name: 'handleCarForProcessing',
+      trigger: triggers.handleCarForProcessing,
+    });
   });
 });

@@ -57,6 +57,7 @@ describe('renderControllerFile', () => {
           method: 'get',
           path: '/cars/{id}',
           summary: 'Gets a car by ID.',
+          isPublic: false,
           parameters: [
             {
               name: 'id',
@@ -75,6 +76,7 @@ describe('renderControllerFile', () => {
           operationId: 'carList',
           method: 'get',
           path: '/cars',
+          isPublic: false,
           parameters: [
             {
               name: 'limit',
@@ -89,6 +91,7 @@ describe('renderControllerFile', () => {
           operationId: 'carCreate',
           method: 'post',
           path: '/cars',
+          isPublic: false,
           parameters: [],
           requestBodyRef: './dtos/car-create.dto.yaml',
           successResponse: {
@@ -100,6 +103,7 @@ describe('renderControllerFile', () => {
           operationId: 'carDelete',
           method: 'delete',
           path: '/cars/{id}',
+          isPublic: false,
           parameters: [
             {
               name: 'id',
@@ -114,6 +118,7 @@ describe('renderControllerFile', () => {
           operationId: 'carUpdate',
           method: 'patch',
           path: '/cars/{id}',
+          isPublic: false,
           parameters: [
             {
               name: 'id',
@@ -138,6 +143,7 @@ describe('renderControllerFile', () => {
           operationId: 'carArchive',
           method: 'post',
           path: '/cars/{id}/archive',
+          isPublic: true,
           parameters: [
             {
               name: 'id',
@@ -223,14 +229,31 @@ describe('renderControllerFile', () => {
     expect(result).toMatch(
       /_NestjsCommonBody\(\)\(constructor\.prototype, 'update', 2\)/,
     );
+    // `design:paramtypes` metadata, in path/query/body order.
+    expect(result).toMatch(
+      /Reflect\.defineMetadata\(\s*['"]design:paramtypes['"],\s*\[CarUpdatePathParams, CarUpdateQueryParams, CarUpdateDto\],\s*constructor\.prototype,\s*'update',?\s*\)/,
+    );
+    // carCreate: body only.
+    expect(result).toMatch(
+      /Reflect\.defineMetadata\(\s*['"]design:paramtypes['"],\s*\[CarCreateDto\],\s*constructor\.prototype,\s*'create',?\s*\)/,
+    );
+    // The metadata is guarded so compiler-emitted metadata is preserved.
+    expect(result).toMatch(
+      /if \(\s*!Reflect\.hasOwnMetadata\(\s*['"]design:paramtypes['"],\s*constructor\.prototype,\s*'update',?\s*\)\s*\)/,
+    );
 
-    // carArchive: sub-path route
+    // carArchive: sub-path route, public operation
     expect(result).toMatch(/archive\(/);
     expect(result).toMatch(
       /_NestjsCommonPost\(':id\/archive'\)\([^)]+, 'archive'/,
     );
     expect(result).toMatch(
       /_NestjsCommonHttpCode\(_NestjsCommonHttpStatus\.OK\)\([^)]+, 'archive'/,
+    );
+    expect(result).toMatch(/_CausaRuntimePublic\(\)\([^)]+, 'archive'/);
+    expect(result).not.toMatch(/_CausaRuntimePublic\(\)\([^)]+, 'get'/);
+    expect(result).toMatch(
+      /import \{[^}]*Public as _CausaRuntimePublic[^}]*\} from '@causa\/runtime\/nestjs';/,
     );
 
     // Imports
