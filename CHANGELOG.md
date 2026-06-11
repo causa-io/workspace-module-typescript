@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.1.0 (2026-06-11)
+
 Features:
 
 - Generate event controllers from `serviceContainer.triggers` in the `typescriptNestjsController` generator. Other modules can contribute method decorators by implementing the new `ModelGenerateTypeScriptTriggerDecorators` function.
