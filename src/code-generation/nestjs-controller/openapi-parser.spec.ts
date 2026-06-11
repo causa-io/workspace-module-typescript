@@ -29,6 +29,7 @@ paths:
     get:
       operationId: carList
       summary: Lists all cars.
+      security: []
       parameters:
         - name: limit
           in: query
@@ -41,6 +42,8 @@ paths:
     post:
       operationId: carCreate
       summary: Creates a car.
+      security:
+        - oauth2: []
       requestBody:
         required: true
         content:
@@ -123,6 +126,7 @@ paths:
           method: 'get',
           path: '/cars',
           summary: 'Lists all cars.',
+          isPublic: true,
           parameters: [
             {
               name: 'limit',
@@ -138,6 +142,7 @@ paths:
           method: 'post',
           path: '/cars',
           summary: 'Creates a car.',
+          isPublic: false,
           parameters: [],
           requestBodyRef: './dtos/car-create.dto.yaml',
           successResponse: {
@@ -150,6 +155,7 @@ paths:
           operationId: 'carGet',
           method: 'get',
           path: '/cars/{id}',
+          isPublic: false,
           parameters: [
             {
               name: 'id',
@@ -174,6 +180,7 @@ paths:
           operationId: 'carDelete',
           method: 'delete',
           path: '/cars/{id}',
+          isPublic: false,
           parameters: [
             {
               name: 'id',
@@ -192,6 +199,7 @@ paths:
           method: 'get',
           path: '/cars/{id}/export',
           summary: 'Exports a car as PDF.',
+          isPublic: false,
           parameters: [
             {
               name: 'id',

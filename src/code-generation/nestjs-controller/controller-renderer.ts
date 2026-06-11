@@ -13,7 +13,11 @@ import type {
   ParsedApiSpecification,
   ParsedOperation,
 } from './types.js';
-import { addNestJsImport, type ImportDictionary } from './utilities.js';
+import {
+  addCausaNestJsImport,
+  addNestJsImport,
+  type ImportDictionary,
+} from './utilities.js';
 
 /**
  * Maps HTTP methods to NestJS decorator names.
@@ -133,6 +137,7 @@ function buildMethodInfo(
     requestBodyRef,
     method: httpMethod,
     successResponse,
+    isPublic,
   } = operation;
   const { resourceName, basePath, filePath } = apiSpec;
 
@@ -164,6 +169,7 @@ function buildMethodInfo(
     returnTypeSchema,
     returnTypeDescription,
     description,
+    isPublic,
   };
 }
 
@@ -316,6 +322,17 @@ function renderDecoratorFactory(
 
       lines.push(
         `    ${httpCodeSymbol}(${httpCodeArg})(`,
+        `      constructor.prototype,`,
+        `      '${method.name}',`,
+        `      Object.getOwnPropertyDescriptor(constructor.prototype, '${method.name}')!,`,
+        `    );`,
+      );
+    }
+
+    if (method.isPublic) {
+      const publicSymbol = addCausaNestJsImport(imports, 'Public');
+      lines.push(
+        `    ${publicSymbol}()(`,
         `      constructor.prototype,`,
         `      '${method.name}',`,
         `      Object.getOwnPropertyDescriptor(constructor.prototype, '${method.name}')!,`,

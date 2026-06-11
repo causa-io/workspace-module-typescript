@@ -27,3 +27,25 @@ export function addNestJsImport(
   });
   return externalSymbolAlias('@nestjs/common', symbol);
 }
+
+/**
+ * The module from which Causa runtime NestJS symbols are imported.
+ */
+const CAUSA_NESTJS_MODULE = '@causa/runtime/nestjs';
+
+/**
+ * Adds a `@causa/runtime/nestjs` import with underscore prefix to avoid clashes.
+ *
+ * @param imports The import dictionary.
+ * @param symbol The symbol to import.
+ * @returns The prefixed symbol name to use in code.
+ */
+export function addCausaNestJsImport(
+  imports: ImportDictionary,
+  symbol: string,
+): string {
+  mergeImports(imports, {
+    [CAUSA_NESTJS_MODULE]: [externalImportSpec(CAUSA_NESTJS_MODULE, symbol)],
+  });
+  return externalSymbolAlias(CAUSA_NESTJS_MODULE, symbol);
+}

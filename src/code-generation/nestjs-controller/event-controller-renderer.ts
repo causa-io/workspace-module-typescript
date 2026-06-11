@@ -1,18 +1,15 @@
 import {
-  externalImportSpec,
-  externalSymbolAlias,
   formatAndWriteTypeScript,
   LEADING_COMMENT,
   mergeImports,
   renderImports,
 } from '../base.js';
 import type { EventController } from './types.js';
-import { addNestJsImport, type ImportDictionary } from './utilities.js';
-
-/**
- * The module from which the `EventBody` decorator is imported.
- */
-const CAUSA_NESTJS_MODULE = '@causa/runtime/nestjs';
+import {
+  addCausaNestJsImport,
+  addNestJsImport,
+  type ImportDictionary,
+} from './utilities.js';
 
 /**
  * Renders the contract interface for an event controller.
@@ -141,15 +138,7 @@ function renderDecoratorFactory(
       );
     }
 
-    mergeImports(imports, {
-      [CAUSA_NESTJS_MODULE]: [
-        externalImportSpec(CAUSA_NESTJS_MODULE, 'EventBody'),
-      ],
-    });
-    const eventBodySymbol = externalSymbolAlias(
-      CAUSA_NESTJS_MODULE,
-      'EventBody',
-    );
+    const eventBodySymbol = addCausaNestJsImport(imports, 'EventBody');
     lines.push(
       `    ${eventBodySymbol}()(constructor.prototype, '${method.name}', 0);`,
     );

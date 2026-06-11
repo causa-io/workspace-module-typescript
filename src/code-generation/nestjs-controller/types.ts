@@ -115,6 +115,11 @@ export type ParsedOperation = {
    * The success response for the operation.
    */
   successResponse?: ParsedResponse;
+
+  /**
+   * Whether the operation explicitly opts out of authorization, by declaring an empty `security` array.
+   */
+  isPublic: boolean;
 };
 
 /**
@@ -210,6 +215,11 @@ export type ApiControllerMethod = {
    * JSDoc description for the method.
    */
   description?: string;
+
+  /**
+   * Whether to decorate the method with `@Public()`, marking it as not requiring authorization.
+   */
+  isPublic: boolean;
 };
 
 /**
