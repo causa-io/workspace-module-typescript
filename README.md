@@ -296,6 +296,8 @@ paths:
       # ...
 ```
 
+Operations declaring an empty `security` array (`security: []`) are decorated with `@Public()` from `@causa/runtime/nestjs`, marking them as not requiring authorization. Document-level `security` is ignored: operations without an explicit `security: []` are left to the application's (global) authentication guard.
+
 The generated controller file exports an interface and a decorator factory. To use the generated code, implement the interface and apply the decorator:
 
 ```typescript
@@ -310,3 +312,11 @@ export class CarController implements CarApiContract {
   }
 }
 ```
+
+In addition to OpenAPI specifications, this generator produces event controllers for the `serviceContainer.triggers` of the project that define an `http` endpoint. Triggers are grouped into controllers by the base path of their endpoint (the path minus its last segment), and each trigger becomes a method (named after the trigger) handling a `POST` request on the last path segment. A `*.events.controller.ts` file is generated for each controller.
+
+The first argument of a trigger method is the event, decorated with `@EventBody()` from `@causa/runtime/nestjs`. It is typed using:
+
+- For `event` triggers, the class generated for the topic's schema. The `typescriptModelClass` generator must emit it, by enabling the `includeEvents` option.
+- For other triggers defining a `dto` option, the class generated for the referenced schema file (resolved relative to the project root). The `typescriptModelClass` generator must emit it, e.g. by listing the schema file in its `globs`.
+- Otherwise, `object`.
