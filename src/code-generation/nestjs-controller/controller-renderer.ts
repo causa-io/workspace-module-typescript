@@ -1,12 +1,10 @@
 import type { GeneratedSchema, GeneratedSchemas } from '@causa/workspace-core';
 import { dirname, resolve } from 'path';
 import {
-  externalImportSpec,
-  externalSymbolAlias,
   formatAndWriteTypeScript,
   LEADING_COMMENT,
   mergeImports,
-  renderImports as renderImportsBlock,
+  renderImports,
 } from '../base.js';
 import { getParameterSchemaKey } from './parameters-json-schema.js';
 import type {
@@ -15,11 +13,7 @@ import type {
   ParsedApiSpecification,
   ParsedOperation,
 } from './types.js';
-
-/**
- * An import dictionary mapping file paths to sets of symbols.
- */
-type ImportDictionary = Record<string, Set<string>>;
+import { addNestJsImport, type ImportDictionary } from './utilities.js';
 
 /**
  * Maps HTTP methods to NestJS decorator names.
@@ -171,25 +165,6 @@ function buildMethodInfo(
     returnTypeDescription,
     description,
   };
-}
-
-/**
- * Adds a NestJS common import with underscore prefix to avoid clashes.
- *
- * @param imports The import dictionary.
- * @param symbol The symbol to import.
- * @param isType Whether to import as a type.
- * @returns The prefixed symbol name to use in code.
- */
-function addNestJsImport(
-  imports: ImportDictionary,
-  symbol: string,
-  isType = false,
-): string {
-  mergeImports(imports, {
-    ['@nestjs/common']: [externalImportSpec('@nestjs/common', symbol, isType)],
-  });
-  return externalSymbolAlias('@nestjs/common', symbol);
 }
 
 /**
@@ -416,7 +391,7 @@ export function renderControllerFile(
     lines,
   );
 
-  const importsBlock = renderImportsBlock(imports, controllerFilePath);
+  const importsBlock = renderImports(imports, controllerFilePath);
   lines.unshift(importsBlock, '');
 
   return lines.join('\n');

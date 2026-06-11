@@ -3,6 +3,7 @@ import type {
   ServiceContainerConfiguration,
 } from '@causa/workspace-core';
 import type { OpenAPIV3_1 } from '@scalar/openapi-types';
+import type { TypeScriptDecorator } from '../model-class/index.js';
 
 /**
  * A trigger defined in the `serviceContainer.triggers` configuration.
@@ -237,4 +238,55 @@ export type HttpTrigger = {
    * When `undefined`, the event is typed as `object`.
    */
   eventSchema: GeneratedSchema | undefined;
+};
+
+/**
+ * Information about an event controller method to be rendered.
+ */
+export type EventControllerMethod = {
+  /**
+   * The method name, derived from the trigger name.
+   */
+  name: string;
+
+  /**
+   * The sub-path for the method decorator.
+   */
+  subPath: string;
+
+  /**
+   * JSDoc description for the method.
+   */
+  description?: string;
+
+  /**
+   * The schema for the event (or DTO) passed to the method.
+   * When `undefined`, the event is typed as `object`.
+   */
+  eventSchema: GeneratedSchema | undefined;
+
+  /**
+   * Additional decorators to apply to the method (e.g. `@UseEventHandler(...)`).
+   */
+  decorators: TypeScriptDecorator[];
+};
+
+/**
+ * An event controller grouping the trigger-handling methods sharing a common endpoint base path.
+ */
+export type EventController = {
+  /**
+   * The PascalCase name for the controller, derived from the base path (e.g. `assets` -> `Assets`).
+   */
+  name: string;
+
+  /**
+   * The base path for the controller, without leading nor trailing slash.
+   */
+  basePath: string;
+
+  /**
+   * The methods of the controller.
+   */
+  methods: EventControllerMethod[];
 };
