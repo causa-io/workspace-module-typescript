@@ -259,6 +259,9 @@ enum: [sedan, suv]
   it('should generate model.ts and controller files from OpenAPI spec', async () => {
     const specFile = join(tmpDir, 'api', 'car.api.yaml');
     await writeFile(specFile, OPENAPI_SPEC);
+    const staleFile = join(tmpDir, 'src/api/stale.controller.ts');
+    await mkdir(join(tmpDir, 'src/api'), { recursive: true });
+    await writeFile(staleFile, '// Leftover from a previous generation.');
 
     const { context, functionRegistry } = createContext({
       projectPath: tmpDir,
@@ -310,6 +313,8 @@ enum: [sedan, suv]
     const controllerContent = await readFile(controllerFile, 'utf-8');
     expect(controllerContent).toContain('export interface CarApiContract');
     expect(controllerContent).toContain('export function AsCarApiController()');
+
+    await expect(readFile(staleFile, 'utf-8')).rejects.toThrow('ENOENT');
   });
 
   it('should generate event controllers from service container triggers', async () => {

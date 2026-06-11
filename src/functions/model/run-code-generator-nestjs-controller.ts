@@ -9,7 +9,7 @@ import {
 } from '@causa/workspace-core';
 import { loadSchemas } from '@causa/workspace-core/jsonschema';
 import { camelCase, kebabCase, pascalCase } from 'change-case';
-import { mkdir, readFile } from 'fs/promises';
+import { mkdir, readFile, rm } from 'fs/promises';
 import { basename, join } from 'path';
 import { assignSchemaNames } from '../../code-generation/base.js';
 import {
@@ -108,6 +108,7 @@ export class ModelRunCodeGeneratorForTypeScriptNestjsController extends ModelRun
       return {};
     }
 
+    await rm(outputDir, { recursive: true, force: true });
     await mkdir(outputDir, { recursive: true });
 
     const parameterSchemas = specs.reduce(
