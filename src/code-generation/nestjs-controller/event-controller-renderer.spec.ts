@@ -69,9 +69,18 @@ describe('renderEventControllerFile', () => {
       /_CausaRuntimeEventBody\(\)\(constructor\.prototype, 'staleCarCleanup', 0\)/,
     );
 
-    // Imports.
+    // `design:paramtypes` metadata for the typed handler, guarded by `hasOwnMetadata`.
     expect(result).toMatch(
-      /import \{ type CarEvent \} from '\.\.\/model\/generated\.js';/,
+      /Reflect\.defineMetadata\(\s*['"]design:paramtypes['"],\s*\[CarEvent\],\s*constructor\.prototype,\s*'handleCarForProcessing',?\s*\)/,
+    );
+    // The untyped handler falls back to `Object`, so `EventBody` can index into the metadata without throwing.
+    expect(result).toMatch(
+      /Reflect\.defineMetadata\(\s*['"]design:paramtypes['"],\s*\[Object\],\s*constructor\.prototype,\s*'staleCarCleanup',?\s*\)/,
+    );
+
+    // Imports. The event class is imported as a value (not type-only), so it can be referenced at runtime.
+    expect(result).toMatch(
+      /import \{ CarEvent \} from '\.\.\/model\/generated\.js';/,
     );
     expect(result).toMatch(
       /import \{[^}]*EventBody as _CausaRuntimeEventBody[^}]*\} from '@causa\/runtime\/nestjs';/,

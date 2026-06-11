@@ -229,6 +229,18 @@ describe('renderControllerFile', () => {
     expect(result).toMatch(
       /_NestjsCommonBody\(\)\(constructor\.prototype, 'update', 2\)/,
     );
+    // `design:paramtypes` metadata, in path/query/body order.
+    expect(result).toMatch(
+      /Reflect\.defineMetadata\(\s*['"]design:paramtypes['"],\s*\[CarUpdatePathParams, CarUpdateQueryParams, CarUpdateDto\],\s*constructor\.prototype,\s*'update',?\s*\)/,
+    );
+    // carCreate: body only.
+    expect(result).toMatch(
+      /Reflect\.defineMetadata\(\s*['"]design:paramtypes['"],\s*\[CarCreateDto\],\s*constructor\.prototype,\s*'create',?\s*\)/,
+    );
+    // The metadata is guarded so compiler-emitted metadata is preserved.
+    expect(result).toMatch(
+      /if \(\s*!Reflect\.hasOwnMetadata\(\s*['"]design:paramtypes['"],\s*constructor\.prototype,\s*'update',?\s*\)\s*\)/,
+    );
 
     // carArchive: sub-path route, public operation
     expect(result).toMatch(/archive\(/);

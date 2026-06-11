@@ -8,6 +8,7 @@ import type { EventController } from './types.js';
 import {
   addCausaNestJsImport,
   addNestJsImport,
+  renderParamTypesMetadata,
   type ImportDictionary,
 } from './utilities.js';
 
@@ -118,6 +119,11 @@ function renderDecoratorFactory(
     const httpStatusSymbol = addNestJsImport(imports, 'HttpStatus');
 
     lines.push('');
+    lines.push(
+      ...renderParamTypesMetadata(imports, method.name, [
+        method.eventSchema ?? 'Object',
+      ]),
+    );
     renderMethodDecorator(
       `${postSymbol}('${method.subPath}')`,
       method.name,

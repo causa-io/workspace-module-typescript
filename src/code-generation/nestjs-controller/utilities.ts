@@ -1,3 +1,4 @@
+import type { GeneratedSchema } from '@causa/workspace-core';
 import {
   externalImportSpec,
   externalSymbolAlias,
@@ -48,4 +49,46 @@ export function addCausaNestJsImport(
     [CAUSA_NESTJS_MODULE]: [externalImportSpec(CAUSA_NESTJS_MODULE, symbol)],
   });
   return externalSymbolAlias(CAUSA_NESTJS_MODULE, symbol);
+}
+
+/**
+ * Renders the statements defining the `design:paramtypes` metadata for a controller method, to be appended to a
+ * decorator factory body.
+ *
+ * Because the controller decorators are applied imperatively (through the decorator factory) rather than syntactically
+ * on the implementation method, the TypeScript compiler does not emit the `design:paramtypes` metadata for it. Without
+ * it, the runtime cannot deserialize and validate the method's parameters (e.g. the request body or event payload). The
+ * metadata is defined only when absent, leaving any metadata emitted by the compiler (e.g. when the user adds their own
+ * decorators to the method) untouched.
+ *
+ * @param imports The import dictionary to add the parameter class imports to.
+ * @param methodName The name of the method.
+ * @param paramTypes The types of the method's parameters, in parameter order. Each entry is either a generated class
+ *   (value-imported) or a literal type expression such as `Object` for an untyped parameter. When empty, no statement
+ *   is rendered.
+ * @returns The lines defining the metadata.
+ */
+export function renderParamTypesMetadata(
+  imports: ImportDictionary,
+  methodName: string,
+  paramTypes: (GeneratedSchema | string)[],
+): string[] {
+  if (paramTypes.length === 0) {
+    return [];
+  }
+
+  const typeNames = paramTypes.map((paramType) => {
+    if (typeof paramType === 'string') {
+      return paramType;
+    }
+
+    mergeImports(imports, { [paramType.file]: [paramType.name] });
+    return paramType.name;
+  });
+
+  return [
+    `    if (!Reflect.hasOwnMetadata('design:paramtypes', constructor.prototype, '${methodName}')) {`,
+    `      Reflect.defineMetadata('design:paramtypes', [${typeNames.join(', ')}], constructor.prototype, '${methodName}');`,
+    `    }`,
+  ];
 }

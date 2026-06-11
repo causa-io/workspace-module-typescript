@@ -16,6 +16,7 @@ import type {
 import {
   addCausaNestJsImport,
   addNestJsImport,
+  renderParamTypesMetadata,
   type ImportDictionary,
 } from './utilities.js';
 
@@ -299,10 +300,20 @@ function renderDecoratorFactory(
   for (const method of methods) {
     const { pathParamsSchema, queryParamsSchema, requestBodySchema } = method;
 
+    const paramTypes = [
+      pathParamsSchema,
+      queryParamsSchema,
+      requestBodySchema,
+    ].filter((schema) => !!schema);
+
+    lines.push(
+      '',
+      ...renderParamTypesMetadata(imports, method.name, paramTypes),
+    );
+
     const methodDecorator = HTTP_METHOD_DECORATORS[method.httpMethod];
     const methodSymbol = addNestJsImport(imports, methodDecorator);
     lines.push(
-      '',
       `    ${methodSymbol}('${toExpressPath(method.subPath)}')(`,
       `      constructor.prototype,`,
       `      '${method.name}',`,
