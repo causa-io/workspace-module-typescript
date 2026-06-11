@@ -210,3 +210,31 @@ export type ApiControllerMethod = {
    */
   description?: string;
 };
+
+/**
+ * A service container trigger calling an HTTP endpoint of the service.
+ */
+export type HttpTrigger = {
+  /**
+   * The name of the trigger, i.e. its key in the `serviceContainer.triggers` configuration.
+   */
+  name: string;
+
+  /**
+   * The raw trigger configuration.
+   */
+  trigger: ServiceContainerTrigger;
+
+  /**
+   * The last segment of the endpoint path, used as the method's sub-path.
+   */
+  subPath: string;
+
+  /**
+   * The schema for the event passed to the handler method.
+   * For `event` triggers, this is the class generated for the topic's schema. For other triggers, this is the class
+   * generated for the `dto` schema, when defined.
+   * When `undefined`, the event is typed as `object`.
+   */
+  eventSchema: GeneratedSchema | undefined;
+};
