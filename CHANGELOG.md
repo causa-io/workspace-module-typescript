@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+Features:
+
+- Generate event controllers from `serviceContainer.triggers` in the `typescriptNestjsController` generator. Other modules can contribute method decorators by implementing the new `ModelGenerateTypeScriptTriggerDecorators` function.
+- Clear the `typescriptNestjsController` output directory before generating files.
+- Decorate generated API controller methods with `@Public()` from `@causa/runtime/nestjs` when the OpenAPI operation declares an empty `security` array.
+
+Fixes:
+
+- Define the `design:paramtypes` metadata for generated API and event controller methods if it is not already emitted by the compiler.
+
 ## v1.0.1 (2026-06-10)
 
 Fixes:
