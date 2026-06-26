@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ARG NODE_VERSION=latest
-ARG NODE_MAJOR_VERSION=20
+ARG NODE_MAJOR_VERSION=24
 
 # Base image using the correct version of Node and npm.
 FROM node:${NODE_VERSION} AS node-base

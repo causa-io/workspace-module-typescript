@@ -92,7 +92,7 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
       {
         baseBuildArgs: {
           NODE_VERSION: 'latest',
-          NODE_MAJOR_VERSION: '20',
+          NODE_MAJOR_VERSION: '24',
           NPM_VERSION: 'latest',
         },
       },
@@ -115,7 +115,7 @@ describe('ProjectBuildArtefactForTypeScriptServiceContainer', () => {
       {
         baseBuildArgs: {
           NODE_VERSION: 'latest',
-          NODE_MAJOR_VERSION: '20',
+          NODE_MAJOR_VERSION: '24',
           NPM_VERSION: 'latest',
         },
       },
