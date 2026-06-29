@@ -71,5 +71,10 @@
     "rimraf": "^6.1.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.0"
+  },
+  "allowScripts": {
+    "@swc/core": true,
+    "fsevents": true,
+    "unrs-resolver": true
   }
 }
