@@ -10,6 +10,7 @@ Features:
 Chores:
 
 - Defer loading of heavy dependencies (`npm-check-updates`) during function registration.
+- Deprecate the security check implementation.
 
 ## v1.1.0 (2026-06-11)
 
