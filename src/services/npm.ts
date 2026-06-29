@@ -29,10 +29,18 @@ export class NpmService {
    */
   readonly requiredVersion: string;
 
+  /**
+   * The mapping of npm commands to sandbox profile keys, read from the `javascript.npm.sandbox` configuration.
+   * Keys are npm command names (e.g. `build`, `ci`), or `run <script>` for npm scripts.
+   * The `default` key is used when no command-specific sandbox matches.
+   */
+  readonly sandboxes: Record<string, string>;
+
   constructor(context: WorkspaceContext) {
     this.processService = context.service(ProcessService);
     this.environment = context.getAndRender('javascript.npm.environment');
     this.requiredVersion = context.get('javascript.npm.version') ?? 'latest';
+    this.sandboxes = context.get('javascript.npm.sandbox') ?? {};
   }
 
   /**
@@ -163,10 +171,13 @@ export class NpmService {
     await this.checkNpmVersion();
 
     const defaultEnvironment = (await this.environment) ?? {};
+    const sandboxKey = command === 'run-script' ? `run ${args[0]}` : command;
+    const sandbox = this.sandboxes[sandboxKey] ?? this.sandboxes.default;
 
     try {
-      const p = this.processService.spawn('npm', [command, ...args], {
+      const p = await this.processService.spawn('npm', [command, ...args], {
         capture: { stderr: true },
+        sandbox,
         ...options,
         environment: options.environment ?? {
           ...process.env,

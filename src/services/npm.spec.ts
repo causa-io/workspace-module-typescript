@@ -79,6 +79,84 @@ describe('NpmService', () => {
     });
   });
 
+  describe('sandbox', () => {
+    let processService: ProcessService;
+
+    beforeEach(() => {
+      ({ context } = createContext({
+        configuration: {
+          workspace: { name: '🏷️' },
+          javascript: {
+            npm: {
+              sandbox: {
+                default: 'defaultSandbox',
+                ci: 'ciSandbox',
+                'run build': 'buildSandbox',
+              },
+            },
+          },
+        },
+      }));
+      service = context.service(NpmService);
+      processService = context.service(ProcessService);
+      jest
+        .spyOn(processService, 'spawn')
+        .mockReturnValue({ result: Promise.resolve({ code: 0 }) } as any);
+    });
+
+    it('should run the command in the sandbox matching the command name', async () => {
+      await service.npm('ci', []);
+
+      expect(processService.spawn).toHaveBeenCalledExactlyOnceWith(
+        'npm',
+        ['ci'],
+        expect.objectContaining({ sandbox: 'ciSandbox' }),
+      );
+    });
+
+    it('should run the script in the sandbox matching `run <script>`', async () => {
+      await service.npm('run-script', ['build', '--', '--arg']);
+
+      expect(processService.spawn).toHaveBeenCalledExactlyOnceWith(
+        'npm',
+        ['run-script', 'build', '--', '--arg'],
+        expect.objectContaining({ sandbox: 'buildSandbox' }),
+      );
+    });
+
+    it('should fall back to the default sandbox when no command matches', async () => {
+      await service.npm('publish', []);
+
+      expect(processService.spawn).toHaveBeenCalledExactlyOnceWith(
+        'npm',
+        ['publish'],
+        expect.objectContaining({ sandbox: 'defaultSandbox' }),
+      );
+    });
+
+    it('should not sandbox when no command matches and no default is set', async () => {
+      ({ context } = createContext({
+        configuration: {
+          workspace: { name: '🏷️' },
+          javascript: { npm: { sandbox: { ci: 'ciSandbox' } } },
+        },
+      }));
+      service = context.service(NpmService);
+      processService = context.service(ProcessService);
+      jest
+        .spyOn(processService, 'spawn')
+        .mockReturnValue({ result: Promise.resolve({ code: 0 }) } as any);
+
+      await service.npm('publish', []);
+
+      expect(processService.spawn).toHaveBeenCalledExactlyOnceWith(
+        'npm',
+        ['publish'],
+        expect.objectContaining({ sandbox: undefined }),
+      );
+    });
+  });
+
   describe('build', () => {
     it('should run the build command', async () => {
       jest.spyOn(service, 'npm').mockResolvedValueOnce({ code: 0 });
