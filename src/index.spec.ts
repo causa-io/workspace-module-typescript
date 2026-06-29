@@ -2,7 +2,7 @@ import module from 'module';
 
 const require = module.createRequire(import.meta.url);
 
-const heavyModules = ['@scalar/'];
+const heavyModules = ['@scalar/', 'npm-check-updates'];
 
 describe('registerFunctions', () => {
   function getLoadedModules(): string[] {
