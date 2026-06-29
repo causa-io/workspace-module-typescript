@@ -99,6 +99,7 @@ export class ProjectDependenciesUpdateForJavaScript extends ProjectDependenciesU
         packageTargets[dependencyName] ?? defaultTarget,
       jsonUpgraded: true,
       upgrade: true,
+      deprecated: false,
     });
 
     process.env = previousEnv;

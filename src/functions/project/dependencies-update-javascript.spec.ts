@@ -106,6 +106,7 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
       target: expect.any(Function),
       jsonUpgraded: true,
       upgrade: true,
+      deprecated: false,
     });
     const actualTarget = (ncuRunMock.mock.calls[0][0] as any).target;
     expect(actualTarget('is-even')).toEqual('minor');
@@ -133,6 +134,7 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
       target: expect.any(Function),
       jsonUpgraded: true,
       upgrade: true,
+      deprecated: false,
     });
     expect(npmService.update).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: tmpDir,
@@ -155,6 +157,7 @@ describe('ProjectDependenciesUpdateForJavaScript', () => {
       target: expect.any(Function),
       jsonUpgraded: true,
       upgrade: true,
+      deprecated: false,
     });
     expect(npmService.update).toHaveBeenCalledExactlyOnceWith({
       workingDirectory: tmpDir,
