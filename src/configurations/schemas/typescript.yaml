@@ -34,6 +34,17 @@ properties:
               The destination directory for built packages, relative to the project's root.
               This is used when building JavaScript / TypeScript package artefacts.
 
+          sandbox:
+            type: object
+            description: |-
+              The sandbox profiles to use when running npm commands.
+              Keys are npm command names (e.g. `ci`), or `run <script>` for npm scripts.
+              Values are sandbox profile keys defined under the `causa.sandboxes` configuration.
+              The `default` key is used when no command-specific sandbox matches.
+              If no command matches and no default is set, the command is not sandboxed.
+            additionalProperties:
+              type: string
+
       node:
         title: JavaScriptNode
         type: object
