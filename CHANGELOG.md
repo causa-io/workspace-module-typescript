@@ -6,6 +6,7 @@ Features:
 
 - Default to Node.js `24` (instead of `20`) when building a TypeScript service container Docker image and `javascript.node.version` is set to `latest`.
 - Do not upgrade dependencies to deprecated versions when running `ProjectDependenciesUpdate`.
+- Support running npm commands in sandboxes using the `javascript.npm.sandbox` configuration.
 
 Chores:
 
