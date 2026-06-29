@@ -16,6 +16,23 @@ Add `@causa/workspace-typescript` to your Causa configuration in `causa.modules`
 
 For all the configuration in your Causa files related to TypeScript (but also JavaScript) look at [the schema for the `TypeScriptConfiguration`](./src/configurations/typescript.ts).
 
+### Sandboxing `npm` commands
+
+`npm` commands can be run in sandboxes defined under the `causa.sandboxes` configuration. Sandboxes are selected per command using the `javascript.npm.sandbox` configuration:
+
+```yaml
+javascript:
+  npm:
+    sandbox:
+      # The sandbox used when no command-specific sandbox matches.
+      # Optional: if there is no match and no default, the command is not sandboxed.
+      default: mySandbox
+      # The sandbox used when running `npm ci`. Keys are npm command names.
+      ci: ciSandbox
+      # npm scripts are matched using `run <script>`, e.g. for `npm run build`.
+      run build: buildSandbox
+```
+
 ## ✨ Supported project types and commands
 
 Projects supported by this module must have `typescript` (or in some cases `javascript` is enough) as their `project.language`. The following Causa `project.type`s are supported:
