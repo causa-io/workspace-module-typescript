@@ -259,6 +259,17 @@ export class Npm {
   @IsString()
   readonly packDestination?: string;
 
+  /**
+   * The sandbox profiles to use when running npm commands.
+   * Keys are npm command names (e.g. `build`, `ci`), or `run <script>` for npm scripts.
+   * Values are sandbox profile keys defined under the `causa.sandboxes` configuration.
+   * The `default` key is used when no command-specific sandbox matches.
+   * If no command matches and no default is set, the command is not sandboxed.
+   */
+  @AllowMissing()
+  @IsObject()
+  readonly sandbox?: Record<string, string>;
+
   [key: string]: any;
 }
 
