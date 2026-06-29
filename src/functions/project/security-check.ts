@@ -22,6 +22,10 @@ const CONTAINER_CODE_LOCATION = '/workdir';
  */
 export class ProjectSecurityCheckForJavaScript extends ProjectSecurityCheck {
   async _call(): Promise<void> {
+    this._context.logger.warn(
+      '⚠️ The security check for JavaScript and TypeScript projects in its current form is deprecated and will be removed in a future release.',
+    );
+
     const projectPath = this._context.getProjectPathOrThrow();
     const projectName = this._context.get('project.name');
 
