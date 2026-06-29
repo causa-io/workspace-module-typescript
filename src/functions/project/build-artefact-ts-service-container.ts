@@ -18,7 +18,7 @@ const DOCKER_FILE = fileURLToPath(
 /**
  * The default Node.js major version when `javascript.node.version` is set to `latest`.
  */
-const DEFAULT_NODE_MAJOR_VERSION = '20';
+const DEFAULT_NODE_MAJOR_VERSION = '24';
 
 /**
  * Implements the {@link ProjectBuildArtefact} function for a TypeScript service container.

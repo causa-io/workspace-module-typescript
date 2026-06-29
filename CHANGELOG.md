@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Default to Node.js `24` (instead of `20`) when building a TypeScript service container Docker image and `javascript.node.version` is set to `latest`.
+
 ## v1.1.0 (2026-06-11)
 
 Features:
