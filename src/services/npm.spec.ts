@@ -157,6 +157,45 @@ describe('NpmService', () => {
     });
   });
 
+  describe('environment', () => {
+    const setUpService = (
+      environment: Record<string, string | null>,
+    ): jest.SpiedFunction<ProcessService['spawn']> => {
+      ({ context } = createContext({
+        configuration: {
+          workspace: { name: '🏷️' },
+          javascript: { npm: { environment } },
+        },
+      }));
+      service = context.service(NpmService);
+      return jest
+        .spyOn(context.service(ProcessService), 'spawn')
+        .mockReturnValue({ result: Promise.resolve({ code: 0 }) } as any);
+    };
+
+    it('should apply the configured environment, adding and removing variables', async () => {
+      process.env.CAUSA_TEST_KEEP = 'inherited';
+      const spawn = setUpService({ ADD_ME: '🍬', REMOVE_ME: null });
+
+      await service.npm('version', [], {
+        environment: {
+          ...process.env,
+          CUSTOM_KEEP: 'custom',
+          REMOVE_ME: 'custom',
+        },
+      });
+
+      const actualEnvironment = spawn.mock.calls[0][2]?.environment;
+      expect(actualEnvironment).toMatchObject({
+        ADD_ME: '🍬',
+        CAUSA_TEST_KEEP: 'inherited',
+        CUSTOM_KEEP: 'custom',
+      });
+      expect(actualEnvironment).not.toContainKey('REMOVE_ME');
+      delete process.env.CAUSA_TEST_KEEP;
+    });
+  });
+
   describe('build', () => {
     it('should run the build command', async () => {
       jest.spyOn(service, 'npm').mockResolvedValueOnce({ code: 0 });

@@ -48,8 +48,7 @@ async function lookForUpdates(
     conf.get('javascript.dependencies.update.packageTargets') ?? {};
 
   const previousEnv = { ...process.env };
-  const environment = await context.service(NpmService).environment;
-  process.env = { ...previousEnv, ...environment };
+  process.env = await context.service(NpmService).resolveEnvironment();
 
   const upgrades = await run({
     cwd: projectPath,

@@ -20,8 +20,9 @@ export class NpmService {
   /**
    * The environment that should be provided to the npm process.
    * This is read and rendered from the `javascript.npm.environment` configuration.
+   * A `null` value for a key removes the corresponding variable from the environment passed to npm.
    */
-  readonly environment: Promise<Record<string, any> | undefined>;
+  readonly environment: Promise<Record<string, string | null> | undefined>;
 
   /**
    * The required npm version set in the configuration.
@@ -170,7 +171,7 @@ export class NpmService {
   ): Promise<SpawnedProcessResult> {
     await this.checkNpmVersion();
 
-    const defaultEnvironment = (await this.environment) ?? {};
+    const environment = await this.resolveEnvironment(options.environment);
     const sandboxKey = command === 'run-script' ? `run ${args[0]}` : command;
     const sandbox = this.sandboxes[sandboxKey] ?? this.sandboxes.default;
 
@@ -179,10 +180,7 @@ export class NpmService {
         capture: { stderr: true },
         sandbox,
         ...options,
-        environment: options.environment ?? {
-          ...process.env,
-          ...defaultEnvironment,
-        },
+        environment,
       });
       return await p.result;
     } catch (error) {
@@ -192,6 +190,30 @@ export class NpmService {
 
       throw error;
     }
+  }
+
+  /**
+   * Merges the configured {@link NpmService.environment} into the given base environment.
+   * Keys with a `null` value in the configuration remove the corresponding variable from the result.
+   *
+   * @param base The base environment to merge into. Defaults to {@link process.env}.
+   * @returns A new environment object with the configured variables applied.
+   */
+  async resolveEnvironment(
+    base: Record<string, string | undefined> = process.env,
+  ): Promise<Record<string, string | undefined>> {
+    const environment = { ...base };
+    const configuredEnvironment = (await this.environment) ?? {};
+
+    for (const [key, value] of Object.entries(configuredEnvironment)) {
+      if (value === null) {
+        delete environment[key];
+      } else {
+        environment[key] = value;
+      }
+    }
+
+    return environment;
   }
 
   /**
