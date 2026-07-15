@@ -238,10 +238,11 @@ export class Npm {
   /**
    * Environment variables to set when running npm.
    * Supports formatting.
+   * A `null` value removes the corresponding variable from the inherited environment.
    */
   @AllowMissing()
   @IsObject()
-  readonly environment?: Record<string, TemplateString>;
+  readonly environment?: Record<string, TemplateString | null>;
 
   /**
    * The version of npm to use.
