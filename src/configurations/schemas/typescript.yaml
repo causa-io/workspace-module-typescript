@@ -19,8 +19,11 @@ properties:
             description: |-
               Environment variables to set when running npm.
               Supports formatting.
+              A `null` value removes the corresponding variable from the inherited environment.
             additionalProperties:
-              $ref: '#/$defs/_TemplateString'
+              oneOf:
+                - type: 'null'
+                - $ref: '#/$defs/_TemplateString'
 
           version:
             type: string
