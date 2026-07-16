@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.3.0 (2026-07-16)
+
 Features:
 
 - Support `null`-valued keys in `javascript.npm.environment` to remove a variable from the inherited environment when running npm commands.
