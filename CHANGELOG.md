@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.4.0-beta.1 (2026-10-09)
+
 Features:
 
 - Pass arguments by reference rather than copying them for `ModelGenerateTypeScriptDecorators` and `ModelGenerateTypeScriptTriggerDecorators`, using `@causa/workspace`'s `PassArgumentsByReference`. Implementations of those functions must not mutate their arguments.
