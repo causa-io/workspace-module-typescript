@@ -1,5 +1,6 @@
 import { WorkspaceFunction } from '@causa/workspace';
 import type { ObjectSchema, Property, Schema } from '@causa/workspace-core';
+import { PassArgumentsByReference } from '@causa/workspace/function-registry';
 import { IsObject, IsString } from 'class-validator';
 import type {
   ServiceContainerTrigger,
@@ -13,6 +14,7 @@ import type {
  * {@link ModelGenerateTypeScriptDecorators.generator} and {@link ModelGenerateTypeScriptDecorators.configuration} when
  * the renderer is relevant.
  */
+@PassArgumentsByReference()
 export abstract class ModelGenerateTypeScriptDecorators extends WorkspaceFunction<
   TypeScriptDecorator[] | Promise<TypeScriptDecorator[]>
 > {
@@ -56,6 +58,7 @@ export abstract class ModelGenerateTypeScriptDecorators extends WorkspaceFunctio
  * Implementations should check support based on the {@link ModelGenerateTypeScriptTriggerDecorators.generator} and
  * {@link ModelGenerateTypeScriptTriggerDecorators.trigger} when the implementation is relevant.
  */
+@PassArgumentsByReference()
 export abstract class ModelGenerateTypeScriptTriggerDecorators extends WorkspaceFunction<
   TypeScriptDecorator[] | Promise<TypeScriptDecorator[]>
 > {
